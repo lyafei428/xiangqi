@@ -1,0 +1,82 @@
+[
+  {
+    "id": "mission-flying-general",
+    "type": "find-mate",
+    "lesson": "flying-general",
+    "title": "对面笑：一步杀",
+    "fen": "3k5/9/R8/9/9/9/9/9/9/2R1K4 w - - 0 1",
+    "plies": 1,
+    "source": "自编",
+    "hint": "先用一辆车将军，另一辆车已经封住横线。"
+  },
+  {
+    "id": "mission-double-rook",
+    "type": "attack",
+    "lesson": "double-rook",
+    "title": "双车错：底线将军",
+    "fen": "4k4/R8/9/9/9/1R7/9/9/9/3K5 w - - 0 1",
+    "plies": 1,
+    "source": "自编",
+    "hint": "把竖线上的车沉到底线。"
+  },
+  {
+    "id": "mission-horse-cannon",
+    "type": "find-mate",
+    "lesson": "horse-cannon",
+    "title": "马后炮：一步杀",
+    "fen": "4k4/9/4N4/9/C8/9/9/9/9/3K5 w - - 0 1",
+    "plies": 1,
+    "source": "自编",
+    "hint": "炮要走到马的正后方，用马当炮架。"
+  },
+  {
+    "id": "mission-smothered",
+    "type": "find-mate",
+    "lesson": "smothered",
+    "title": "闷宫：贴身一将",
+    "fen": "3rkr3/9/4P4/4P4/9/4C4/9/9/9/4K4 w - - 0 1",
+    "plies": 1,
+    "source": "自编",
+    "hint": "红兵向前一步，身后有炮保护。"
+  },
+  {
+    "id": "mission-double-cannon",
+    "type": "find-mate",
+    "lesson": "double-cannon",
+    "title": "重炮：底线叠炮",
+    "fen": "2C1k4/9/C8/5N3/9/9/9/9/9/3K5 w - - 0 1",
+    "plies": 1,
+    "source": "自编",
+    "hint": "把后面那门炮平到底线，让前炮当炮架。"
+  },
+  {
+    "id": "mission-iron-bolt",
+    "type": "attack",
+    "lesson": "iron-bolt",
+    "title": "铁门栓：两步杀",
+    "fen": "4k4/9/9/p4N3/9/R1p6/3R1R3/4P4/9/4K4 w - - 0 1",
+    "plies": 2,
+    "source": "自编",
+    "hint": "先吃掉挡在横线上的那枚卒，下一着再平车。"
+  },
+  {
+    "id": "mission-defense-left",
+    "type": "defense",
+    "lesson": "horse-side",
+    "title": "守住将门（左）",
+    "fen": "3k5/R8/9/9/9/9/9/9/r7r/3PKP3 w - - 0 1",
+    "plies": 1,
+    "source": "自编",
+    "hint": "对方的车下一着就要沉到底线；先吃掉它。"
+  },
+  {
+    "id": "mission-defense-right",
+    "type": "defense",
+    "lesson": "horse-corner",
+    "title": "守住将门（右）",
+    "fen": "5k3/8R/9/9/9/9/9/9/r7r/3PKP3 w - - 0 1",
+    "plies": 1,
+    "source": "自编",
+    "hint": "对方右翼的车是威胁，红车能吃掉它。"
+  }
+]

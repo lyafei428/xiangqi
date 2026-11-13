@@ -8,11 +8,12 @@
 
 ```bash
 npm run typecheck     # tsc --noEmit，类型检查
-npm test              # node --test，单元测试
-npm run check         # 两者连跑
+npm test              # node --test，引擎与纯逻辑单测
+npm run test:ui       # vitest run，前端集成用例（jsdom）
+npm run check         # 三者连跑
 ```
 
-提交前 `npm run check` 必须全绿。测试文件在 `test/`，命名 `*.test.ts`。
+提交前 `npm run check` 必须全绿。测试文件在 `test/`，命名 `*.test.ts`；前端用例用 `*.test.tsx`（集成用例放 `test/integration/`），需求—测试矩阵在 `test/RTM.md`。
 
 ## 文档
 
@@ -22,6 +23,7 @@ npm run check         # 两者连跑
 | 设计 | `docs/design/` | 怎么实现、模块规格 |
 | 模块 | `docs/design/modules/` | 单模块细节 |
 | 批次 | `docs/batches/` | 一轮实现的执行记录 |
+| 测试 | `test/RTM.md` | 需求—测试矩阵，集成用例索引 |
 
 需求与设计文档只写"现在是什么"，不写历史。历史在 git 提交里。
 

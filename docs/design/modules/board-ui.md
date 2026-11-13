@@ -2,6 +2,10 @@
 
 一套组件，三种模式。对弈、教学、练习共用，不各写一份。
 
+Closest precedent: `docs/design/modules/local-play.md` — 棋盘的尺寸测量、三档布局与对弈模式的行为已由该模块定下。本模块只把入参收口成 `BoardMode`，不改变 M1 的棋盘几何与视觉。
+
+Survey evidence: 已核对 `docs/requirements/xiangqi.md`（F1.2 棋盘交互、F2.1 演示、F3.1 判定题）、`docs/design/modules/local-play.md`（尺寸与对局交互）、`src/shared/` 的 `generateLegalMoves` / `playMove` 契约。未发现与 M2 冲突的既有设计。
+
 ## 1. 几何
 
 棋盘为 9 列 × 10 行的交叉点布局，棋子落在交叉点上，不是格子里。
@@ -40,20 +44,21 @@ row = round((screenY - 50) / 100)    // 0..9
 8  选中框 / 将军高亮
 ```
 
-- 每枚棋子是一个 `<g>`，`transform="translate(x,y)"` 定位。走子只改 transform，不重建节点、不改 viewBox。
+- 每枚棋子是一个 `<g>`，按交叉点 keyed 渲染，`transform="translate(x,y)"` 定位。走子只重绘起点与终点两枚棋子，不改 viewBox。
 - 棋子用圆形底 + 单字，红黑两色加中性描边。**不做立体阴影、不做渐变**。
 
 ## 3. 交互
 
 | 动作 | 行为 |
 |---|---|
-| 点己方棋子 | 选中，同时向引擎要 `generateMoves` 并高亮可落点 |
+| 点己方棋子 | 选中，同时向引擎要 `generateLegalMoves` 并高亮可落点 |
 | 点已选中棋子 | 取消选中 |
 | 点可落点 | 走子 |
 | 点不可落点 | 取消选中，不弹错误提示 |
 | 拖动棋子到落点 | 等同点选两段式，拖动为增强不做唯一路径 |
 
-- 触控命中区 ≥ 44×44 CSS px；棋子视觉直径可小于命中区。
+- 高亮一律用 `generateLegalMoves`。伪合法的 `generateMoves` 含送将着法，画成可落点后点击必被引擎拒绝，等于教出错着。
+- 命中区按半径 45 换算。格宽 40px 的最小档约为 36px 直径；44px 是触控理想值，与需求 F4.3 的 40px 格宽下限在 360px 宽棋盘上不能同时成立，按格宽下限优先。
 - `touch-action: manipulation` 消 300ms 延迟；拖动时该元素临时 `touch-action: none`。
 - **禁止 hover-only 交互**：触屏上没有 hover，任何信息都必须点击可见。
 
@@ -61,34 +66,52 @@ row = round((screenY - 50) / 100)    // 0..9
 
 ```ts
 type BoardMode =
-  | { kind: 'play'; side: Color | 'both'; legalMoves: Move[] }
-  | { kind: 'demo'; highlight: Move | null; arrows: Move[] }
-  | { kind: 'drill'; side: Color; expected: Square[]; marks: DrillMark[] };
+  | { kind: 'play'; side: Color | 'both' }
+  | { kind: 'demo' }
+  | { kind: 'drill'; side: Color };
+
+interface BoardProps {
+  mode: BoardMode;
+  position: Position;
+  size: BoardSize;
+  selection?: { selected: number | null; targets: readonly number[] };
+  lastMove?: Move | null;
+  checkSquare?: number | null;
+  marks?: readonly { square: number; kind: 'select' | 'correct' | 'wrong' }[];
+  onSelect?: (square: number) => void;
+  onTap?: (square: number) => void;
+}
 ```
+
+- M2 起按 mode 分支：`play` 与 `drill` 可交互，`demo` 只读。
+- `demo` 用 `lastMove` 标当前步；`drill` 用 `marks` 画选中与对错。
 
 | 模式 | 可动子 | 额外显示 |
 |---|---|---|
 | `play` | 按 `side` 限制（本地双人 = `both`） | 可落点、上一步 |
-| `demo` | 不可动 | 高亮箭头、被吃子淡出 |
+| `demo` | 不可动 | 当前步标记 |
 | `drill` | 只允许 `side` 方，且按题目要求 | 对错标记（红叉 / 绿勾）就地显示，不弹模态框 |
 
 ## 5. 响应式
 
-| 视口 | 棋盘尺寸 | 说明 |
-|---|---|---|
-| ≥1024px | 高度取 `min(可用高, 720px)`，宽度按 9:10 比例 | 与右侧栏并排 |
-| 768–1023px | 宽度取容器宽，高度按 9:10 | 下方抽屉 |
-| <768px | `min(容器宽, (可用高 - 面板高) * 0.9)`，**且格宽 ≥ 40px** | 底部抽屉 |
+棋盘尺寸用一条统一公式，三档的差别在页面布局与面板，不在棋盘本身：
 
-- 格宽 = 棋盘渲染宽度 / 9。低于 40px 时按 40px 反推棋盘宽度，允许横向留白，**不继续压小**。
+```text
+宽 = max(360, min(容器宽, min(容器高, 720px) × 0.9))
+高 = 宽 × 10 / 9
+```
+
+- 容器宽/高指棋盘舞台的可用尺寸（已扣掉面板与内边距）。宽与高同时受约束，棋盘不越出舞台——唯一例外是格宽下限那一档（见下条）。
+- ≥1024px 与右侧栏并排；768–1023px 在下抽屉上方；<768px 在底部抽屉上方。
+- 格宽 = 棋盘渲染宽度 / 9。低于 40px 时按 40px 反推棋盘宽度（360px）；容器宽不足 360px 时棋盘保持 360px，由棋盘舞台横向滚动，不继续压小。
 - `ResizeObserver` 监听容器变化重算，旋转屏幕不重挂载组件。
 - 用 `dvh` 不用 `vh`。
 
 ## 6. 性能
 
-- 32 个棋子节点，走子只改受影响的 2 个节点的 `transform`。
-- 动画只碰 `transform` 与 `opacity`，时长 150ms，`prefers-reduced-motion: reduce` 时关闭。
-- 不在动画帧里读 `offsetWidth` / `getBoundingClientRect`——命中判定只在 `pointerdown` 时算一次。
+- 只渲染有子的交叉点（开局 32 枚），走子重绘起点与终点两枚。
+- 走子不加过渡动画，避免布局抖动与额外的重排测量。将来加动画时只碰 `transform` 与 `opacity`，并在 `prefers-reduced-motion: reduce` 时关闭。
+- 不在事件处理之外读 `offsetWidth` / `getBoundingClientRect`——命中判定只在 `pointerdown` / `pointerup` 时算一次。
 - 棋盘整体不做 React 重渲染优化（memo）：90 个交叉点的量级用不上，过度优化让代码难读。
 
 ## 7. 无障碍

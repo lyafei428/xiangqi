@@ -1,0 +1,74 @@
+// 房间注册表：房间码生成、查找、加入与落子的门面。
+
+import { randomBytes, randomInt } from 'node:crypto';
+import { INITIAL_FEN } from '../shared/index.ts';
+import type { Move } from '../shared/index.ts';
+import type { JoinOutcome, MoveOutcome, RoomState } from './room.ts';
+import { applyRoomMove, createRoom, joinRoom, setConnected } from './room.ts';
+
+const CODE_CHARS = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+
+export function newToken(): string {
+  return randomBytes(16).toString('hex');
+}
+
+function newCode(): string {
+  let code = '';
+  for (let index = 0; index < 6; index += 1) {
+    code += CODE_CHARS[randomInt(CODE_CHARS.length)];
+  }
+  return code;
+}
+
+export class Rooms {
+  private readonly rooms = new Map<string, RoomState>();
+
+  create(startFen = INITIAL_FEN): { room: RoomState; token: string } {
+    let code = newCode();
+    while (this.rooms.has(code)) code = newCode();
+    const token = newToken();
+    const room = createRoom(code, token, startFen);
+    this.rooms.set(code, room);
+    return { room, token };
+  }
+
+  get(code: string): RoomState | undefined {
+    return this.rooms.get(code);
+  }
+
+  join(code: string, token: string): JoinOutcome | { ok: false; reason: 'room-not-found' } {
+    const room = this.rooms.get(code);
+    if (room === undefined) return { ok: false, reason: 'room-not-found' };
+    const outcome = joinRoom(room, token);
+    if (outcome.ok) this.rooms.set(code, outcome.room);
+    return outcome;
+  }
+
+  setConnected(code: string, token: string, connected: boolean, now = Date.now()): RoomState | undefined {
+    const room = this.rooms.get(code);
+    if (room === undefined) return undefined;
+    const next = setConnected(room, token, connected, now);
+    this.rooms.set(code, next);
+    return next;
+  }
+
+  /** 两人都离线超过 ttlMs 的房间回收；返回回收数量。 */
+  sweep(now = Date.now(), ttlMs = 30 * 60_000): number {
+    let removed = 0;
+    for (const [code, room] of this.rooms) {
+      if (room.idleSince !== null && now - room.idleSince >= ttlMs) {
+        this.rooms.delete(code);
+        removed += 1;
+      }
+    }
+    return removed;
+  }
+
+  move(code: string, token: string, move: Move, seq: number): MoveOutcome {
+    const room = this.rooms.get(code);
+    if (room === undefined) return { ok: false, reason: 'not-in-room' };
+    const outcome = applyRoomMove(room, token, move, seq);
+    if (outcome.ok) this.rooms.set(code, outcome.room);
+    return outcome;
+  }
+}

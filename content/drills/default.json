@@ -1,0 +1,5 @@
+{
+  "kinds": ["move-pattern", "legality", "position", "notation"],
+  "plies": { "min": 6, "max": 24 },
+  "attempts": { "hint": 2, "reveal": 3 }
+}

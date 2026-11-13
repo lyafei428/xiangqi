@@ -16,19 +16,17 @@ import { applyMove, generateMoves, isSquareAttacked } from './moves.ts';
 /** 连续 120 着（60 回合）无吃子判和。 */
 export const NATURAL_LIMIT = 120;
 
-function findKing(board: Board, color: Color): number {
+/** 将帅所在交叉点。找不到不是"没被将"，是局面坏了：FEN 读入层已拦一次，走到这里说明内存里的局面被写坏。 */
+export function kingSquareOf(board: Board, color: Color): number {
   for (let index = 0; index < BOARD_SIZE; index += 1) {
     const piece = pieceAt(board, index);
     if (piece !== null && piece.color === color && piece.type === 'K') return index;
   }
-  return -1;
+  throw new Error(`kingSquareOf: ${color} has no king on the board`);
 }
 
 export function isInCheck(pos: Position, color: Color): boolean {
-  const king = findKing(pos.board, color);
-  // 没有将帅不是"没被将"，是局面坏了：FEN 读入层已拦一次，走到这里说明内存里的局面被写坏。
-  if (king < 0) throw new Error(`isInCheck: ${color} has no king on the board`);
-  return isSquareAttacked(pos, king, opposite(color));
+  return isSquareAttacked(pos, kingSquareOf(pos.board, color), opposite(color));
 }
 
 export function generateLegalMoves(pos: Position): Move[] {

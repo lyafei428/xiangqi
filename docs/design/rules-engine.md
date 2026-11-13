@@ -42,6 +42,8 @@ export type ResultType =
   | 'repetition'   // 三次重复：和
   | 'natural';     // 连续 60 回合无吃子：和
 
+export type GameStatus = 'playing' | 'check' | 'checkmate' | 'stalemate';
+
 export interface GameResult { readonly type: ResultType; readonly winner: Color | null }
 ```
 
@@ -95,19 +97,24 @@ isSquareAttacked(pos: Position, sq: number, by: Color): boolean
 ## 5. 合法着法与将军
 
 ```ts
-generateMoves(pos): Move[]        // 伪合法，供界面高亮用
+generateMoves(pos): Move[]        // 伪合法；界面高亮用 generateLegalMoves
 generateLegalMoves(pos): Move[]   // 过滤掉走后己方被将的着法
 isLegal(pos, move): boolean
 isInCheck(pos, color): boolean    // 该色将帅是否被攻击
+kingSquareOf(board, color): number // 将帅所在交叉点；没有将帅抛错
 applyMove(pos, move): Position    // 不校验合法性，调用方负责
+playMove(pos, history, move): { position: Position; history: HistoryEntry[] } // 校验合法性，非法抛错，追加一条 HistoryEntry
+recordMove(before, move): HistoryEntry // 只记一着、不返回新局面；同样校验合法性
 ```
 
 合法着法 = 伪合法着法中，走完后 `isInCheck(己方) === false` 的那些。飞将由 §4.2 覆盖，无需单独分支。
 
+`applyMove` 只搬子；`playMove` 在它之上做合法性校验并追加 `HistoryEntry`，界面与服务端都走 `playMove`。`recordMove` 供只需要历史条目的调用方使用，避免为了拿一条记录而重复搬家。
+
 ## 6. 终局判定
 
 ```ts
-statusOf(pos): 'playing' | 'check' | 'checkmate' | 'stalemate'
+statusOf(pos): GameStatus
 ```
 
 | 情形 | 判定 |
@@ -145,6 +152,10 @@ judgeGame(position: Position, history: readonly HistoryEntry[], startFen: string
 
 `history` 中自上一次吃子起的着数（半回合数）达到 **120**（即 60 回合）时判和，`type: 'natural'`。
 
+```ts
+naturalLimitResult(history: readonly HistoryEntry[]): GameResult | null
+```
+
 ### 6.3 判定顺序
 
 每次走子后依次检查：① 将死 → ② 困毙 → ③ 长将/重复 → ④ 自然限着。前面命中即终止。
@@ -174,6 +185,7 @@ judgeGame(position: Position, history: readonly HistoryEntry[], startFen: string
 
 ```ts
 toChineseNotation(pos: Position, move: Move): string
+pieceName(color: Color, type: PieceType): string   // 界面用字：帅/将、仕/士、相/象、兵/卒
 ```
 
 `pos` 必须是**走这一着之前的局面**。记谱只在显示层使用，棋谱存储一律用坐标序列。
@@ -202,8 +214,8 @@ perft 统计**合法着法**（走后己方不被将），与 `generateLegalMove
 | 文件 | 内容 |
 |---|---|
 | `src/shared/types.ts` | §2 的全部类型 |
-| `src/shared/board.ts` | 坐标换算、九宫/河界判断、取子、空盘与局面相等 |
-| `src/shared/fen.ts` | `parseFen` / `toFen` / `initialPosition` |
+| `src/shared/board.ts` | 坐标换算（`indexOf` / `xOf` / `yOf`）、`pieceAt`、九宫/河界判断、`emptyBoard`、`positionsEqual` |
+| `src/shared/fen.ts` | `INITIAL_FEN` / `parseFen` / `toFen` / `initialPosition` |
 | `src/shared/moves.ts` | 走法生成、`isSquareAttacked` |
 | `src/shared/rules.ts` | 合法着法、将军、终局、重复与长将、自然限着 |
 | `src/shared/notation.ts` | `toChineseNotation`、纵线换算 |

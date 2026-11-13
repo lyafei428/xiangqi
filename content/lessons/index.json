@@ -1,0 +1,44 @@
+{
+  "chapters": [
+    {
+      "number": 1,
+      "title": "第一章 走法",
+      "lessons": [
+        { "id": "board-basics", "title": "棋盘与棋子", "summary": "9 列 10 行、九宫、河界，红先黑后。" },
+        { "id": "rook", "title": "车：直来直去", "summary": "车沿横竖直线走，遇子即停，敌子可吃。" },
+        { "id": "horse", "title": "马：日字与蹩马腿", "summary": "马走日字，马腿被挡时该方向不通。" },
+        { "id": "cannon", "title": "炮：直行与隔子吃", "summary": "炮走直线，吃子必须隔一个炮架。" },
+        { "id": "advisor-elephant", "title": "相与仕：斜走与边界", "summary": "相走田字不过河，仕斜走一步不出九宫。" },
+        { "id": "king", "title": "帅与将：九宫一步", "summary": "将帅在九宫内走一步，不能照面。" },
+        { "id": "pawn", "title": "兵与卒：向前与过河", "summary": "兵卒只进不退，过河后可以横走。" },
+        { "id": "capture-check", "title": "吃子与将军", "summary": "吃子占落点，攻击将帅是将军。" }
+      ]
+    },
+    {
+      "number": 2,
+      "title": "第二章 规则判罚",
+      "lessons": [
+        { "id": "checkmate", "title": "将死：被将且无路可走", "summary": "被将且没有合法着法，判负。" },
+        { "id": "stalemate", "title": "困毙：没被将，也无路可走", "summary": "困毙在中国象棋判负，不是和棋。" },
+        { "id": "perpetual", "title": "长将判负", "summary": "循环里每着都将军的一方判负。" },
+        { "id": "repetition", "title": "三次重复判和", "summary": "同一局面第三次出现，判和。" },
+        { "id": "natural-limit", "title": "60 回合无吃子判和", "summary": "连续 120 着无吃子，判和。" },
+        { "id": "legality", "title": "合法着法：不能送将与必须应将", "summary": "走后不能被将，被将必须应对。" }
+      ]
+    },
+    {
+      "number": 3,
+      "title": "第三章 基本杀法",
+      "lessons": [
+        { "id": "flying-general", "title": "对面笑：将帅照面", "summary": "用将帅不能照面封死最后一个逃格。" },
+        { "id": "double-rook", "title": "双车错：两车配合", "summary": "一车将军，另一车封住将的退路。" },
+        { "id": "horse-cannon", "title": "马后炮：马当炮架", "summary": "马封两翼，炮在马后用马当炮架将军。" },
+        { "id": "smothered", "title": "闷宫：被自己的子堵死", "summary": "对方的将被他自己的子堵在九宫里。" },
+        { "id": "double-cannon", "title": "重炮：两炮叠线", "summary": "前炮当架，后炮隔着前炮将军。" },
+        { "id": "iron-bolt", "title": "铁门栓：炮镇中路", "summary": "中路炮封正面，两翼被自己的子堵死。" },
+        { "id": "horse-side", "title": "卧槽马：侧翼将军", "summary": "马跳九宫侧翼，车封住将前的一格。" },
+        { "id": "horse-corner", "title": "挂角马：角上将军", "summary": "马挂九宫角，另一子封住将前的一格。" }
+      ]
+    }
+  ]
+}

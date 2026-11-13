@@ -8,7 +8,9 @@ import {
   isInCheck,
   isLegal,
   judgeGame,
+  kingSquareOf,
   parseFen,
+  playMove,
   statusOf,
   toFen,
 } from '../src/shared/index.ts';
@@ -89,6 +91,22 @@ test('isLegal 拒绝规则上不成立的着法', () => {
   assert.equal(isLegal(initialPosition, { from: at(0, 9), to: at(0, 5) }), false, '车不能越过己方兵');
   assert.equal(isLegal(initialPosition, { from: at(4, 5), to: at(4, 4) }), false, '空起点');
   assert.equal(isLegal(initialPosition, { from: at(0, 9), to: at(0, 8) }), true);
+});
+
+test('kingSquareOf 取将帅所在交叉点，缺将帅抛错', () => {
+  assert.equal(kingSquareOf(initialPosition.board, 'red'), at(4, 9));
+  assert.equal(kingSquareOf(initialPosition.board, 'black'), at(4, 0));
+  const broken = initialPosition.board.map((piece) =>
+    piece !== null && piece.color === 'red' && piece.type === 'K' ? null : piece,
+  );
+  assert.throws(() => kingSquareOf(broken, 'red'), /no king/);
+});
+
+test('playMove 拒绝非法着法', () => {
+  assert.throws(
+    () => playMove(initialPosition, [], { from: at(0, 0), to: at(0, 1) }),
+    /illegal move/,
+  );
 });
 
 test('statusOf 对开局与被将局面分别给出 playing / check', () => {

@@ -11,6 +11,11 @@ const PIECE_NAMES: Readonly<Record<Color, Readonly<Record<PieceType, string>>>> 
   black: { K: '将', A: '士', B: '象', N: '马', R: '车', C: '炮', P: '卒' },
 };
 
+/** 棋子的界面用字：红方用帅仕相，黑方将士象，兵卒分开。 */
+export function pieceName(color: Color, type: PieceType): string {
+  return PIECE_NAMES[color][type];
+}
+
 // 车、炮、兵、帅记移动行数，马、相、仕记目标纵线。记反了整盘棋谱就读不出来。
 const AMOUNT_IS_TARGET_FILE: Readonly<Record<PieceType, boolean>> = {
   K: false,
