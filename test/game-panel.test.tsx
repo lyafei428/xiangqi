@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// 五种结局的可见文案。App 没有残局入口，胜负结局在组件层直接构造会话断言。
+// 八种结局的可见文案。App 没有残局入口，胜负结局在组件层直接构造会话断言。
 
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
@@ -16,7 +16,14 @@ function sessionWith(result: GameResult): GameSession {
 
 function statusTextOf(result: GameResult): string {
   const view = render(
-    <GamePanel session={sessionWith(result)} open onToggle={() => {}} onReset={() => {}} />,
+    <GamePanel
+      session={sessionWith(result)}
+      open
+      now={Date.now()}
+      onToggle={() => {}}
+      onReset={() => {}}
+      onResign={() => {}}
+    />,
   );
   const text = screen.getByRole('status').textContent ?? '';
   view.unmount();
@@ -42,5 +49,17 @@ describe('对局结果文案', () => {
 
   it('自然限着显示和棋', () => {
     expect(statusTextOf({ type: 'natural', winner: null })).toContain('和棋 · 60 回合无吃子');
+  });
+
+  it('超时显示胜方与「超时」', () => {
+    expect(statusTextOf({ type: 'timeout', winner: 'black' })).toContain('黑方胜 · 超时');
+  });
+
+  it('认输显示胜方与「认输」', () => {
+    expect(statusTextOf({ type: 'resign', winner: 'red' })).toContain('红方胜 · 认输');
+  });
+
+  it('双方同意显示和棋', () => {
+    expect(statusTextOf({ type: 'agreement', winner: null })).toContain('和棋 · 双方同意');
   });
 });

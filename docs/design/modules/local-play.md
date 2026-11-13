@@ -10,7 +10,7 @@ Survey evidence: 已核对 `docs/design/architecture.md`（分层、技术栈、
 
 - 规则只从 `src/shared/` 取。走法、合法着法、将军、终局、记谱全部调用引擎，客户端不复制任何判罚逻辑。
 - 本地双人的对局数据只有一个 reducer 状态对象。布局变化只改 CSS 与棋盘像素尺寸，不重置状态，也不重挂载棋盘。
-- 本模块不做联机、计时、认输求和、棋谱持久化；这些在后续批次。
+- 本模块含计时与认输；求和与联机计时见 `docs/design/modules/clock.md`；联机与棋谱持久化不在本模块。
 
 ## 2. 文件划分
 
@@ -47,8 +47,9 @@ Survey evidence: 已核对 `docs/design/architecture.md`（分层、技术栈、
 | `status` | 当前局面状态：`playing` / `check` / `checkmate` / `stalemate` |
 | `selected` | 已选中的起点，`null` 表示无选中 |
 | `targets` | 选中棋子的合法落点 |
+| `clock` | 双方剩余时间与在走方，见 `docs/design/modules/clock.md` |
 
-动作有三个：`select(square)` 在指针按下时选中己方棋子，不切换；`tap(square)` 做点击判定；`reset(startFen?)` 开新局。
+动作有五个：`select(square, now)` 在指针按下时选中己方棋子，不切换；`tap(square, now)` 做点击判定；`reset(startFen?)` 开新局；`tick(now)` 推时钟；`resign(now)` 当前行棋方认输。时间由页面随动作传入，会话本身不读墙钟。时钟与认输的判罚见 `docs/design/modules/clock.md` §2。
 
 `reset` 不带 `startFen` 时回到本局起始局面（`state.startFen`）；带参时从新起始局面开一局。
 
@@ -101,16 +102,17 @@ Survey evidence: 已核对 `docs/design/architecture.md`（分层、技术栈、
 | 验收 | 验证方式 |
 |---|---|
 | 浏览器里能下完一局 | 集成用例 F1-1（`npx vitest run test/integration/local-play.test.tsx`）走到三次重复判和并锁盘；浏览器实跑补走子与终局展示 |
-| 五种结局文案正确 | `npx vitest run test/game-panel.test.tsx` 断言将死、困毙、长将、三次重复、60 回合无吃子五条文案 |
+| 八种结局文案正确 | `npx vitest run test/game-panel.test.tsx` 断言将死、困毙、长将、三次重复、60 回合无吃子五条，以及超时、认输、双方同意三条 |
 | 三档视口切换局面不丢 | 同一页面改宽高，reducer 状态不变；三档截图核对 |
 | 格宽 ≥40 CSS px | `boardSize` 单测断言棋盘宽 ≥360；手机档实测渲染宽 / 9 |
 | 选中与终局状态保留 | 缩放后选中高亮、将军高亮、终局提示仍在 |
+| 计时与认输 | 时钟归零显示「黑方胜 · 超时」并锁盘；认输立刻结束并锁盘；详见 `docs/design/modules/clock.md` §7 |
 
 单元测试：`node --test test/client-geometry.test.ts test/client-session.test.ts` 覆盖坐标换算、命中半径、三档尺寸、选子、走子、换边、点不可落点、三次重复判和、终局锁盘、新局、记谱、将军高亮；非法着法的抛错路径由 `node --test test/rules.test.ts` 覆盖。
 
 ## 8. 集成测试设计
 
-起点：`test/RTM.md` 的「对弈」故事。本批新增 F1-1 一行；M1 是首批客户端代码，此前没有前端集成用例，因此不破坏、不冗余、不缺失既有行。
+起点：`test/RTM.md` 的「对弈」故事。本批新增 F1-3（计时与认输）；F1-1 原有断言不破坏、不冗余；F1-2 / F1-4 属联机，在 `docs/design/modules/online.md` §9。
 
 | 项 | 内容 |
 |---|---|
@@ -122,6 +124,6 @@ Survey evidence: 已核对 `docs/design/architecture.md`（分层、技术栈、
 
 提交前 `npm run check` 全绿（AGENTS.md 的提交门），不属于本模块的验收。
 
-五种结局文案由 `test/game-panel.test.tsx` 在组件层断言；App 没有残局入口，胜负结局不从集成入口构造。
+八种结局文案由 `test/game-panel.test.tsx` 在组件层断言；App 没有残局入口，胜负结局不从集成入口构造。
 
 响应式故事在 jsdom 里没有布局，不能冒充集成用例；它的验收仍按 §7 用浏览器实跑，等引入浏览器级测试框架后按 `test/RTM.md` 补行。

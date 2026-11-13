@@ -2,6 +2,7 @@
 // 规则判定一律交给 shared 引擎，这里只负责选子、记账和终局后的锁盘。
 
 import type {
+  Color,
   GameResult,
   GameStatus,
   HistoryEntry,
@@ -9,7 +10,9 @@ import type {
   Position,
 } from '../../shared/index.ts';
 import {
+  CLOCK_MS,
   INITIAL_FEN,
+  createClock,
   generateLegalMoves,
   judgeGame,
   kingSquareOf,
@@ -17,8 +20,16 @@ import {
   pieceAt,
   playMove,
   statusOf,
+  stopClock,
+  switchClock,
+  timeoutColor,
   toChineseNotation,
 } from '../../shared/index.ts';
+import type { ClockState } from '../../shared/index.ts';
+
+function opposite(color: Color): Color {
+  return color === 'red' ? 'black' : 'red';
+}
 
 export interface GameSession {
   readonly startFen: string;
@@ -31,14 +42,17 @@ export interface GameSession {
   readonly status: GameStatus;
   readonly selected: number | null;
   readonly targets: readonly number[];
+  readonly clock: ClockState;
 }
 
 export type GameAction =
-  | { readonly type: 'select'; readonly square: number }
-  | { readonly type: 'tap'; readonly square: number }
+  | { readonly type: 'select'; readonly square: number; readonly now?: number }
+  | { readonly type: 'tap'; readonly square: number; readonly now?: number }
+  | { readonly type: 'tick'; readonly now: number }
+  | { readonly type: 'resign'; readonly now?: number }
   | { readonly type: 'reset'; readonly startFen?: string };
 
-export function createSession(startFen: string = INITIAL_FEN): GameSession {
+export function createSession(startFen: string = INITIAL_FEN, now = Date.now()): GameSession {
   const position = parseFen(startFen);
   return {
     startFen,
@@ -50,6 +64,7 @@ export function createSession(startFen: string = INITIAL_FEN): GameSession {
     status: statusOf(position),
     selected: null,
     targets: [],
+    clock: createClock(now, CLOCK_MS),
   };
 }
 
@@ -59,35 +74,56 @@ function targetsFrom(position: Position, from: number): number[] {
     .map((move) => move.to);
 }
 
+/** 旗落即终局：走子与选子入口先过这一关，超时后不再接受任何动作。 */
+function timedOutState(state: GameSession, now: number): GameSession | null {
+  if (state.result !== null) return null;
+  const timedOut = timeoutColor(state.clock, now);
+  if (timedOut === null) return null;
+  return {
+    ...state,
+    result: { type: 'timeout', winner: opposite(timedOut) },
+    clock: stopClock(state.clock, now),
+    selected: null,
+    targets: [],
+  };
+}
+
 /** 指针按下时只选中、不切换：拖动要从按下就开始算，抬起才决定走不走。 */
-function selectSquare(state: GameSession, square: number): GameSession {
+function selectSquare(state: GameSession, square: number, now: number): GameSession {
+  const expired = timedOutState(state, now);
+  if (expired !== null) return expired;
   const piece = pieceAt(state.position.board, square);
   if (piece === null || piece.color !== state.position.turn) return state;
   if (state.selected === square) return state;
   return { ...state, selected: square, targets: targetsFrom(state.position, square) };
 }
 
-function playTurn(state: GameSession, move: Move): GameSession {
+function playTurn(state: GameSession, move: Move, now: number): GameSession {
   const notation = toChineseNotation(state.position, move);
   // 非法着法由 playMove 抛错：history 是重复与自然限着的输入，不能混进假着法。
   const { position, history } = playMove(state.position, state.history, move);
+  const played = switchClock(state.clock, now);
+  const result = judgeGame(position, history, state.startFen);
   return {
     ...state,
     position,
     history,
     notations: [...state.notations, notation],
     lastMove: move,
-    result: judgeGame(position, history, state.startFen),
+    result,
     status: statusOf(position),
     selected: null,
     targets: [],
+    clock: result === null ? played : stopClock(played, now),
   };
 }
 
-function tapSquare(state: GameSession, square: number): GameSession {
+function tapSquare(state: GameSession, square: number, now: number): GameSession {
+  const expired = timedOutState(state, now);
+  if (expired !== null) return expired;
   if (state.result !== null) return state;
   if (state.selected !== null && state.targets.includes(square)) {
-    return playTurn(state, { from: state.selected, to: square });
+    return playTurn(state, { from: state.selected, to: square }, now);
   }
   const piece = pieceAt(state.position.board, square);
   if (piece !== null && piece.color === state.position.turn) {
@@ -103,9 +139,25 @@ function tapSquare(state: GameSession, square: number): GameSession {
 export function sessionReducer(state: GameSession, action: GameAction): GameSession {
   switch (action.type) {
     case 'select':
-      return selectSquare(state, action.square);
+      return selectSquare(state, action.square, action.now ?? Date.now());
     case 'tap':
-      return tapSquare(state, action.square);
+      return tapSquare(state, action.square, action.now ?? Date.now());
+    case 'tick': {
+      const expired = timedOutState(state, action.now);
+      return expired ?? state;
+    }
+    case 'resign': {
+      if (state.result !== null) return state;
+      const now = action.now ?? Date.now();
+      const loser = state.position.turn;
+      return {
+        ...state,
+        result: { type: 'resign', winner: opposite(loser) },
+        clock: stopClock(state.clock, now),
+        selected: null,
+        targets: [],
+      };
+    }
     case 'reset':
       // 无参时回到本局起始局面，而不是固定初始局面：练习与残局批次会从自定义 FEN 开局。
       return createSession(action.startFen ?? state.startFen);

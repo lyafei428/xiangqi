@@ -434,6 +434,67 @@ button {
 .new-game:active {
   transform: translateY(1px);
 }
+.clock-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.clock {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffdf7;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.clock-black {
+  margin-left: 0;
+}
+
+.clock-row .resign {
+  margin-left: auto;
+  padding: 6px 10px;
+  font-size: 14px;
+}
+
+.clock-row .resign + .resign {
+  margin-left: 0;
+}
+
+.clock.is-low {
+  color: #a12f2f;
+  border-color: #a12f2f;
+}
+
+.resign {
+  border: 1px solid var(--line);
+  background: #fffdf7;
+  color: var(--text);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.resign:hover:not(:disabled) {
+  background: #f3ead8;
+}
+
+.resign:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn.small {
+  padding: 4px 10px;
+  font-size: 13px;
+  margin-left: 8px;
+}
+
 
 /* 课程目录 */
 

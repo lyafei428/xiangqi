@@ -35,7 +35,10 @@ export type ResultType =
   | 'stalemate' // 困毙：无着法方负（中国象棋判负，不是和棋）
   | 'perpetual' // 长将：长将方负
   | 'repetition' // 三次重复：和
-  | 'natural'; // 连续 60 回合无吃子：和
+  | 'natural' // 连续 60 回合无吃子：和
+  | 'timeout' // 超时：归零方负
+  | 'resign' // 认输：认输方负
+  | 'agreement'; // 双方同意和棋
 
 export interface GameResult {
   readonly type: ResultType;

@@ -6,4 +6,5 @@ export * from './fen.ts';
 export * from './moves.ts';
 export * from './rules.ts';
 export * from './notation.ts';
+export * from './clock.ts';
 export * from './perft.ts';

@@ -1,8 +1,15 @@
 // 联机页：大厅（建房 / 加入）与房间（棋盘 + 面板）。
 
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import type { GameResult, ResultType } from '../../shared/index.ts';
-import { generateLegalMoves, kingSquareOf, parseFen, pieceAt } from '../../shared/index.ts';
+import type { Color, GameResult, ResultType } from '../../shared/index.ts';
+import {
+  formatClock,
+  generateLegalMoves,
+  kingSquareOf,
+  parseFen,
+  pieceAt,
+} from '../../shared/index.ts';
+import type { Snapshot } from '../../shared/protocol.ts';
 import { Board } from '../board/Board.tsx';
 import { boardSize } from '../board/geometry.ts';
 import { useStageSize } from '../board/useStageSize.ts';
@@ -15,6 +22,9 @@ const RESULT_REASON: Readonly<Record<ResultType, string>> = {
   perpetual: '长将',
   repetition: '三次重复',
   natural: '60 回合无吃子',
+  timeout: '超时',
+  resign: '认输',
+  agreement: '双方同意',
 };
 
 function resultText(result: GameResult): string {
@@ -22,13 +32,33 @@ function resultText(result: GameResult): string {
   return `${winner} · ${RESULT_REASON[result.type]}`;
 }
 
+/** 以收到快照的时刻为锚做本地投影；归零仍由服务端裁决。 */
+function projectedMs(
+  snapshot: Snapshot,
+  color: Color,
+  receivedAt: number,
+  now: number,
+  active: boolean,
+): number {
+  const base = color === 'red' ? snapshot.clock.redMs : snapshot.clock.blackMs;
+  if (!active || snapshot.clock.running !== color) return Math.max(0, base);
+  return Math.max(0, base - Math.max(0, now - receivedAt));
+}
+
 export function OnlinePage() {
   const [state, dispatch] = useReducer(onlineReducer, undefined, createOnlineState);
   const [code, setCode] = useState('');
   const [selected, setSelected] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const socketRef = useRef<OnlineSocket | null>(null);
+  const receivedAtRef = useRef(Date.now());
   const stageRef = useRef<HTMLDivElement | null>(null);
   const stage = useStageSize(stageRef);
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const socket = new OnlineSocket({ onEvent: (event) => dispatch(event) });
@@ -43,6 +73,11 @@ export function OnlinePage() {
 
   const snapshot = state.snapshot;
   const position = useMemo(() => (snapshot === null ? null : parseFen(snapshot.fen)), [snapshot?.fen]);
+
+  // 只跟服务端生成的快照走：presence 会新建快照对象，但时钟引用不变，不能因它重置锚点。
+  useEffect(() => {
+    receivedAtRef.current = Date.now();
+  }, [snapshot?.clock]);
 
   useEffect(() => {
     setSelected(null);
@@ -112,6 +147,18 @@ export function OnlinePage() {
     setSelected(null);
   };
 
+  const resign = (): void => {
+    socketRef.current?.send({ type: 'resign' });
+  };
+
+  const offerDraw = (): void => {
+    socketRef.current?.send({ type: 'offer-draw' });
+  };
+
+  const answerDraw = (accept: boolean): void => {
+    socketRef.current?.send({ type: 'draw-response', accept });
+  };
+
   if (snapshot === null) {
     const busy = state.phase === 'connecting';
     return (
@@ -162,6 +209,18 @@ export function OnlinePage() {
     snapshot.result !== null
       ? resultText(snapshot.result)
       : `轮到${snapshot.turn === 'red' ? '红方' : '黑方'}`;
+  const receivedAt = receivedAtRef.current;
+  // 未坐满不算开局：服务端不扣时，客户端也不投影，否则等对手时会看到自己掉秒。
+  const started = snapshot.players >= 2;
+  const redMs = projectedMs(snapshot, 'red', receivedAt, now, started);
+  const blackMs = projectedMs(snapshot, 'black', receivedAt, now, started);
+  const over = snapshot.result !== null;
+  const myTurn = state.color !== null && snapshot.turn === state.color;
+  const incomingOffer =
+    snapshot.drawOffer !== null && state.color !== null && snapshot.drawOffer !== state.color;
+  const myOffer = snapshot.drawOffer !== null && snapshot.drawOffer === state.color;
+  const canOffer =
+    !over && state.color !== null && snapshot.drawOffer === null && snapshot.drawBlocked !== state.color;
 
   return (
     <div className="page page-play online-room">
@@ -215,6 +274,32 @@ export function OnlinePage() {
           <p className="online-presence">
             红方{snapshot.red ? '在线' : '离线'} · 黑方{snapshot.black ? '在线' : '离线'}
           </p>
+          <div className="clock-row" aria-label="双方用时">
+            <span className={`clock clock-red${redMs < 60_000 ? ' is-low' : ''}`}>
+              红 {formatClock(redMs)}
+            </span>
+            <span className={`clock clock-black${blackMs < 60_000 ? ' is-low' : ''}`}>
+              黑 {formatClock(blackMs)}
+            </span>
+            <button type="button" className="resign" onClick={resign} disabled={over || !myTurn}>
+              认输
+            </button>
+            <button type="button" className="resign" onClick={offerDraw} disabled={!canOffer}>
+              提议和棋
+            </button>
+          </div>
+          {incomingOffer ? (
+            <p className="online-banner" role="status">
+              对方提议和棋
+              <button type="button" className="btn small" onClick={() => answerDraw(true)}>
+                接受
+              </button>
+              <button type="button" className="btn small" onClick={() => answerDraw(false)}>
+                拒绝
+              </button>
+            </p>
+          ) : null}
+          {myOffer ? <p className="online-banner">已提议和棋，等待对方答复</p> : null}
           {snapshot.players < 2 ? (
             <p className="online-waiting">
               把房间码发给对手：<strong>{snapshot.room}</strong>

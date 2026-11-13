@@ -3,13 +3,16 @@
 
 import { useEffect, useRef } from 'react';
 import type { Color, GameResult } from '../../shared/index.ts';
+import { formatClock, remainingOf } from '../../shared/index.ts';
 import type { GameSession } from '../game/session.ts';
 
 export interface GamePanelProps {
   readonly session: GameSession;
   readonly open: boolean;
+  readonly now: number;
   readonly onToggle: () => void;
   readonly onReset: () => void;
+  readonly onResign: () => void;
 }
 
 function colorName(color: Color): string {
@@ -33,6 +36,12 @@ function resultText(result: GameResult): string {
       return '和棋 · 三次重复局面';
     case 'natural':
       return '和棋 · 60 回合无吃子';
+    case 'timeout':
+      return `${winnerName(result.winner)}胜 · 超时`;
+    case 'resign':
+      return `${winnerName(result.winner)}胜 · 认输`;
+    case 'agreement':
+      return '和棋 · 双方同意';
   }
 }
 
@@ -65,9 +74,12 @@ function toRounds(notations: readonly string[]): RoundRow[] {
 }
 
 export function GamePanel(props: GamePanelProps) {
-  const { session, open, onToggle, onReset } = props;
+  const { session, open, now, onToggle, onReset, onResign } = props;
   const movesRef = useRef<HTMLDivElement | null>(null);
   const rounds = toRounds(session.notations);
+  const redMs = remainingOf(session.clock, 'red', now);
+  const blackMs = remainingOf(session.clock, 'black', now);
+  const over = session.result !== null;
 
   useEffect(() => {
     const element = movesRef.current;
@@ -101,6 +113,18 @@ export function GamePanel(props: GamePanelProps) {
           />
           {statusText(session)}
         </p>
+
+        <div className="clock-row" aria-label="双方用时">
+          <span className={`clock clock-red${redMs < 60_000 ? ' is-low' : ''}`}>
+            红 {formatClock(redMs)}
+          </span>
+          <span className={`clock clock-black${blackMs < 60_000 ? ' is-low' : ''}`}>
+            黑 {formatClock(blackMs)}
+          </span>
+          <button type="button" className="resign" onClick={onResign} disabled={over}>
+            认输
+          </button>
+        </div>
 
         <div className="moves" ref={movesRef} aria-label="着法记录">
           {rounds.length === 0 ? (

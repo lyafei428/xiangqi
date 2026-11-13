@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// 集成用例 F1-2（联机页）：从大厅建房 → 收到权威快照 → 在棋盘上发送一着。
+// 集成用例 F1-2（联机建房与走子）与 F1-4（联机认输与求和）。
 // 真实 WebSocket 的同步、拒绝与重连在 test/online.test.ts 覆盖。
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,6 +9,7 @@ import type { ServerMessage, Snapshot } from '../../src/shared/protocol.ts';
 import {
   INITIAL_FEN,
   applyMove,
+  createClock,
   generateLegalMoves,
   parseFen,
   statusOf,
@@ -102,6 +103,9 @@ function snapshot(overrides: Partial<Snapshot> = {}): Snapshot {
     red: true,
     black: false,
     players: 1,
+    clock: createClock(Date.now()),
+    drawOffer: null,
+    drawBlocked: null,
     ...overrides,
   };
 }
@@ -187,3 +191,100 @@ describe('F1-2 联机页：建房、权威快照与走子', () => {
     );
   });
 });
+
+describe('F1-4 联机认输与求和', () => {
+  async function seated(): Promise<FakeWebSocket> {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: '创建房间' }));
+    await waitFor(() => expect(FakeWebSocket.instances.length).toBe(1));
+    const socket = FakeWebSocket.instances[0];
+    if (socket === undefined) throw new Error('没有 socket');
+    socket.serverSend({
+      type: 'joined',
+      room: 'ABC234',
+      token: 'token-red',
+      color: 'red',
+      snapshot: snapshot(),
+    });
+    await screen.findByText(/房间 ABC234/);
+    socket.serverSend({ type: 'state', snapshot: snapshot({ players: 2, black: true }) });
+    await screen.findByText('轮到红方');
+    return socket;
+  }
+
+  it('对方提议和棋：显示接受/拒绝，接受后发出 draw-response 并看到判和文案', async () => {
+    const socket = await seated();
+    socket.serverSend({
+      type: 'state',
+      snapshot: snapshot({ players: 2, black: true, drawOffer: 'black' }),
+    });
+    await screen.findByText('对方提议和棋');
+
+    fireEvent.click(screen.getByRole('button', { name: '接受' }));
+    await waitFor(() => {
+      const sent = socket.sent.map((raw) => JSON.parse(raw) as { type: string; accept?: boolean });
+      expect(
+        sent.some((message) => message.type === 'draw-response' && message.accept === true),
+      ).toBe(true);
+    });
+
+    socket.serverSend({
+      type: 'state',
+      snapshot: snapshot({
+        players: 2,
+        black: true,
+        result: { type: 'agreement', winner: null },
+      }),
+    });
+    await screen.findByText('和棋 · 双方同意');
+  });
+
+  it('认输按钮发出 resign，终局后按钮禁用', async () => {
+    const socket = await seated();
+    fireEvent.click(screen.getByRole('button', { name: '认输' }));
+    await waitFor(() => {
+      const sent = socket.sent.map((raw) => JSON.parse(raw) as { type: string });
+      expect(sent.some((message) => message.type === 'resign')).toBe(true);
+    });
+
+    socket.serverSend({
+      type: 'state',
+      snapshot: snapshot({
+        players: 2,
+        black: true,
+        result: { type: 'resign', winner: 'black' },
+      }),
+    });
+    await screen.findByText('黑方胜 · 认输');
+    const button = screen.getByRole('button', { name: '认输' }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+  });
+
+  it('被拒后暂时不能再提议，对方走一着后恢复', async () => {
+    const socket = await seated();
+    fireEvent.click(screen.getByRole('button', { name: '提议和棋' }));
+    await waitFor(() => {
+      const sent = socket.sent.map((raw) => JSON.parse(raw) as { type: string });
+      expect(sent.some((message) => message.type === 'offer-draw')).toBe(true);
+    });
+
+    socket.serverSend({
+      type: 'state',
+      snapshot: snapshot({ players: 2, black: true, drawBlocked: 'red' }),
+    });
+    await waitFor(() => {
+      const offer = screen.getByRole('button', { name: '提议和棋' }) as HTMLButtonElement;
+      expect(offer.disabled).toBe(true);
+    });
+
+    socket.serverSend({
+      type: 'state',
+      snapshot: snapshot({ players: 2, black: true, turn: 'black', seq: 1 }),
+    });
+    await waitFor(() => {
+      const offer = screen.getByRole('button', { name: '提议和棋' }) as HTMLButtonElement;
+      expect(offer.disabled).toBe(false);
+    });
+  });
+});
+

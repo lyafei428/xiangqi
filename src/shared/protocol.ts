@@ -1,5 +1,6 @@
-// 联机协议：客户端只发坐标，服务端回权威快照。纯类型与校验，不碰 DOM / Node API。
+// 联机协议：客户端只发坐标与意图，服务端回权威快照。纯类型与校验，不碰 DOM / Node API。
 
+import type { ClockState } from './clock.ts';
 import type { Color, GameResult, GameStatus, Move } from './types.ts';
 
 export interface Snapshot {
@@ -14,11 +15,17 @@ export interface Snapshot {
   readonly red: boolean;
   readonly black: boolean;
   readonly players: number;
+  readonly clock: ClockState;
+  readonly drawOffer: Color | null;
+  readonly drawBlocked: Color | null;
 }
 
 export type ClientMessage =
   | { readonly type: 'join'; readonly room?: string; readonly token?: string }
   | { readonly type: 'move'; readonly from: number; readonly to: number; readonly seq: number }
+  | { readonly type: 'resign' }
+  | { readonly type: 'offer-draw' }
+  | { readonly type: 'draw-response'; readonly accept: boolean }
   | { readonly type: 'leave' }
   | { readonly type: 'ping' };
 
@@ -41,7 +48,10 @@ export type RejectReason =
   | 'not-your-turn'
   | 'game-over'
   | 'stale-seq'
-  | 'illegal-move';
+  | 'illegal-move'
+  | 'draw-blocked'
+  | 'draw-pending'
+  | 'no-draw-offer';
 
 export type ErrorCode = 'room-full' | 'room-not-found' | 'bad-message';
 
@@ -71,6 +81,10 @@ export function isClientMessage(value: unknown): value is ClientMessage {
         Number.isInteger(value.seq) &&
         value.seq >= 0
       );
+    case 'draw-response':
+      return typeof value.accept === 'boolean';
+    case 'resign':
+    case 'offer-draw':
     case 'leave':
     case 'ping':
       return true;

@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
-// 集成用例 F1-1：从 App 入口走完一局本地双人并判和。
+// 集成用例 F1-1（本地双人走完一局并判和）与 F1-3（计时与认输）。
 // 指针事件走的是真实事件链，不直接调用 reducer：Board → session → 引擎 → 记谱 → 面板。
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, act } from '@testing-library/react';
 import { App } from '../../src/client/App.tsx';
 
 class ResizeObserverStub {
@@ -95,3 +95,33 @@ describe('F1-1 本地双人走完一局并判和', () => {
     expect(container.querySelectorAll('.move-row')).toHaveLength(0);
   });
 });
+
+describe('F1-3 本地计时与认输', () => {
+  it('面板从 10:00 起步', () => {
+    const { container } = setup();
+    expect(container.querySelector('.clock-row')?.textContent).toContain('10:00');
+  });
+
+  it('红方时钟归零显示「黑方胜 · 超时」并锁盘', () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+      const { container } = setup();
+      act(() => {
+        vi.advanceTimersByTime(601_000);
+      });
+      expect(screen.getByRole('status').textContent).toContain('黑方胜 · 超时');
+      expect(container.querySelectorAll('.piece[tabindex="0"]')).toHaveLength(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('认输立刻结束并锁盘', () => {
+    const { container } = setup();
+    fireEvent.click(screen.getByRole('button', { name: '认输' }));
+    expect(screen.getByRole('status').textContent).toContain('黑方胜 · 认输');
+    expect(container.querySelectorAll('.piece[tabindex="0"]')).toHaveLength(0);
+  });
+});
+

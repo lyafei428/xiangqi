@@ -21,7 +21,7 @@ Survey evidence: 已核对以下文档与代码：
 - 进房发 token（16 字节随机十六进制）。客户端存 `sessionStorage`，断线后带 token 重连，服务端按 token 找回颜色与局面。
 - 房间存内存：服务进程重启即清空。M4 的「断线重连恢复」限定在服务进程存活期内；持久化留后续批次。
 - 回收：两人都离线超过 30 分钟的房间删除，服务端每 60 秒扫一次；窗口内带 token 可重连。
-- M4 不判超时负；对手离线只显示「等待重连」，计时判负属 M5。
+- 联机计时、认输与求和已实现，判罚见 `docs/design/modules/clock.md` §2；对手离线只显示「等待重连」。
 
 ## 2. 协议
 
@@ -31,6 +31,9 @@ Survey evidence: 已核对以下文档与代码：
 type ClientMessage =
   | { type: 'join'; room?: string; token?: string }
   | { type: 'move'; from: number; to: number; seq: number }
+  | { type: 'resign' }
+  | { type: 'offer-draw' }
+  | { type: 'draw-response'; accept: boolean }
   | { type: 'leave' }
   | { type: 'ping' };
 
@@ -54,12 +57,20 @@ interface Snapshot {
   red: boolean;   // 在线
   black: boolean;
   players: number; // 已坐下的座位数（1 或 2）
+  clock: ClockState;       // 快照时刻的剩余（redMs/blackMs 已按快照时间算好）
+  drawOffer: Color | null; // 当前的和棋提议方
+  drawBlocked: Color | null; // 拒绝后、对方走一着前不能再提议的一方
 }
 ```
 
 - `move.seq` 是客户端看到的快照序号。服务端只接受等于当前序号的着法；不等就回 `rejected` 与当前快照，防止重连后补发旧着。
+- 认输与求和的判罚见 `docs/design/modules/clock.md` §2；协议只负责传输意图与结果。
 - `rejected` 一定附带当前快照，客户端以快照为准，不做本地回滚。
-- `rejected.reason` 是固定取值（`not-in-room` / `not-your-turn` / `game-over` / `stale-seq` / `illegal-move`），客户端按取值给文案；非法着法、轮次不对、序号过期都走 `rejected`，房间状态不变。
+- `rejected.reason` 是固定取值（`not-in-room` / `not-your-turn` / `game-over` / `stale-seq` / `illegal-move` / `draw-blocked` / `draw-pending` / `no-draw-offer`），客户端按取值给文案；非法着法、轮次不对、序号过期都走 `rejected`，房间状态不变。
+- 三个新拒绝码的来源：
+  - `draw-blocked`：被拒方在对方走一着前再次提议；复现：A 提议、B 拒绝后，A 再发 `offer-draw`。
+  - `draw-pending`：已有待答提议时再提议；复现：A 提议后，B 在应答前也发 `offer-draw`。
+  - `no-draw-offer`：没有待答提议或不是提议的对方时发 `draw-response`；复现：直接发 `{"type":"draw-response","accept":true}`，或提议方自己发应答。
 - `error` 的三个取值的来源：
   - `room-not-found`：大厅输入一个注册表里没有的 6 位码；复现：`join` 带该码，服务端回此码。
   - `room-full`：满房后又来一台设备（或旧 token 失效后座位已被占）；复现：第三人用新 token 进满房。
@@ -75,6 +86,8 @@ interface Snapshot {
 | `src/server/main.ts` | 读端口、启动、优雅退出。 |
 
 - 落子：`playMove(position, history, move)`；抛错即 `rejected`，房间不动；成功则更新局面、记谱（`toChineseNotation`，与本地对局同一套中文记谱）、`seq + 1`、`lastMove`，并取 `statusOf` / `judgeGame` 结果。
+- 时钟：房间持 `ClockState`（剩余毫秒、在走方与锚点）；第二人就座时开锚；落子前先判超时，判超时才扣时并换边；每秒检查在走方是否归零，归零即判 `timeout` 并广播。
+- 认输与求和：协议接线与广播；判罚与状态机见 `docs/design/modules/clock.md` §2/§4。
 - 广播：每次状态变化向房内两人发 `state`；第二人进房或重连时也先给先到者补一份 `state`（`players` 变了，先到者才能从等待进到对局）；连接/断开发 `presence`。
 - 在线状态只有一个权威：快照里的 `red` / `black`。`presence` 只是变更通知，客户端把两个字段合入当前快照，面板只读快照。
 - 心跳：30 秒 ping，连续两次无 pong 视为掉线，保留房间与 token 供重连。
@@ -87,7 +100,7 @@ interface Snapshot {
 - `src/client/online/socket.ts`：WebSocket 封装与自动重连（1s → 2s → 4s → 8s 封顶）；`sessionStorage` 存 `{ room, token }`；重连时自动带 token 发 `join`。构造器接受 `WebSocketImpl` 注入（默认 `globalThis.WebSocket`），测试用假构造器驱动重连阶梯。
 - `src/client/pages/OnlinePage.tsx`：大厅（建房 / 输房间码）与房间（棋盘 + 面板）同页切换；页面清单在 `docs/design/modules/app-shell.md` §4，本模块不重复。
 - 棋盘用 `play` 模式按己方颜色限权；选子与可落点在本地用 `generateLegalMoves` 算，落子只发 `{from, to, seq}`，等服务端快照。
-- 面板：房间码、己方颜色、轮到谁、双方在线、记谱、结果、离开。对手离线时显示「等待对手重连」，棋盘只读。
+- 面板：房间码、己方颜色、轮到谁、双方在线、双方时钟、记谱、结果、离开；对局中提供「认输」与「提议和棋」；对方提议时显示接受/拒绝。对手离线时显示「等待对手重连」，棋盘只读。
 
 ## 5. 路由与页面
 
@@ -136,6 +149,8 @@ interface Snapshot {
 | 需求 | 落点 |
 |---|---|
 | F1.2 两台设备同房、走子实时同步 | `src/server/room.ts` + `test/online.test.ts` 双客户端 |
+| F1.4 计时与归零判负 | 快照 `clock` + 服务端每秒检查；`docs/design/modules/clock.md` |
+| F1.5 认输与求和 | `resign` / `offer-draw` / `draw-response`；判罚见 `docs/design/modules/clock.md` §2 |
 | 非法着法被拒 | 服务端 `playMove` 校验 + `rejected` + 快照复原 |
 | 断线重连恢复 | token + `Snapshot`；`test/online.test.ts` 断开重连 |
 | 客户端不决定结果 | 客户端只发坐标，渲染服务端快照 |
@@ -144,11 +159,12 @@ interface Snapshot {
 
 ## 9. 集成测试设计
 
-起点：`test/RTM.md` 的「对弈」故事。本批新增 F1-2 一行；F1-1（本地双人）不破坏，不冗余。
+起点：`test/RTM.md` 的「对弈」故事。本批新增 F1-2 一行；F1-1（本地双人）不破坏，不冗余。M5a 新增 F1-4（联机计时、认输与求和），F1-3 属本地、在 `docs/design/modules/clock.md` §8。
 本批也改了壳的导航（第四项），壳的行 `F4-1` 不受影响：它的断言不涉及导航项数；`test/integration/navigation.test.tsx` 不因新增一项而改。
 
 | 行 | 验的交互 | 用户可见结果 | 入口 | 需求 |
 |---|---|---|---|---|
 | F1-2 | 两个客户端 → 房间 → 服务端权威判定 | 同房走子双方看到同一局面；非法着法被拒绝；断线重连带 token 恢复 | 打开页面 → 联机 | F1.2 |
+| F1-4 | 两个客户端 → 房间时钟与求和 | 双方看到同一时钟；归零判负；求和被接受判和；被拒后再次提议被拒，对方走一着后可再提议 | 打开页面 → 联机 | F1.4、F1.5 |
 
 实现：`test/online.test.ts`（真实 ws，两个客户端；`createOnlineServer()` 绑端口 0，避免与本地服务或并行用例抢 8787）；`test/integration/online.test.tsx`（jsdom 假 socket，通过 `WebSocketImpl` 注入，从联机页建房并走一着）。房间状态机单测在 `test/room.test.ts`。

@@ -139,6 +139,10 @@ export async function createOnlineServer(options: OnlineServerOptions = {}): Pro
           send(conn.ws, { type: 'error', code: 'bad-message', message: '先加入房间' });
           return;
         }
+        // 先结清已归零的钟，再看待发的着法：旗落了就不该再走上一步。
+        for (const expired of rooms.timeouts()) {
+          broadcast(expired.code, { type: 'state', snapshot: snapshotOf(expired) });
+        }
         const outcome = rooms.move(conn.room, conn.token, { from: message.from, to: message.to }, message.seq);
         if (!outcome.ok) {
           const current = rooms.get(conn.room);
@@ -153,6 +157,37 @@ export async function createOnlineServer(options: OnlineServerOptions = {}): Pro
         }
         broadcast(conn.room, { type: 'state', snapshot: snapshotOf(outcome.room) });
         broadcastPresence(outcome.room);
+        return;
+      }
+      case 'resign':
+      case 'offer-draw':
+      case 'draw-response': {
+        if (conn.room === undefined || conn.token === undefined) {
+          send(conn.ws, { type: 'error', code: 'bad-message', message: '先加入房间' });
+          return;
+        }
+        // 与落子同一条前置：旗落了就不该再认输或谈和。
+        for (const expired of rooms.timeouts()) {
+          broadcast(expired.code, { type: 'state', snapshot: snapshotOf(expired) });
+        }
+        const outcome =
+          message.type === 'resign'
+            ? rooms.resign(conn.room, conn.token)
+            : message.type === 'offer-draw'
+              ? rooms.offerDraw(conn.room, conn.token)
+              : rooms.respondDraw(conn.room, conn.token, message.accept);
+        if (!outcome.ok) {
+          const current = rooms.get(conn.room);
+          if (current !== undefined) {
+            send(conn.ws, {
+              type: 'rejected',
+              reason: outcome.reason,
+              snapshot: snapshotOf(current),
+            });
+          }
+          return;
+        }
+        broadcast(conn.room, { type: 'state', snapshot: snapshotOf(outcome.room) });
         return;
       }
     }
@@ -211,9 +246,18 @@ export async function createOnlineServer(options: OnlineServerOptions = {}): Pro
   const sweep = setInterval(() => rooms.sweep(), 60_000);
   sweep.unref();
 
+  // 服务端是时钟的唯一裁决：每秒扫一次，归零就广播终局。
+  const clocks = setInterval(() => {
+    for (const room of rooms.timeouts()) {
+      broadcast(room.code, { type: 'state', snapshot: snapshotOf(room) });
+    }
+  }, 1_000);
+  clocks.unref();
+
   const close = async (): Promise<void> => {
     clearInterval(heartbeat);
     clearInterval(sweep);
+    clearInterval(clocks);
     for (const conn of all) conn.ws.terminate();
     await new Promise<void>((resolve) => wss.close(() => resolve()));
     await new Promise<void>((resolve) => httpServer.close(() => resolve()));

@@ -150,3 +150,89 @@ test('两个客户端同房：同步、拒绝非法、断线重连', async () =>
     await server.close();
   }
 });
+
+test('联机认输与求和：协议接线与权威快照', async () => {
+  const server = await createOnlineServer({ port: 0, heartbeatMs: 60_000 });
+  const clients: Client[] = [];
+  try {
+    const red = new Client(server.port);
+    clients.push(red);
+    await red.open();
+    red.send({ type: 'join' });
+    const joinedRed = await red.next((message) => message.type === 'joined');
+    if (joinedRed.type !== 'joined') throw new Error('建房失败');
+
+    const black = new Client(server.port);
+    clients.push(black);
+    await black.open();
+    black.send({ type: 'join', room: joinedRed.room });
+    await black.next((message) => message.type === 'joined');
+    await red.next((message) => message.type === 'state' && message.snapshot.players === 2);
+
+    // 求和：红方提议，黑方接受 → 双方看到同一判和快照。
+    red.send({ type: 'offer-draw' });
+    const offered = await black.next(
+      (message) => message.type === 'state' && message.snapshot.drawOffer === 'red',
+    );
+    if (offered.type !== 'state') throw new Error('没有收到提议');
+
+    // 已有待答提议时再提议：rejected。
+    black.send({ type: 'offer-draw' });
+    const pending = await black.next((message) => message.type === 'rejected');
+    if (pending.type !== 'rejected') throw new Error('没有收到拒绝');
+    assert.equal(pending.reason, 'draw-pending');
+
+    black.send({ type: 'draw-response', accept: true });
+    const drawn = await red.next(
+      (message) => message.type === 'state' && message.snapshot.result !== null,
+    );
+    if (drawn.type !== 'state') throw new Error('没有收到结果');
+    assert.deepEqual(drawn.snapshot.result, { type: 'agreement', winner: null });
+    assert.equal(drawn.snapshot.clock.running, null);
+
+    // 终局后认输：rejected game-over。
+    red.send({ type: 'resign' });
+    const over = await red.next((message) => message.type === 'rejected' && message.reason === 'game-over');
+    assert.equal(over.type, 'rejected');
+  } finally {
+    for (const client of clients) client.close();
+    await server.close();
+  }
+});
+
+test('联机认输：行棋方认输判对方胜，非行棋方被拒', async () => {
+  const server = await createOnlineServer({ port: 0, heartbeatMs: 60_000 });
+  const clients: Client[] = [];
+  try {
+    const red = new Client(server.port);
+    clients.push(red);
+    await red.open();
+    red.send({ type: 'join' });
+    const joinedRed = await red.next((message) => message.type === 'joined');
+    if (joinedRed.type !== 'joined') throw new Error('建房失败');
+
+    const black = new Client(server.port);
+    clients.push(black);
+    await black.open();
+    black.send({ type: 'join', room: joinedRed.room });
+    await black.next((message) => message.type === 'joined');
+    await red.next((message) => message.type === 'state' && message.snapshot.players === 2);
+
+    // 黑方不是行棋方：拒。
+    black.send({ type: 'resign' });
+    const wrong = await black.next((message) => message.type === 'rejected');
+    if (wrong.type !== 'rejected') throw new Error('没有收到拒绝');
+    assert.equal(wrong.reason, 'not-your-turn');
+
+    red.send({ type: 'resign' });
+    const resigned = await black.next(
+      (message) => message.type === 'state' && message.snapshot.result !== null,
+    );
+    if (resigned.type !== 'state') throw new Error('没有收到结果');
+    assert.deepEqual(resigned.snapshot.result, { type: 'resign', winner: 'black' });
+  } finally {
+    for (const client of clients) client.close();
+    await server.close();
+  }
+});
+

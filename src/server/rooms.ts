@@ -1,10 +1,19 @@
 // 房间注册表：房间码生成、查找、加入与落子的门面。
 
 import { randomBytes, randomInt } from 'node:crypto';
-import { INITIAL_FEN } from '../shared/index.ts';
+import { INITIAL_FEN, CLOCK_MS } from '../shared/index.ts';
 import type { Move } from '../shared/index.ts';
 import type { JoinOutcome, MoveOutcome, RoomState } from './room.ts';
-import { applyRoomMove, createRoom, joinRoom, setConnected } from './room.ts';
+import {
+  applyRoomMove,
+  applyTimeout,
+  createRoom,
+  joinRoom,
+  offerDrawRoom,
+  resignRoom,
+  respondDrawRoom,
+  setConnected,
+} from './room.ts';
 
 const CODE_CHARS = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 
@@ -23,11 +32,11 @@ function newCode(): string {
 export class Rooms {
   private readonly rooms = new Map<string, RoomState>();
 
-  create(startFen = INITIAL_FEN): { room: RoomState; token: string } {
+  create(startFen = INITIAL_FEN, clockMs = CLOCK_MS, now = Date.now()): { room: RoomState; token: string } {
     let code = newCode();
     while (this.rooms.has(code)) code = newCode();
     const token = newToken();
-    const room = createRoom(code, token, startFen);
+    const room = createRoom(code, token, startFen, clockMs, now);
     this.rooms.set(code, room);
     return { room, token };
   }
@@ -36,10 +45,10 @@ export class Rooms {
     return this.rooms.get(code);
   }
 
-  join(code: string, token: string): JoinOutcome | { ok: false; reason: 'room-not-found' } {
+  join(code: string, token: string, now = Date.now()): JoinOutcome | { ok: false; reason: 'room-not-found' } {
     const room = this.rooms.get(code);
     if (room === undefined) return { ok: false, reason: 'room-not-found' };
-    const outcome = joinRoom(room, token);
+    const outcome = joinRoom(room, token, now);
     if (outcome.ok) this.rooms.set(code, outcome.room);
     return outcome;
   }
@@ -70,5 +79,42 @@ export class Rooms {
     const outcome = applyRoomMove(room, token, move, seq);
     if (outcome.ok) this.rooms.set(code, outcome.room);
     return outcome;
+  }
+
+  resign(code: string, token: string): MoveOutcome {
+    const room = this.rooms.get(code);
+    if (room === undefined) return { ok: false, reason: 'not-in-room' };
+    const outcome = resignRoom(room, token);
+    if (outcome.ok) this.rooms.set(code, outcome.room);
+    return outcome;
+  }
+
+  offerDraw(code: string, token: string): MoveOutcome {
+    const room = this.rooms.get(code);
+    if (room === undefined) return { ok: false, reason: 'not-in-room' };
+    const outcome = offerDrawRoom(room, token);
+    if (outcome.ok) this.rooms.set(code, outcome.room);
+    return outcome;
+  }
+
+  respondDraw(code: string, token: string, accept: boolean): MoveOutcome {
+    const room = this.rooms.get(code);
+    if (room === undefined) return { ok: false, reason: 'not-in-room' };
+    const outcome = respondDrawRoom(room, token, accept);
+    if (outcome.ok) this.rooms.set(code, outcome.room);
+    return outcome;
+  }
+
+  /** 扫一遍房间时钟；返回本轮判超时的房间，由调用方广播。 */
+  timeouts(now = Date.now()): RoomState[] {
+    const timedOut: RoomState[] = [];
+    for (const [code, room] of this.rooms) {
+      const next = applyTimeout(room, now);
+      if (next !== null) {
+        this.rooms.set(code, next);
+        timedOut.push(next);
+      }
+    }
+    return timedOut;
   }
 }
