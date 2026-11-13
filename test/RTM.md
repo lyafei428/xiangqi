@@ -12,8 +12,15 @@
 | F1-4 | 联机计时、认输与求和 | 双方看到同一时钟；归零判负；求和被接受判和；被拒后再次提议被拒，对方走一着后可再提议 | 打开页面 → 联机 | F1.4、F1.5 |
 | F1-5 | 棋谱回放、导入导出与续局 | 终局后棋谱页列出该局；回放可停在任意一步；导出文件重新导入能完整回放；关页重开棋盘与时钟接上 | 打开页面 → 对弈 / 棋谱 | F1.6 |
 | F1-6 | 第三人观战 | 第三台设备进同一房间只看不走，无认输与求和按钮；棋手离开后仍能看；第 11 台设备被拒 | 打开页面 → 联机 | F1.7 |
+| F1-7 | 人机对战 | 选难度与阵营后走一着，机器在 2 秒内回一着并更新棋盘；思考中棋盘不可动；换难度后回子速度变化可见；终局后不再回子 | 打开页面 → 人机 | F1.3 |
 
-用例实现：`test/integration/local-play.test.tsx`（F1-1、F1-3、F1-5 的续局）；`test/online.test.ts` 与 `test/integration/online.test.tsx`（F1-2、F1-4、F1-6 的联机面）、`test/room.test.ts`（F1-6 的房间层：八人上限与回收）；`test/integration/replay.test.tsx`（F1-5 的列表、回放与导入导出）。
+用例实现：
+
+- `test/integration/local-play.test.tsx`：F1-1、F1-3、F1-5 的续局。
+- `test/online.test.ts` 与 `test/integration/online.test.tsx`：F1-2、F1-4、F1-6 的联机面。
+- `test/room.test.ts`：F1-6 的房间层（八人上限与回收）。
+- `test/integration/replay.test.tsx`：F1-5 的列表、回放与导入导出。
+- `test/ai.test.ts`、`test/ai-engine.test.ts` 与 `test/integration/ai.test.tsx`：F1-7。
 
 ## 教学（需求 F2）
 
@@ -43,7 +50,7 @@
 
 | 行 | 集成用例 | 业务结果 | 用户入口 | 需求 |
 |---|---|---|---|---|
-| F4-1 | 切页不丢对局 | 走一着后去课程再回对弈，棋盘与记谱保持原样 | 打开页面 → 对弈 → 课程 → 对弈 | F4.2 |
+| F4-1 | 切页不丢对局 | 走一着后去课程再回来，棋盘与记谱保持原样（对弈与人机各验一次） | 打开页面 → 对弈（人机）→ 课程 → 回原页 | F4.2 |
 
 用例实现：`test/integration/navigation.test.tsx`。
 

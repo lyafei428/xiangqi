@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { PlayPage } from './pages/PlayPage.tsx';
+import { AiPage } from './pages/AiPage.tsx';
 import { LearnPage } from './pages/LearnPage.tsx';
 import { LessonPage } from './pages/LessonPage.tsx';
 import { DrillPage } from './pages/DrillPage.tsx';
@@ -20,6 +21,7 @@ import { useRoute } from './shell/useRoute.ts';
 
 const NAV: readonly { readonly label: string; readonly route: Route; readonly match: Route['name'][] }[] = [
   { label: '对弈', route: { name: 'play' }, match: ['play'] },
+  { label: '人机', route: { name: 'ai' }, match: ['ai'] },
   { label: '联机', route: { name: 'online' }, match: ['online'] },
   { label: '课程', route: { name: 'learn' }, match: ['learn', 'lesson'] },
   { label: '练习', route: { name: 'drill' }, match: ['drill', 'missions', 'mission'] },
@@ -120,6 +122,7 @@ export function App() {
       </nav>
       <div className="app-main">
         {route.name === 'play' ? <PlayPage session={session} dispatch={dispatch} /> : null}
+        {route.name === 'ai' ? <AiPage /> : null}
         {route.name === 'learn' ? <LearnPage visited={visited} /> : null}
         {route.name === 'lesson' ? (
           <LessonPage key={route.id} id={route.id} onVisited={markVisited} />

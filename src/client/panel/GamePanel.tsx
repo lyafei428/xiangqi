@@ -11,6 +11,10 @@ export interface GamePanelProps {
   readonly session: GameSession;
   readonly open: boolean;
   readonly now: number;
+  /** 模式标签：人机页传实际档位（「人机 · 普通」），对弈页沿用默认的本地双人。 */
+  readonly modeLabel?: string;
+  /** 认输需额外置灰时传 true（人机页：AI 回合玩家不能认输）。默认 false。 */
+  readonly resignDisabled?: boolean;
   readonly onToggle: () => void;
   readonly onReset: () => void;
   readonly onResign: () => void;
@@ -49,7 +53,16 @@ function toRounds(notations: readonly string[]): RoundRow[] {
 }
 
 export function GamePanel(props: GamePanelProps) {
-  const { session, open, now, onToggle, onReset, onResign } = props;
+  const {
+    session,
+    open,
+    now,
+    modeLabel = '本地双人',
+    resignDisabled = false,
+    onToggle,
+    onReset,
+    onResign,
+  } = props;
   const movesRef = useRef<HTMLDivElement | null>(null);
   const rounds = toRounds(session.notations);
   const redMs = remainingOf(session.clock, 'red', now);
@@ -65,7 +78,7 @@ export function GamePanel(props: GamePanelProps) {
     <aside className="panel" aria-label="对局面板">
       <div className="panel-head">
         <h1 className="panel-title">中国象棋</h1>
-        <span className="panel-mode">本地双人</span>
+        <span className="panel-mode">{modeLabel}</span>
         <button
           type="button"
           className="panel-toggle"
@@ -96,7 +109,12 @@ export function GamePanel(props: GamePanelProps) {
           <span className={`clock clock-black${blackMs < 60_000 ? ' is-low' : ''}`}>
             黑 {formatClock(blackMs)}
           </span>
-          <button type="button" className="resign" onClick={onResign} disabled={over}>
+          <button
+            type="button"
+            className="resign"
+            onClick={onResign}
+            disabled={over || resignDisabled}
+          >
             认输
           </button>
         </div>

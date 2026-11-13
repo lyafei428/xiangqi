@@ -14,6 +14,7 @@ import {
   INITIAL_FEN,
   createClock,
   generateLegalMoves,
+  isLegal,
   judgeGame,
   kingSquareOf,
   parseFen,
@@ -48,6 +49,7 @@ export interface GameSession {
 export type GameAction =
   | { readonly type: 'select'; readonly square: number; readonly now?: number }
   | { readonly type: 'tap'; readonly square: number; readonly now?: number }
+  | { readonly type: 'play'; readonly move: Move; readonly now?: number }
   | { readonly type: 'tick'; readonly now: number }
   | { readonly type: 'resign'; readonly now?: number }
   | { readonly type: 'reset'; readonly startFen?: string };
@@ -106,7 +108,6 @@ export function restoreSession(
     return null;
   }
 }
-
 
 function targetsFrom(position: Position, from: number): number[] {
   return generateLegalMoves(position)
@@ -182,6 +183,16 @@ export function sessionReducer(state: GameSession, action: GameAction): GameSess
       return selectSquare(state, action.square, action.now ?? Date.now());
     case 'tap':
       return tapSquare(state, action.square, action.now ?? Date.now());
+    case 'play': {
+      const now = action.now ?? Date.now();
+      const expired = timedOutState(state, now);
+      if (expired !== null) return expired;
+      if (state.result !== null) return state;
+      // 非法着法原样退回而不是抛错：这道闸的意义就是让上游（人机页）的引擎着法
+      // 在 reducer 里被挡下，而不是把 playMove 的抛错变成整页崩掉。
+      if (!isLegal(state.position, action.move)) return state;
+      return playTurn(state, action.move, now);
+    }
     case 'tick': {
       const expired = timedOutState(state, action.now);
       return expired ?? state;

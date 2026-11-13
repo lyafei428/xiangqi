@@ -14,6 +14,16 @@ function play(session: GameSession, from: number, to: number): GameSession {
   return tap(tap(session, from), to);
 }
 
+/** `play` 动作（人机页给引擎用的那条直落路径），与上面的点击两段式区分开。 */
+function playMoveAction(
+  session: GameSession,
+  from: number,
+  to: number,
+  now?: number,
+): GameSession {
+  return sessionReducer(session, { type: 'play', move: { from, to }, now });
+}
+
 test('新局：初始局面、红先、无结果', () => {
   const session = createSession();
   assert.equal(session.startFen, INITIAL_FEN);
@@ -179,5 +189,47 @@ test('新局重置时钟与结果', () => {
   assert.equal(fresh.result, null);
   assert.equal(fresh.clock.running, 'red');
   assert.equal(fresh.clock.redMs, 600_000);
+});
+
+test('play 动作：合法着法直接落地并记谱', () => {
+  const session = playMoveAction(createSession(), at(1, 7), at(1, 6));
+  assert.equal(session.position.turn, 'black');
+  assert.equal(session.history.length, 1);
+  assert.equal(session.notations[0], '炮八进一');
+  assert.deepEqual(session.lastMove, { from: at(1, 7), to: at(1, 6) });
+  assert.equal(session.selected, null);
+  assert.deepEqual(session.targets, []);
+});
+
+test('play 动作：非法着法被拒，状态原样返回', () => {
+  const session = createSession();
+  // 车不能斜走：这是规则上不成立的着法，不是「没选中」那种交互态。
+  const denied = playMoveAction(session, at(0, 0), at(4, 4));
+  assert.equal(denied, session, '被拒时不应产生新状态');
+  assert.equal(denied.history.length, 0);
+  assert.deepEqual(denied.notations, []);
+});
+
+test('play 动作：终局后不再接受着法', () => {
+  const over = sessionReducer(createSession(), { type: 'resign' });
+  const denied = playMoveAction(over, at(1, 7), at(1, 6));
+  assert.equal(denied, over);
+});
+
+test('play 动作：走子切时钟，时间由动作带入', () => {
+  const base = createSession(INITIAL_FEN, 1_000);
+  const moved = playMoveAction(base, at(1, 7), at(1, 6), 6_000);
+  assert.equal(moved.clock.running, 'black');
+  assert.equal(moved.clock.since, 6_000);
+  assert.equal(moved.clock.redMs, 595_000);
+  assert.equal(moved.result, null);
+});
+
+test('play 动作：旗落后不再落子，直接判超时', () => {
+  const base = createSession(INITIAL_FEN, 0);
+  const late = playMoveAction(base, at(1, 7), at(1, 6), 600_000);
+  assert.deepEqual(late.result, { type: 'timeout', winner: 'black' });
+  assert.equal(late.history.length, 0);
+  assert.equal(late.clock.running, null);
 });
 

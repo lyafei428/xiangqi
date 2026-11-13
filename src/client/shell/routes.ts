@@ -4,6 +4,7 @@ import type { DrillKind } from '../drills/generator.ts';
 
 export type Route =
   | { readonly name: 'play' }
+  | { readonly name: 'ai' }
   | { readonly name: 'learn' }
   | { readonly name: 'lesson'; readonly id: string }
   | { readonly name: 'drill'; readonly seed?: number; readonly kind?: DrillKind }
@@ -22,6 +23,7 @@ function asDrillKind(value: string | null): DrillKind | undefined {
 export function parseHash(hash: string): Route {
   const raw = hash.startsWith('#') ? hash.slice(1) : hash;
   const [path = '', query = ''] = raw.split('?');
+  if (path === '/ai') return { name: 'ai' };
   if (path === '/learn') return { name: 'learn' };
   if (path.startsWith('/lesson/')) {
     const id = decodeURIComponent(path.slice('/lesson/'.length));
@@ -56,6 +58,8 @@ export function routeHash(route: Route): string {
   switch (route.name) {
     case 'play':
       return '#/play';
+    case 'ai':
+      return '#/ai';
     case 'learn':
       return '#/learn';
     case 'lesson':

@@ -55,6 +55,26 @@ xiangqi/
 └─ test/                     引擎测试与内容自证测试
 ```
 
+文档地图（一节归一份档，跨档只引用）：
+
+| 档 | 拥有的主题 |
+|---|---|
+| `docs/requirements/xiangqi.md` | 要什么、验收口径（F1–F5） |
+| `docs/design/architecture.md` | 分层、技术栈、目录、数据流、响应式、性能预算、里程碑 |
+| `docs/design/modules/app-shell.md` | 路由表、导航顺序、页面清单、壳状态归属、集成用例索引 |
+| `docs/design/modules/board-ui.md` | 棋盘几何、渲染分层、交互规则、尺寸与无障碍 |
+| `docs/design/modules/local-play.md` | 本地对局会话状态机与动作表 |
+| `docs/design/modules/clock.md` | 计时、认输、求和的判罚 |
+| `docs/design/modules/ai.md` | 人机对战的引擎、Worker 与人机页 |
+| `docs/design/modules/online.md` | 联机协议、服务端房间、观战与联机页 |
+| `docs/design/modules/replay.md` | 棋谱格式、存局与回放 |
+| `docs/design/modules/lessons.md` | 课程内容与课程页 |
+| `docs/design/modules/drills.md` | 练习题型与判分 |
+| `docs/design/modules/missions.md` | 对弈题 |
+| `test/RTM.md` | 需求—测试矩阵与集成用例索引 |
+| `docs/batches/` | 每轮执行记录；可整档删除，设计档与需求档不得引用 |
+
+
 ## 5. 数据流
 
 ```text

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// 八种结局的可见文案。App 没有残局入口，胜负结局在组件层直接构造会话断言。
+// 八种结局的可见文案与模式标签。App 没有残局入口，胜负结局在组件层直接构造会话断言。
 
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
@@ -61,5 +61,60 @@ describe('对局结果文案', () => {
 
   it('双方同意显示和棋', () => {
     expect(statusTextOf({ type: 'agreement', winner: null })).toContain('和棋 · 双方同意');
+  });
+});
+
+describe('模式标签', () => {
+  function renderPanel(modeLabel?: string): void {
+    render(
+      <GamePanel
+        session={createSession()}
+        open
+        now={Date.now()}
+        modeLabel={modeLabel}
+        onToggle={() => {}}
+        onReset={() => {}}
+        onResign={() => {}}
+      />,
+    );
+  }
+
+  it('不传时仍是「本地双人」', () => {
+    renderPanel();
+    expect(screen.getByText('本地双人')).toBeTruthy();
+  });
+
+  it('人机页的档位按 prop 渲染', () => {
+    renderPanel('人机 · 高手');
+    expect(screen.getByText('人机 · 高手')).toBeTruthy();
+    expect(screen.queryByText('本地双人')).toBeNull();
+  });
+
+  it('resignDisabled 置灰认输按钮，默认不置灰', () => {
+    render(
+      <GamePanel
+        session={createSession()}
+        open
+        now={Date.now()}
+        onToggle={() => {}}
+        onReset={() => {}}
+        onResign={() => {}}
+      />,
+    );
+    expect(screen.getByRole('button', { name: '认输' })).not.toHaveProperty('disabled', true);
+    cleanup();
+    render(
+      <GamePanel
+        session={createSession()}
+        open
+        now={Date.now()}
+        resignDisabled
+        onToggle={() => {}}
+        onReset={() => {}}
+        onResign={() => {}}
+      />,
+    );
+    const button = screen.getByRole('button', { name: '认输' }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
   });
 });

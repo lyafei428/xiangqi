@@ -25,7 +25,7 @@ Survey evidence: 已核对 `docs/design/architecture.md`（分层、技术栈、
 | `src/client/main.tsx` | 挂载入口。 |
 | `index.html` | Vite 入口，提供 `#root` 挂载点。 |
 
-本批源文件与测试文件均未跨 500 行档（最大 `src/client/board/Board.tsx` 394 行、`src/client/app.css` 390 行），无需拆分方案。
+本批源文件与测试文件均未跨 500 行档（最大 `src/client/board/Board.tsx` 265 行）；样式集中在 `src/client/app.css` 一处维护，不按源文件分档。
 
 现有件检查：
 
@@ -49,7 +49,7 @@ Survey evidence: 已核对 `docs/design/architecture.md`（分层、技术栈、
 | `targets` | 选中棋子的合法落点 |
 | `clock` | 双方剩余时间与在走方，见 `docs/design/modules/clock.md` |
 
-动作有五个：`select(square, now)` 在指针按下时选中己方棋子，不切换；`tap(square, now)` 做点击判定；`reset(startFen?)` 开新局；`tick(now)` 推时钟；`resign(now)` 当前行棋方认输。时间由页面随动作传入，会话本身不读墙钟。时钟与认输的判罚见 `docs/design/modules/clock.md` §2。
+动作有六个：`select(square, now)` 在指针按下时选中己方棋子，不切换；`tap(square, now)` 做点击判定；`play(move, now)` 直接落一着（先过 `isLegal`，人机页给引擎用）；`reset(startFen?)` 开新局；`tick(now)` 推时钟；`resign(now)` 当前行棋方认输。时间由页面随动作传入，会话本身不读墙钟。时钟与认输的判罚见 `docs/design/modules/clock.md` §2。
 
 `reset` 不带 `startFen` 时回到本局起始局面（`state.startFen`）；带参时从新起始局面开一局。
 
