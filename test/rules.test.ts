@@ -10,6 +10,7 @@ import {
   judgeGame,
   parseFen,
   statusOf,
+  toFen,
 } from '../src/shared/index.ts';
 
 const at = (x: number, y: number): number => y * 9 + x;
@@ -28,14 +29,14 @@ test('将死：被将且无合法着法', () => {
   assert.equal(isInCheck(MATE, 'black'), true);
   assert.equal(generateLegalMoves(MATE).length, 0);
   assert.equal(statusOf(MATE), 'checkmate');
-  assert.deepEqual(judgeGame(MATE), { type: 'checkmate', winner: 'red' });
+  assert.deepEqual(judgeGame(MATE, [], toFen(MATE)), { type: 'checkmate', winner: 'red' });
 });
 
 test('困毙判负：未被将且无合法着法，无着法方负', () => {
   assert.equal(isInCheck(STALEMATE, 'black'), false, '困毙与将死的唯一区别就是没被将');
   assert.equal(generateLegalMoves(STALEMATE).length, 0);
   assert.equal(statusOf(STALEMATE), 'stalemate');
-  assert.deepEqual(judgeGame(STALEMATE), { type: 'stalemate', winner: 'red' });
+  assert.deepEqual(judgeGame(STALEMATE, [], toFen(STALEMATE)), { type: 'stalemate', winner: 'red' });
 });
 
 test('飞将：将帅照面的局面本身就是被将', () => {
@@ -92,5 +93,5 @@ test('isLegal 拒绝规则上不成立的着法', () => {
 
 test('statusOf 对开局与被将局面分别给出 playing / check', () => {
   assert.equal(statusOf(initialPosition), 'playing');
-  assert.deepEqual(judgeGame(initialPosition), null);
+  assert.deepEqual(judgeGame(initialPosition, [], toFen(initialPosition)), null);
 });

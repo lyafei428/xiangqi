@@ -316,8 +316,21 @@ export function isSquareAttacked(pos: Position, sq: number, by: Color): boolean 
   return false;
 }
 
-/** 不校验合法性：调用方负责确认这着在规则上成立。 */
+function assertIndexOnBoard(index: number): void {
+  if (!Number.isInteger(index) || index < 0 || index >= BOARD_SIZE) {
+    throw new Error(`applyMove: index ${index} is outside 0..${BOARD_SIZE - 1}`);
+  }
+}
+
+/**
+ * 不校验合法性：调用方负责确认这着在规则上成立。
+ * 但下标必须落在 0..89：越界的 to 不会抛错，只会把定长 90 的棋盘悄悄撑长，
+ * 或者给数组挂上负下标属性——坏局面要到很远的判罚环节才显形，那时已无从追查。
+ */
 export function applyMove(pos: Position, move: Move): Position {
+  assertIndexOnBoard(move.from);
+  assertIndexOnBoard(move.to);
+  if (move.from === move.to) throw new Error(`applyMove: from and to are both ${move.from}`);
   const moving = pieceAt(pos.board, move.from);
   // 起点空着是调用方的程序错误，静默照做会把目标格抹成空格，坏棋盘会一路传下去。
   if (moving === null) throw new Error(`applyMove: no piece at index ${move.from}`);

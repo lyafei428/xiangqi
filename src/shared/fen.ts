@@ -1,7 +1,7 @@
 // FEN 读写。非法输入一律抛错，不返回兜底局面——坏局面越早暴露越便宜。
 
 import type { Board, Color, Piece, PieceType, Position } from './types.ts';
-import { BOARD_HEIGHT, BOARD_SIZE, BOARD_WIDTH, indexOf } from './board.ts';
+import { BOARD_HEIGHT, BOARD_WIDTH, emptyBoard, indexOf } from './board.ts';
 
 export const INITIAL_FEN =
   'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1';
@@ -62,22 +62,33 @@ export function parseFen(fen: string): Position {
     throw new Error(`Invalid FEN: expected ${BOARD_HEIGHT} rows, got ${rows.length}`);
   }
 
-  const board: (Piece | null)[] = new Array<Piece | null>(BOARD_SIZE).fill(null);
+  const board: (Piece | null)[] = emptyBoard().slice();
   const kings: Record<Color, number> = { red: 0, black: 0 };
 
   for (let y = 0; y < BOARD_HEIGHT; y += 1) {
     const row = rows[y];
     if (row === undefined) throw new Error(`Invalid FEN: row ${y} is missing`);
     let x = 0;
+    let prevWasDigit = false;
     for (const char of row) {
       const digit = char.charCodeAt(0) - 48;
       if (digit >= 0 && digit <= 9) {
+        // '0' 是空转一列、连写数字会被累加成别的列数（"18" 读成 9 列），两者都不是合法 FEN，
+        // 却都会静默通过，与「非法输入一律抛错」的契约相反。
+        if (digit === 0) {
+          throw new Error(`Invalid FEN: '0' is not a valid empty-run length in row ${y}`);
+        }
+        if (prevWasDigit) {
+          throw new Error(`Invalid FEN: consecutive digits "${row}" in row ${y}`);
+        }
+        prevWasDigit = true;
         x += digit;
         if (x > BOARD_WIDTH) {
           throw new Error(`Invalid FEN: row ${y} is wider than ${BOARD_WIDTH} columns`);
         }
         continue;
       }
+      prevWasDigit = false;
       const type = TYPE_LETTERS[char.toUpperCase()];
       if (type === undefined) {
         throw new Error(`Invalid FEN: unknown piece character "${char}" in row ${y}`);

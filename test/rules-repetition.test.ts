@@ -57,30 +57,41 @@ const PERPETUAL_CYCLE: Line = [
 
 test('三次重复判和：两方都不将军', () => {
   const start = position(['3k5', '9', '9', '9', '9', 'R7r', '9', '9', '9', '4K4']);
+  const startFen = toFen(start);
 
+  const once = playLine(start, repeat(SHUFFLE_CYCLE, 1));
+  assert.equal(
+    repetitionResult(once.position, once.history, startFen),
+    null,
+    '起始局面算第 1 次，回到一次共 2 次，不判',
+  );
+
+  // 起始局面计入后，第二圈走完就是第 3 次——这正是「双方各自挪回原位」的实际情形。
   const twice = playLine(start, repeat(SHUFFLE_CYCLE, 2));
-  assert.equal(repetitionResult(twice.position, twice.history), null, '只出现两次不判');
-
-  const thrice = playLine(start, repeat(SHUFFLE_CYCLE, 3));
-  assert.deepEqual(repetitionResult(thrice.position, thrice.history), {
+  assert.deepEqual(repetitionResult(twice.position, twice.history, startFen), {
     type: 'repetition',
     winner: null,
   });
-  assert.deepEqual(judgeGame(thrice.position, thrice.history), { type: 'repetition', winner: null });
+  assert.deepEqual(judgeGame(twice.position, twice.history, startFen), {
+    type: 'repetition',
+    winner: null,
+  });
 });
 
 test('长将判负：每着都将军的一方负', () => {
   const start = position(['4k4', '9', '9', '9', '9', '4R4', '9', '9', '9', '5K3'], 'b');
 
-  const twice = playLine(start, repeat(PERPETUAL_CYCLE, 2));
-  assert.equal(repetitionResult(twice.position, twice.history), null);
+  const startFen = toFen(start);
 
-  const thrice = playLine(start, repeat(PERPETUAL_CYCLE, 3));
-  assert.deepEqual(repetitionResult(thrice.position, thrice.history), {
+  const once = playLine(start, repeat(PERPETUAL_CYCLE, 1));
+  assert.equal(repetitionResult(once.position, once.history, startFen), null);
+
+  const twice = playLine(start, repeat(PERPETUAL_CYCLE, 2));
+  assert.deepEqual(repetitionResult(twice.position, twice.history, startFen), {
     type: 'perpetual',
     winner: 'black',
   });
-  assert.deepEqual(judgeGame(thrice.position, thrice.history), {
+  assert.deepEqual(judgeGame(twice.position, twice.history, startFen), {
     type: 'perpetual',
     winner: 'black',
   });
@@ -103,8 +114,6 @@ test('自然限着：连续 120 着无吃子判和', () => {
     gaveCheck: false,
     captured: false,
   });
-  const capture = (): HistoryEntry => ({ ...quiet(), captured: true });
-
   assert.equal(naturalLimitResult(Array.from({ length: 119 }, quiet)), null);
   assert.deepEqual(naturalLimitResult(Array.from({ length: 120 }, quiet)), {
     type: 'natural',

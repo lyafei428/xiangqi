@@ -42,12 +42,6 @@ export function pieceAt(board: Board, index: number): Piece | null {
   return board[index] ?? null;
 }
 
-export function withPiece(board: Board, index: number, piece: Piece | null): Board {
-  const next = board.slice();
-  next[index] = piece;
-  return next;
-}
-
 export function emptyBoard(): Board {
   return new Array<Piece | null>(BOARD_SIZE).fill(null);
 }

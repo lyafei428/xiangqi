@@ -67,11 +67,19 @@ export function recordMove(before: Position, move: Move): HistoryEntry {
   return buildEntry(before, applyMove(before, move), move);
 }
 
+/**
+ * 落子并记账。
+ * 非法着法在这里就抛错：它会同时写进 history，而 history 是重复判罚与自然限着的输入，
+ * 混进去以后错在几十着之内都看不出来。
+ */
 export function playMove(
   pos: Position,
   history: readonly HistoryEntry[],
   move: Move,
 ): { position: Position; history: HistoryEntry[] } {
+  if (!isLegal(pos, move)) {
+    throw new Error(`playMove: illegal move ${move.from}->${move.to}`);
+  }
   const position = applyMove(pos, move);
   return { position, history: [...history, buildEntry(pos, position, move)] };
 }
@@ -79,9 +87,13 @@ export function playMove(
 export function repetitionResult(
   position: Position,
   history: readonly HistoryEntry[],
+  startFen: string,
 ): GameResult | null {
   const key = positionKey(position);
   const occurrences: number[] = [];
+  // 起始局面在第一着之前就已出现一次，history 里没有它。不补这一项，「双方各自挪回原位」
+  // 这类循环要晚一整圈才判和——而那正是三次重复规则最常被用到的场合。
+  if (fenKey(startFen) === key) occurrences.push(-1);
   for (let index = 0; index < history.length; index += 1) {
     const entry = history[index];
     if (entry !== undefined && fenKey(entry.fen) === key) occurrences.push(index);
@@ -127,10 +139,11 @@ export function naturalLimitResult(history: readonly HistoryEntry[]): GameResult
 /** 走子后的完整判定，命中顺序：将死 → 困毙 → 长将/重复 → 自然限着。 */
 export function judgeGame(
   position: Position,
-  history: readonly HistoryEntry[] = [],
+  history: readonly HistoryEntry[],
+  startFen: string,
 ): GameResult | null {
   const status = statusOf(position);
   if (status === 'checkmate') return { type: 'checkmate', winner: opposite(position.turn) };
   if (status === 'stalemate') return { type: 'stalemate', winner: opposite(position.turn) };
-  return repetitionResult(position, history) ?? naturalLimitResult(history);
+  return repetitionResult(position, history, startFen) ?? naturalLimitResult(history);
 }

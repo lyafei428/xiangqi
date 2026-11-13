@@ -123,7 +123,16 @@ statusOf(pos): 'playing' | 'check' | 'checkmate' | 'stalemate'
 
 一局棋维护 `history: HistoryEntry[]`。每走一着追加一条。
 
-**重复检测**：当前局面 FEN（棋盘 + 行棋方，不含计数位）在 `history` 中出现第 3 次时判罚。
+**局面键** = 棋盘 + 行棋方（不含计数位）。
+
+**重复检测**：计数范围 = **起始局面**（`startFen`，即 `history` 第一着之前的局面）加上 `history` 中每一着之后的局面；同一局面键累计出现第 3 次时判罚。
+
+起始局面必须计入：它真实存在过，漏掉它会让「双方各自挪回原位」这类循环晚一整圈才判和，而那正是三次重复规则最常被用到的场合。因此 `repetitionResult` 与 `judgeGame` 的 `startFen` 是**必填参数**——不给默认值，调用方必须决定"这局从哪里开始"。
+
+```ts
+repetitionResult(position: Position, history: readonly HistoryEntry[], startFen: string): GameResult | null
+judgeGame(position: Position, history: readonly HistoryEntry[], startFen: string): GameResult | null
+```
 
 **长将判定**：取该局面第一次出现与第三次出现之间的着法段（循环段）。统计每一方在该段内自己走的着法里"将军"的着数：
 
