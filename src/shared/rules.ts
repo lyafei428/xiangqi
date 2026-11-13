@@ -63,7 +63,15 @@ function buildEntry(before: Position, after: Position, move: Move): HistoryEntry
   };
 }
 
+/**
+ * 只记录一着，不返回新局面。
+ * 与 playMove 同样先过合法性：产出的 HistoryEntry 直接喂给重复判罚与自然限着，
+ * 掺进非法着法以后就再也查不出来。
+ */
 export function recordMove(before: Position, move: Move): HistoryEntry {
+  if (!isLegal(before, move)) {
+    throw new Error(`recordMove: illegal move ${move.from}->${move.to}`);
+  }
   return buildEntry(before, applyMove(before, move), move);
 }
 
@@ -98,12 +106,14 @@ export function repetitionResult(
     const entry = history[index];
     if (entry !== undefined && fenKey(entry.fen) === key) occurrences.push(index);
   }
-  const first = occurrences[0];
+  const second = occurrences[1];
   const third = occurrences[2];
-  if (first === undefined || third === undefined) return null;
+  if (second === undefined || third === undefined) return null;
 
-  // 循环段 = 第一次出现之后到第三次出现（含）的着法。
-  const cycle = history.slice(first + 1, third + 1);
+  // 循环段取「第二次出现到第三次出现」这一整圈，而不是「第一次到第三次」。
+  // 后者会把循环之前的着法也混进来：某方在循环前将军过、循环里却不是每着都将军，
+  // 就会被判成和棋，把该判负的长将放过去。起始局面计入后这种跨度可能大到整局。
+  const cycle = history.slice(second + 1, third + 1);
   let redMoves = 0;
   let redChecks = 0;
   let blackMoves = 0;

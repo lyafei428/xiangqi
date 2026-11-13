@@ -134,7 +134,7 @@ repetitionResult(position: Position, history: readonly HistoryEntry[], startFen:
 judgeGame(position: Position, history: readonly HistoryEntry[], startFen: string): GameResult | null
 ```
 
-**长将判定**：取该局面第一次出现与第三次出现之间的着法段（循环段）。统计每一方在该段内自己走的着法里"将军"的着数：
+**长将判定**：取该局面第二次出现与第三次出现之间的着法段（一个完整循环圈）。统计每一方在该段内自己走的着法里"将军"的着数：
 
 - 恰有一方在该段内**每着都将军**，另一方不是 → 该方负，`type: 'perpetual'`。
 - 否则 → 和，`type: 'repetition'`。
@@ -202,7 +202,7 @@ perft 统计**合法着法**（走后己方不被将），与 `generateLegalMove
 | 文件 | 内容 |
 |---|---|
 | `src/shared/types.ts` | §2 的全部类型 |
-| `src/shared/board.ts` | 坐标换算、九宫/河界判断、取子放子、局面相等 |
+| `src/shared/board.ts` | 坐标换算、九宫/河界判断、取子、空盘与局面相等 |
 | `src/shared/fen.ts` | `parseFen` / `toFen` / `initialPosition` |
 | `src/shared/moves.ts` | 走法生成、`isSquareAttacked` |
 | `src/shared/rules.ts` | 合法着法、将军、终局、重复与长将、自然限着 |

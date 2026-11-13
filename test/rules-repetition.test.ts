@@ -107,6 +107,35 @@ test('长将判定看的是循环段里各自每着是否将军', () => {
   assert.ok(blackEntries.every((entry) => !entry.gaveCheck), '黑方只是躲将，没有将军');
 });
 
+test('长将循环段只取最后一圈：循环之前的非将军着不把长将冲成和棋', () => {
+  // 循环之前的着法不属于长将循环，把它们算进判据会让该判负的一方被判和。
+  const start = position(['4k4', '9', '9', '9', '9', '4R4', '9', '9', '9', '5K3'], 'b');
+  const startFen = toFen(start);
+  const fillerRows = ['4k4', '9', '9', '9', '9', '4R4', '9', '9', '9', '3K5'];
+  const altRows = ['4k4', '9', '9', '9', '9', '3R5', '9', '9', '9', '5K3'];
+  const entry = (fen: string, gaveCheck: boolean): HistoryEntry => ({
+    move: { from: 0, to: 0 },
+    fen,
+    gaveCheck,
+    captured: false,
+  });
+  const history: HistoryEntry[] = [
+    entry(toFen(position(fillerRows, 'b')), false), // 0 红：循环之前，没将军
+    entry(toFen(position(fillerRows, 'w')), false), // 1 黑
+    entry(toFen(position(fillerRows, 'b')), false), // 2 红：循环之前，没将军
+    entry(startFen, false), // 3 起始局面第 2 次
+    entry(toFen(position(fillerRows, 'w')), false), // 4 黑躲将
+    entry(toFen(position(altRows, 'b')), true), // 5 红将军
+    entry(toFen(position(fillerRows, 'w')), false), // 6 黑躲将
+    entry(startFen, true), // 7 起始局面第 3 次，红将军
+  ];
+
+  assert.deepEqual(repetitionResult(start, history, startFen), {
+    type: 'perpetual',
+    winner: 'black',
+  });
+});
+
 test('自然限着：连续 120 着无吃子判和', () => {
   const quiet = (): HistoryEntry => ({
     move: { from: 0, to: 0 },
