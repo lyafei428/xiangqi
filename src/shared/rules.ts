@@ -1,0 +1,136 @@
+// 合法着法、将军、终局，以及长将/重复/自然限着这些判罚口径。
+
+import type {
+  Board,
+  Color,
+  GameResult,
+  GameStatus,
+  HistoryEntry,
+  Move,
+  Position,
+} from './types.ts';
+import { BOARD_SIZE, opposite, pieceAt } from './board.ts';
+import { fenKey, positionKey, toFen, turnOfFen } from './fen.ts';
+import { applyMove, generateMoves, isSquareAttacked } from './moves.ts';
+
+/** 连续 120 着（60 回合）无吃子判和。 */
+export const NATURAL_LIMIT = 120;
+
+function findKing(board: Board, color: Color): number {
+  for (let index = 0; index < BOARD_SIZE; index += 1) {
+    const piece = pieceAt(board, index);
+    if (piece !== null && piece.color === color && piece.type === 'K') return index;
+  }
+  return -1;
+}
+
+export function isInCheck(pos: Position, color: Color): boolean {
+  const king = findKing(pos.board, color);
+  // 没有将帅不是"没被将"，是局面坏了：FEN 读入层已拦一次，走到这里说明内存里的局面被写坏。
+  if (king < 0) throw new Error(`isInCheck: ${color} has no king on the board`);
+  return isSquareAttacked(pos, king, opposite(color));
+}
+
+export function generateLegalMoves(pos: Position): Move[] {
+  const legal: Move[] = [];
+  for (const move of generateMoves(pos)) {
+    const after = applyMove(pos, move);
+    if (!isInCheck(after, pos.turn)) legal.push(move);
+  }
+  return legal;
+}
+
+export function isLegal(pos: Position, move: Move): boolean {
+  return generateLegalMoves(pos).some(
+    (candidate) => candidate.from === move.from && candidate.to === move.to,
+  );
+}
+
+export function statusOf(pos: Position): GameStatus {
+  const inCheck = isInCheck(pos, pos.turn);
+  const hasLegalMove = generateLegalMoves(pos).length > 0;
+  // 困毙在中国象棋是判负，不是国际象棋的和棋。
+  if (!hasLegalMove) return inCheck ? 'checkmate' : 'stalemate';
+  return inCheck ? 'check' : 'playing';
+}
+
+function buildEntry(before: Position, after: Position, move: Move): HistoryEntry {
+  return {
+    move,
+    fen: toFen(after),
+    gaveCheck: isInCheck(after, after.turn),
+    captured: pieceAt(before.board, move.to) !== null,
+  };
+}
+
+export function recordMove(before: Position, move: Move): HistoryEntry {
+  return buildEntry(before, applyMove(before, move), move);
+}
+
+export function playMove(
+  pos: Position,
+  history: readonly HistoryEntry[],
+  move: Move,
+): { position: Position; history: HistoryEntry[] } {
+  const position = applyMove(pos, move);
+  return { position, history: [...history, buildEntry(pos, position, move)] };
+}
+
+export function repetitionResult(
+  position: Position,
+  history: readonly HistoryEntry[],
+): GameResult | null {
+  const key = positionKey(position);
+  const occurrences: number[] = [];
+  for (let index = 0; index < history.length; index += 1) {
+    const entry = history[index];
+    if (entry !== undefined && fenKey(entry.fen) === key) occurrences.push(index);
+  }
+  const first = occurrences[0];
+  const third = occurrences[2];
+  if (first === undefined || third === undefined) return null;
+
+  // 循环段 = 第一次出现之后到第三次出现（含）的着法。
+  const cycle = history.slice(first + 1, third + 1);
+  let redMoves = 0;
+  let redChecks = 0;
+  let blackMoves = 0;
+  let blackChecks = 0;
+  for (const entry of cycle) {
+    // 条目里的 FEN 是走完这着之后的场面，所以它的行棋方是走子方的对手。
+    const mover = opposite(turnOfFen(entry.fen));
+    if (mover === 'red') {
+      redMoves += 1;
+      if (entry.gaveCheck) redChecks += 1;
+    } else {
+      blackMoves += 1;
+      if (entry.gaveCheck) blackChecks += 1;
+    }
+  }
+  const redPerpetual = redMoves > 0 && redChecks === redMoves;
+  const blackPerpetual = blackMoves > 0 && blackChecks === blackMoves;
+  // 只有一方每着都将军才判长将；双方都将军或都不将军都按和棋处理。
+  if (redPerpetual === blackPerpetual) return { type: 'repetition', winner: null };
+  return { type: 'perpetual', winner: redPerpetual ? 'black' : 'red' };
+}
+
+export function naturalLimitResult(history: readonly HistoryEntry[]): GameResult | null {
+  let quietMoves = 0;
+  for (let index = history.length - 1; index >= 0; index -= 1) {
+    const entry = history[index];
+    if (entry === undefined || entry.captured) break;
+    quietMoves += 1;
+  }
+  return quietMoves >= NATURAL_LIMIT ? { type: 'natural', winner: null } : null;
+}
+
+/** 走子后的完整判定，命中顺序：将死 → 困毙 → 长将/重复 → 自然限着。 */
+export function judgeGame(
+  position: Position,
+  history: readonly HistoryEntry[] = [],
+): GameResult | null {
+  const status = statusOf(position);
+  if (status === 'checkmate') return { type: 'checkmate', winner: opposite(position.turn) };
+  if (status === 'stalemate') return { type: 'stalemate', winner: opposite(position.turn) };
+  return repetitionResult(position, history) ?? naturalLimitResult(history);
+}

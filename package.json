@@ -1,0 +1,19 @@
+{
+  "name": "xiangqi",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "中国象棋在线游戏：对弈 · 教学 · 规则练习",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "test": "node --test \"test/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^5.9.0"
+  }
+}
