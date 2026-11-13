@@ -19,6 +19,8 @@ export interface Snapshot {
   readonly red: boolean;
   readonly black: boolean;
   readonly players: number;
+  /** 在线观战连接数（0..8）：只计数，不占座位，也不写 red / black 在线位。 */
+  readonly spectators: number;
   readonly clock: ClockState;
   readonly drawOffer: Color | null;
   readonly drawBlocked: Color | null;
@@ -33,12 +35,16 @@ export type ClientMessage =
   | { readonly type: 'leave' }
   | { readonly type: 'ping' };
 
+/** 观战者的 token 不映射座位，因此 `joined.color` 对观战者为 null。 */
+export type PlayerRole = 'player' | 'spectator';
+
 export type ServerMessage =
   | {
       readonly type: 'joined';
       readonly room: string;
       readonly token: string;
-      readonly color: Color;
+      readonly role: PlayerRole;
+      readonly color: Color | null;
       readonly snapshot: Snapshot;
     }
   | { readonly type: 'state'; readonly snapshot: Snapshot }
@@ -57,7 +63,7 @@ export type RejectReason =
   | 'draw-pending'
   | 'no-draw-offer';
 
-export type ErrorCode = 'room-full' | 'room-not-found' | 'bad-message';
+export type ErrorCode = 'room-not-found' | 'bad-message' | 'spectators-full';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);

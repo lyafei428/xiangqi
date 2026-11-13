@@ -79,7 +79,7 @@ formatClock(ms): string                  // 面板显示：mm:ss
 - `offer-draw`：接受任一棋手，且在 `drawBlocked` 不是自己时；记录 `drawOffer`；已有待答提议时再提议回 `rejected` + `draw-pending`。
 - `draw-response { accept }`：只接受提议的对方；接受判 `agreement`，拒绝清空提议并把 `drawBlocked` 设为提议方；提议方自己发 `draw-response` 回 `no-draw-offer`。
 - 提议、拒绝、接受、走子、认输、超时、终局都清空 `drawOffer`；清空 `drawBlocked` 的时机是「非被拒方走子」——即被拒方在对方走一着之前不能再提议。
-- 观战者不参与认输与求和；拒绝码留到 M5b（见 `docs/design/modules/online.md` §1）。
+- 观战者不参与认输与求和；观战规则见 `docs/design/modules/online.md` §3，拒绝码见同档 §2。
 
 ## 5. 页面
 

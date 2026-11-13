@@ -10,6 +10,8 @@ import {
   respondDrawRoom,
   setConnected,
   snapshotOf,
+  MAX_SPECTATORS,
+  removeSpectator,
 } from '../src/server/room.ts';
 import { INITIAL_FEN, generateLegalMoves, parseFen } from '../src/shared/index.ts';
 import { Rooms } from '../src/server/rooms.ts';
@@ -26,20 +28,99 @@ test('建房：红方持 token，等待第二人', () => {
   const room = createRoom('ABC234', 'red-token');
   const snapshot = snapshotOf(room);
   assert.equal(snapshot.players, 1);
+  assert.equal(snapshot.spectators, 0);
   assert.equal(snapshot.red, true);
   assert.equal(snapshot.black, false);
   assert.equal(snapshot.turn, 'red');
   assert.equal(snapshot.seq, 0);
 });
 
-test('加入：第二人执黑；第三人被拒', () => {
+test('加入：第二人执黑；两席已满时第三人转观战', () => {
   const room = createRoom('ABC234', 'red-token');
   const joined = joinRoom(room, 'black-token');
   assert.equal(joined.ok, true);
   if (!joined.ok) return;
+  assert.equal(joined.role, 'player');
   assert.equal(joined.color, 'black');
   assert.equal(snapshotOf(joined.room).players, 2);
-  assert.deepEqual(joinRoom(joined.room, 'third-token'), { ok: false, reason: 'room-full' });
+
+  const watching = joinRoom(joined.room, 'third-token');
+  assert.equal(watching.ok, true);
+  if (!watching.ok) return;
+  assert.equal(watching.role, 'spectator');
+  assert.equal(watching.color, null);
+  const snapshot = snapshotOf(watching.room);
+  assert.equal(snapshot.players, 2);
+  assert.equal(snapshot.spectators, 1);
+
+  // 观战者的 token 不映射座位：带同一个 token 再来仍是观战，只是又占一条连接。
+  const retry = joinRoom(watching.room, 'third-token');
+  assert.equal(retry.ok, true);
+  if (!retry.ok) return;
+  assert.equal(retry.role, 'spectator');
+  assert.equal(retry.color, null);
+  assert.equal(snapshotOf(retry.room).spectators, 2);
+  assert.equal(snapshotOf(retry.room).players, 2);
+});
+
+test('观战上限：八人在线后第九人 spectators-full，退出一人才能再进', () => {
+  const room = createRoom('ABC234', 'red-token');
+  const seated = joinRoom(room, 'black-token');
+  if (!seated.ok) throw new Error(seated.reason);
+
+  let current = seated.room;
+  for (let index = 0; index < MAX_SPECTATORS; index += 1) {
+    const joined = joinRoom(current, `watcher-${String(index)}`);
+    assert.equal(joined.ok, true);
+    if (!joined.ok) return;
+    assert.equal(joined.role, 'spectator');
+    current = joined.room;
+  }
+  assert.equal(snapshotOf(current).spectators, MAX_SPECTATORS);
+  assert.deepEqual(joinRoom(current, 'watcher-over'), { ok: false, reason: 'spectators-full' });
+
+  // 观战离开只腾观战位：满房又有一个名额。
+  const freed = removeSpectator(current);
+  assert.equal(snapshotOf(freed).spectators, MAX_SPECTATORS - 1);
+  const again = joinRoom(freed, 'watcher-over');
+  assert.equal(again.ok, true);
+  if (!again.ok) return;
+  assert.equal(again.role, 'spectator');
+  // 计数到底不减到负数。
+  assert.equal(snapshotOf(removeSpectator(createRoom('ABC234', 'red-token'))).spectators, 0);
+});
+
+test('观战不写在线位：观战者走子 / 认输 / 求和 / 应答一律 not-in-room', () => {
+  const room = createRoom('ABC234', 'red-token');
+  const seated = joinRoom(room, 'black-token');
+  if (!seated.ok) throw new Error(seated.reason);
+  const watched = joinRoom(seated.room, 'watcher-token');
+  if (!watched.ok) throw new Error(watched.reason);
+
+  const played = applyRoomMove(watched.room, 'watcher-token', legal(), 0);
+  assert.equal(played.ok, false);
+  if (!played.ok) assert.equal(played.reason, 'not-in-room');
+
+  const resigned = resignRoom(watched.room, 'watcher-token');
+  assert.equal(resigned.ok, false);
+  if (!resigned.ok) assert.equal(resigned.reason, 'not-in-room');
+
+  const offered = offerDrawRoom(watched.room, 'watcher-token');
+  assert.equal(offered.ok, false);
+  if (!offered.ok) assert.equal(offered.reason, 'not-in-room');
+
+  const answered = respondDrawRoom(watched.room, 'watcher-token', true);
+  assert.equal(answered.ok, false);
+  if (!answered.ok) assert.equal(answered.reason, 'not-in-room');
+
+  // 房间没被观战者改动：座位、在线位、序号、和棋状态都是原样。
+  const snapshot = snapshotOf(watched.room);
+  assert.equal(snapshot.players, 2);
+  assert.equal(snapshot.red, true);
+  assert.equal(snapshot.black, true);
+  assert.equal(snapshot.spectators, 1);
+  assert.equal(snapshot.seq, 0);
+  assert.equal(snapshot.drawOffer, null);
 });
 
 test('重连：token 找回颜色，座位仍在', () => {
@@ -139,6 +220,35 @@ test('两人中一人在线时不回收', () => {
 
   rooms.setConnected(created.room.code, created.token, false, now);
   assert.equal(rooms.sweep(now + 60 * 60_000, 30 * 60_000), 0);
+});
+
+test('回收：两名棋手断开后观战仍在、房间不回收；观战清零才按 30 分钟回收', () => {
+  const rooms = new Rooms();
+  const created = rooms.create();
+  const code = created.room.code;
+  const now = 1_000_000;
+
+  const seated = rooms.join(code, 'black-token');
+  if (!seated.ok) throw new Error(seated.reason);
+  const watched = rooms.join(code, 'watcher-token');
+  if (!watched.ok) throw new Error(watched.reason);
+  assert.equal(watched.role, 'spectator');
+
+  // 两名棋手都断开：观战还在，房间留住。
+  rooms.setConnected(code, created.token, false, now);
+  rooms.setConnected(code, 'black-token', false, now);
+  assert.equal(rooms.sweep(now + 60 * 60_000, 30 * 60_000), 0);
+  const kept = rooms.get(code);
+  assert.notEqual(kept, undefined);
+  assert.equal(kept?.spectators, 1);
+  assert.equal(kept?.red?.connected, false);
+  assert.equal(kept?.black?.connected, false);
+
+  // 观战者离开、计数归零，下一轮扫才回收。
+  rooms.removeSpectator(code);
+  assert.equal(rooms.get(code)?.spectators, 0);
+  assert.equal(rooms.sweep(now + 60 * 60_000, 30 * 60_000), 1);
+  assert.equal(rooms.get(code), undefined);
 });
 
 

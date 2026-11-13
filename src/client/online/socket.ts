@@ -72,6 +72,13 @@ export class OnlineSocket {
   connect(join: JoinInfo): void {
     this.intentional = false;
     this.joinInfo = join;
+    // 连接仍在时（例如刚被 spectators-full / room-not-found 拒过）就在这条连接上重发 join：
+    // open() 早返回会让大厅永远停在「连接中」，用户只能刷新。连接还在握手时不必重发，
+    // 它的 open 回调会拿刚设的 joinInfo 发出去。
+    if (this.ws !== null && this.ws.readyState === 1) {
+      this.ws.send(JSON.stringify({ type: 'join', ...join }));
+      return;
+    }
     this.open();
   }
 
@@ -161,6 +168,7 @@ export class OnlineSocket {
           type: 'joined',
           room: message.room,
           token: message.token,
+          role: message.role,
           color: message.color,
           snapshot: message.snapshot,
         });

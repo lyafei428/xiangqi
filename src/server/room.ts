@@ -26,6 +26,9 @@ import {
 import type { ClockState } from '../shared/index.ts';
 import type { RejectReason, Snapshot } from '../shared/protocol.ts';
 
+/** 观战上限：需求 F1.7 的 8 人只算观战连接，不含两名棋手。 */
+export const MAX_SPECTATORS = 8;
+
 export interface RoomPlayer {
   readonly token: string;
   readonly color: Color;
@@ -44,6 +47,8 @@ export interface RoomState {
   readonly moves: readonly string[];
   readonly red: RoomPlayer | null;
   readonly black: RoomPlayer | null;
+  /** 在线观战连接数：观战占连接不占座位，所以只计数不写座位。 */
+  readonly spectators: number;
   readonly idleSince: number | null;
   readonly clock: ClockState;
   /** 每方包干毫秒，开新局时用它重置时钟。 */
@@ -53,8 +58,9 @@ export interface RoomState {
 }
 
 export type JoinOutcome =
-  | { readonly ok: true; readonly room: RoomState; readonly color: Color }
-  | { readonly ok: false; readonly reason: 'room-full' };
+  | { readonly ok: true; readonly room: RoomState; readonly role: 'player'; readonly color: Color }
+  | { readonly ok: true; readonly room: RoomState; readonly role: 'spectator'; readonly color: null }
+  | { readonly ok: false; readonly reason: 'spectators-full' };
 
 export type MoveOutcome =
   | { readonly ok: true; readonly room: RoomState }
@@ -80,6 +86,7 @@ export function createRoom(
     moves: [],
     red: { token, color: 'red', connected: true },
     black: null,
+    spectators: 0,
     idleSince: null,
     clock: createClock(now, clockMs),
     clockMs,
@@ -88,12 +95,13 @@ export function createRoom(
   };
 }
 
-/** 带 token 且匹配 → 重连；否则坐到空位上（先红后黑）。 */
+/** 带 token 且匹配 → 重连；否则坐到空位上（先红后黑）；两席已满则进观战。 */
 export function joinRoom(room: RoomState, token: string, now = Date.now()): JoinOutcome {
   if (room.red?.token === token) {
     return {
       ok: true,
       room: { ...room, red: { ...room.red, connected: true }, idleSince: null },
+      role: 'player',
       color: 'red',
     };
   }
@@ -101,6 +109,7 @@ export function joinRoom(room: RoomState, token: string, now = Date.now()): Join
     return {
       ok: true,
       room: { ...room, black: { ...room.black, connected: true }, idleSince: null },
+      role: 'player',
       color: 'black',
     };
   }
@@ -108,6 +117,7 @@ export function joinRoom(room: RoomState, token: string, now = Date.now()): Join
     return {
       ok: true,
       room: { ...room, red: { token, color: 'red', connected: true }, idleSince: null },
+      role: 'player',
       color: 'red',
     };
   }
@@ -121,10 +131,24 @@ export function joinRoom(room: RoomState, token: string, now = Date.now()): Join
         idleSince: null,
         clock: createClock(now, room.clockMs),
       },
+      role: 'player',
       color: 'black',
     };
   }
-  return { ok: false, reason: 'room-full' };
+  if (room.spectators >= MAX_SPECTATORS) return { ok: false, reason: 'spectators-full' };
+  // 观战者的 token 不进座位：只计数，不写 red / black 的在线位。
+  return {
+    ok: true,
+    room: { ...room, spectators: room.spectators + 1 },
+    role: 'spectator',
+    color: null,
+  };
+}
+
+/** 观战者离开或断开：只减计数，腾出观战位。 */
+export function removeSpectator(room: RoomState): RoomState {
+  if (room.spectators === 0) return room;
+  return { ...room, spectators: room.spectators - 1 };
 }
 
 export function setConnected(
@@ -291,6 +315,7 @@ export function snapshotOf(room: RoomState, now = Date.now()): Snapshot {
     red: room.red?.connected ?? false,
     black: room.black?.connected ?? false,
     players: (room.red === null ? 0 : 1) + (room.black === null ? 0 : 1),
+    spectators: room.spectators,
     clock,
     drawOffer: room.drawOffer,
     drawBlocked: room.drawBlocked,

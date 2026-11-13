@@ -59,6 +59,7 @@ export function OnlinePage() {
   }, []);
 
   const snapshot = state.snapshot;
+  const spectating = state.role === 'spectator';
   const position = useMemo(() => (snapshot === null ? null : parseFen(snapshot.fen)), [snapshot?.fen]);
 
   // 只跟服务端生成的快照走：presence 会新建快照对象，但时钟引用不变，不能因它重置锚点。
@@ -219,6 +220,10 @@ export function OnlinePage() {
     snapshot.result !== null
       ? resultLabel(snapshot.result)
       : `轮到${snapshot.turn === 'red' ? '红方' : '黑方'}`;
+  // 观战者无座位颜色：面板换成观战身份。
+  const identityText = spectating
+    ? `观战中 · ${snapshot.spectators} 人观战`
+    : `你是${state.color === 'red' ? '红方' : '黑方'}`;
   const receivedAt = receivedAtRef.current;
   // 未坐满不算开局：服务端不扣时，客户端也不投影，否则等对手时会看到自己掉秒。
   const started = snapshot.players >= 2;
@@ -238,7 +243,7 @@ export function OnlinePage() {
         <div className="board-fit" ref={stageRef}>
           <div className="board-slot">
             <Board
-              mode={{ kind: 'play', side: state.color ?? 'red' }}
+              mode={spectating ? { kind: 'demo' } : { kind: 'play', side: state.color ?? 'red' }}
               size={size}
               position={position ?? parseFen(snapshot.fen)}
               selection={{ selected, targets }}
@@ -266,9 +271,12 @@ export function OnlinePage() {
               {state.notice}
             </p>
           ) : null}
-          <p className="online-color">
-            你是{state.color === 'red' ? '红方' : '黑方'}
-          </p>
+          {state.error === null ? null : (
+            <p className="online-banner" role="alert">
+              {state.error}
+            </p>
+          )}
+          <p className="online-color">{identityText}</p>
           <p className={`status-line${snapshot.result === null ? '' : ' is-result'}`}>
             <span
               className={`turn-dot ${
@@ -291,12 +299,16 @@ export function OnlinePage() {
             <span className={`clock clock-black${blackMs < 60_000 ? ' is-low' : ''}`}>
               黑 {formatClock(blackMs)}
             </span>
-            <button type="button" className="resign" onClick={resign} disabled={over || !myTurn}>
-              认输
-            </button>
-            <button type="button" className="resign" onClick={offerDraw} disabled={!canOffer}>
-              提议和棋
-            </button>
+            {spectating ? null : (
+              <>
+                <button type="button" className="resign" onClick={resign} disabled={over || !myTurn}>
+                  认输
+                </button>
+                <button type="button" className="resign" onClick={offerDraw} disabled={!canOffer}>
+                  提议和棋
+                </button>
+              </>
+            )}
           </div>
           {incomingOffer ? (
             <p className="online-banner" role="status">

@@ -10,6 +10,7 @@ import {
   createRoom,
   joinRoom,
   offerDrawRoom,
+  removeSpectator,
   resignRoom,
   respondDrawRoom,
   setConnected,
@@ -61,10 +62,21 @@ export class Rooms {
     return next;
   }
 
-  /** 两人都离线超过 ttlMs 的房间回收；返回回收数量。 */
+  /** 观战者离开或断开：减计数；返回房间供调用方广播新快照。 */
+  removeSpectator(code: string): RoomState | undefined {
+    const room = this.rooms.get(code);
+    if (room === undefined) return undefined;
+    const next = removeSpectator(room);
+    this.rooms.set(code, next);
+    return next;
+  }
+
+  /** 两人都离线、且无在线观战超过 ttlMs 的房间回收；返回回收数量。 */
   sweep(now = Date.now(), ttlMs = 30 * 60_000): number {
     let removed = 0;
     for (const [code, room] of this.rooms) {
+      // 有观战在线时房间留住：棋手离开不结束观战。
+      if (room.spectators > 0) continue;
       if (room.idleSince !== null && now - room.idleSince >= ttlMs) {
         this.rooms.delete(code);
         removed += 1;

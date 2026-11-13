@@ -3,16 +3,17 @@
 import { createServer } from 'node:http';
 import type { Server } from 'node:http';
 import { WebSocket, WebSocketServer } from 'ws';
-import type { ClientMessage, ServerMessage } from '../shared/protocol.ts';
+import type { ClientMessage, PlayerRole, ServerMessage } from '../shared/protocol.ts';
 import { parseClientMessage } from '../shared/protocol.ts';
 import type { RoomState } from './room.ts';
-import { snapshotOf } from './room.ts';
+import { MAX_SPECTATORS, snapshotOf } from './room.ts';
 import { Rooms, newToken } from './rooms.ts';
 
 interface Conn {
   readonly ws: WebSocket;
   room?: string;
   token?: string;
+  role?: PlayerRole;
   alive: boolean;
   missed: number;
 }
@@ -58,6 +59,12 @@ export async function createOnlineServer(options: OnlineServerOptions = {}): Pro
     for (const conn of roomConns(code)) send(conn.ws, message);
   };
 
+  /** 空 Set 不留：房间按码回收后 byRoom 的条目也要跟着消失，否则跑得越久条目越多。 */
+  const dropEmptyRoom = (code: string): void => {
+    const set = byRoom.get(code);
+    if (set !== undefined && set.size === 0) byRoom.delete(code);
+  };
+
   const broadcastPresence = (room: RoomState): void => {
     broadcast(room.code, {
       type: 'presence',
@@ -67,16 +74,22 @@ export async function createOnlineServer(options: OnlineServerOptions = {}): Pro
   };
 
   const leave = (conn: Conn): void => {
-    if (conn.room === undefined) return;
-    const room = rooms.get(conn.room);
     const code = conn.room;
-    if (room !== undefined && conn.token !== undefined) {
-      const next = rooms.setConnected(code, conn.token, false);
-      if (next !== undefined) broadcastPresence(next);
-    }
+    if (code === undefined) return;
+    const { token, role } = conn;
     roomConns(code).delete(conn);
     conn.room = undefined;
     conn.token = undefined;
+    conn.role = undefined;
+    if (role === 'spectator') {
+      // 观战只减计数、腾出观战位，不碰两位棋手的在线位；观众走了房内也要看到新快照。
+      const next = rooms.removeSpectator(code);
+      if (next !== undefined) broadcast(code, { type: 'state', snapshot: snapshotOf(next) });
+    } else if (token !== undefined) {
+      const next = rooms.setConnected(code, token, false);
+      if (next !== undefined) broadcastPresence(next);
+    }
+    dropEmptyRoom(code);
   };
 
   const join = (conn: Conn, message: Extract<ClientMessage, { type: 'join' }>): void => {
@@ -85,11 +98,13 @@ export async function createOnlineServer(options: OnlineServerOptions = {}): Pro
       const created = rooms.create();
       conn.room = created.room.code;
       conn.token = created.token;
+      conn.role = 'player';
       roomConns(created.room.code).add(conn);
       send(conn.ws, {
         type: 'joined',
         room: created.room.code,
         token: created.token,
+        role: 'player',
         color: 'red',
         snapshot: snapshotOf(created.room),
       });
@@ -104,22 +119,29 @@ export async function createOnlineServer(options: OnlineServerOptions = {}): Pro
     const token = message.token ?? newToken();
     const outcome = rooms.join(message.room, token);
     if (!outcome.ok) {
-      send(conn.ws, { type: 'error', code: 'room-full', message: '房间已满' });
+      send(conn.ws, {
+        type: 'error',
+        code: outcome.reason,
+        message: `观战人数已满（最多 ${MAX_SPECTATORS} 人）`,
+      });
       return;
     }
     conn.room = message.room;
     conn.token = token;
+    conn.role = outcome.role;
     roomConns(message.room).add(conn);
     send(conn.ws, {
       type: 'joined',
       room: message.room,
       token,
+      role: outcome.role,
       color: outcome.color,
       snapshot: snapshotOf(outcome.room),
     });
-    // 第二人进房/重连后，先到者也要拿到 players 与在线状态的新快照。
+    // 第二人就座或观战进出都换了快照（players / spectators 变了），房内全连接都要刷新。
     broadcast(message.room, { type: 'state', snapshot: snapshotOf(outcome.room) });
-    broadcastPresence(outcome.room);
+    // presence 只报棋手在线位：观战进出不改变它。
+    if (outcome.role === 'player') broadcastPresence(outcome.room);
   };
 
   const handle = (conn: Conn, message: ClientMessage): void => {

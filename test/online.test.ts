@@ -36,6 +36,11 @@ class Client {
     this.ws.send(JSON.stringify(message));
   }
 
+  /** 丢掉还没消费的旧消息：断言「之后必须再来一条」前先清场，免得旧广播顶包。 */
+  drain(): void {
+    this.queue.length = 0;
+  }
+
   next(match: (message: ServerMessage) => boolean, timeout = 3000): Promise<ServerMessage> {
     const queued = this.queue.findIndex((message) => match(message));
     if (queued >= 0) {
@@ -136,15 +141,117 @@ test('两个客户端同房：同步、拒绝非法、断线重连', async () =>
     assert.equal(rejoined.color, 'red');
     assert.equal(rejoined.snapshot.seq, 1);
     assert.equal(rejoined.snapshot.turn, 'black');
+  } finally {
+    for (const client of clients) client.close();
+    await server.close();
+  }
+});
 
-    // 第三人进满房：拒绝。
-    const third = new Client(server.port);
-    clients.push(third);
-    await third.open();
-    third.send({ type: 'join', room });
-    const full = await third.next((message) => message.type === 'error');
-    if (full.type !== 'error') throw new Error('没有报错');
-    assert.equal(full.code, 'room-full');
+test('联机观战：第三端只读同一局面，观战数进出都广播', async () => {
+  const server = await createOnlineServer({ port: 0, heartbeatMs: 60_000 });
+  const clients: Client[] = [];
+  try {
+    const red = new Client(server.port);
+    clients.push(red);
+    await red.open();
+    red.send({ type: 'join' });
+    const joinedRed = await red.next((message) => message.type === 'joined');
+    if (joinedRed.type !== 'joined') throw new Error('建房失败');
+    const room = joinedRed.room;
+
+    const black = new Client(server.port);
+    clients.push(black);
+    await black.open();
+    black.send({ type: 'join', room });
+    await black.next((message) => message.type === 'joined');
+    await red.next((message) => message.type === 'state' && message.snapshot.players === 2);
+
+    // 两席已满：第三端自动转观战，不占座位。
+    const watcher = new Client(server.port);
+    clients.push(watcher);
+    await watcher.open();
+    watcher.send({ type: 'join', room });
+    const joinedWatcher = await watcher.next((message) => message.type === 'joined');
+    if (joinedWatcher.type !== 'joined') throw new Error('观战进房失败');
+    assert.equal(joinedWatcher.role, 'spectator');
+    assert.equal(joinedWatcher.color, null);
+    assert.equal(joinedWatcher.snapshot.players, 2);
+    assert.equal(joinedWatcher.snapshot.spectators, 1);
+
+    // 观战进场也广播 state：两席都看到观战数变了。
+    const redSeesWatcher = await red.next(
+      (message) => message.type === 'state' && message.snapshot.spectators === 1,
+    );
+    assert.equal(redSeesWatcher.type, 'state');
+
+    // 观战端收到与棋手同一份局面。
+    const move = generateLegalMoves(parseFen(INITIAL_FEN))[0];
+    if (move === undefined) throw new Error('没有合法着法');
+    red.send({ type: 'move', from: move.from, to: move.to, seq: joinedRed.snapshot.seq });
+    const watched = await watcher.next(
+      (message) => message.type === 'state' && message.snapshot.seq === 1,
+    );
+    const redState = await red.next(
+      (message) => message.type === 'state' && message.snapshot.seq === 1,
+    );
+    if (watched.type !== 'state' || redState.type !== 'state') throw new Error('没有广播到观战端');
+    assert.deepEqual(watched.snapshot, redState.snapshot);
+
+    // 观战者没有座位：走子、认输一律 not-in-room，房间不动。
+    watcher.send({ type: 'move', from: move.from, to: move.to, seq: 1 });
+    const rejectedMove = await watcher.next((message) => message.type === 'rejected');
+    if (rejectedMove.type !== 'rejected') throw new Error('没有拒绝观战者走子');
+    assert.equal(rejectedMove.reason, 'not-in-room');
+    assert.equal(rejectedMove.snapshot.seq, 1);
+
+    watcher.send({ type: 'resign' });
+    const rejectedResign = await watcher.next((message) => message.type === 'rejected');
+    if (rejectedResign.type !== 'rejected') throw new Error('没有拒绝观战者认输');
+    assert.equal(rejectedResign.reason, 'not-in-room');
+
+    // 棋手断开不结束观战：观战连接仍留在房里，并继续收到 state。
+    red.close();
+    const presenceOffline = await watcher.next(
+      (message) => message.type === 'presence' && message.red === false,
+    );
+    assert.equal(presenceOffline.type, 'presence');
+    const afterRed = parseFen(toFen(applyMove(parseFen(INITIAL_FEN), move)));
+    const blackMove = generateLegalMoves(afterRed)[0];
+    if (blackMove === undefined) throw new Error('黑方没有合法着法');
+    black.send({ type: 'move', from: blackMove.from, to: blackMove.to, seq: 1 });
+    const watchedAfterLeave = await watcher.next(
+      (message) => message.type === 'state' && message.snapshot.seq === 2,
+    );
+    assert.equal(watchedAfterLeave.type, 'state');
+
+    // 观战离开：计数归零并广播。
+    black.drain();
+    watcher.close();
+    const blackSeesGone = await black.next(
+      (message) =>
+        message.type === 'state' && message.snapshot.seq === 2 && message.snapshot.spectators === 0,
+    );
+    assert.equal(blackSeesGone.type, 'state');
+
+    // 观战者主动 leave 与断线同一条路：减计数并广播。
+    black.drain();
+    const watcherAgain = new Client(server.port);
+    clients.push(watcherAgain);
+    await watcherAgain.open();
+    watcherAgain.send({ type: 'join', room });
+    const joinedAgain = await watcherAgain.next((message) => message.type === 'joined');
+    if (joinedAgain.type !== 'joined') throw new Error('观战再进失败');
+    assert.equal(joinedAgain.role, 'spectator');
+    const blackSeesBack = await black.next(
+      (message) =>
+        message.type === 'state' && message.snapshot.seq === 2 && message.snapshot.spectators === 1,
+    );
+    assert.equal(blackSeesBack.type, 'state');
+    watcherAgain.send({ type: 'leave' });
+    const blackSeesLeave = await black.next(
+      (message) => message.type === 'state' && message.snapshot.spectators === 0,
+    );
+    assert.equal(blackSeesLeave.type, 'state');
   } finally {
     for (const client of clients) client.close();
     await server.close();

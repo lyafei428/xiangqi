@@ -1,7 +1,7 @@
 // 联机页状态：连接阶段、房间、颜色、权威快照。纯 reducer。
 
 import type { Color } from '../../shared/index.ts';
-import type { RejectReason, Snapshot } from '../../shared/protocol.ts';
+import type { PlayerRole, RejectReason, Snapshot } from '../../shared/protocol.ts';
 
 export type OnlinePhase =
   | 'idle'
@@ -9,12 +9,14 @@ export type OnlinePhase =
   | 'connecting'
   | 'waiting'
   | 'playing'
+  | 'spectating'
   | 'reconnecting'
   | 'error';
 
 export interface OnlineState {
   readonly phase: OnlinePhase;
   readonly room: string | null;
+  readonly role: PlayerRole | null;
   readonly color: Color | null;
   readonly token: string | null;
   readonly snapshot: Snapshot | null;
@@ -29,7 +31,9 @@ export type OnlineEvent =
       readonly type: 'joined';
       readonly room: string;
       readonly token: string;
-      readonly color: Color;
+      /** 服务端为每连接定角色：观战者无座位颜色（null）。 */
+      readonly role: PlayerRole;
+      readonly color: Color | null;
       readonly snapshot: Snapshot;
     }
   | { readonly type: 'state'; readonly snapshot: Snapshot }
@@ -54,6 +58,7 @@ export function createOnlineState(): OnlineState {
   return {
     phase: 'lobby',
     room: null,
+    role: null,
     color: null,
     token: null,
     snapshot: null,
@@ -62,7 +67,9 @@ export function createOnlineState(): OnlineState {
   };
 }
 
-function roomPhase(snapshot: Snapshot): OnlinePhase {
+/** 观战者不看座位数：两名棋手都在，但舞台仍是只读的 spectating。 */
+function roomPhase(snapshot: Snapshot, role: PlayerRole | null): OnlinePhase {
+  if (role === 'spectator') return 'spectating';
   return snapshot.players >= 2 ? 'playing' : 'waiting';
 }
 
@@ -72,21 +79,23 @@ export function onlineReducer(state: OnlineState, event: OnlineEvent): OnlineSta
       return { ...state, phase: 'lobby', error: null, notice: null };
     case 'connecting':
       return { ...state, phase: 'connecting', error: null, notice: null };
-    case 'joined':
+    case 'joined': {
       return {
         ...state,
-        phase: roomPhase(event.snapshot),
+        phase: roomPhase(event.snapshot, event.role),
         room: event.room,
         token: event.token,
+        role: event.role,
         color: event.color,
         snapshot: event.snapshot,
         error: null,
         notice: null,
       };
+    }
     case 'state':
       return {
         ...state,
-        phase: roomPhase(event.snapshot),
+        phase: roomPhase(event.snapshot, state.role),
         snapshot: event.snapshot,
         notice: null,
       };
@@ -100,9 +109,12 @@ export function onlineReducer(state: OnlineState, event: OnlineEvent): OnlineSta
     case 'rejected':
       return {
         ...state,
-        phase: roomPhase(event.snapshot),
+        phase: roomPhase(event.snapshot, state.role),
         snapshot: event.snapshot,
-        notice: REJECT_TEXT[event.reason],
+        notice:
+          state.role === 'spectator' && event.reason === 'not-in-room'
+            ? '你正在观战，不能走棋'
+            : REJECT_TEXT[event.reason],
       };
     case 'error':
       return { ...state, phase: 'error', error: event.message };
