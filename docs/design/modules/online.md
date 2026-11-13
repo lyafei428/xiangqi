@@ -47,13 +47,15 @@ type ServerMessage =
 
 interface Snapshot {
   room: string;
+  startFen: string;
   fen: string;
   seq: number;
   turn: Color;
   status: GameStatus;
   result: GameResult | null;
   lastMove: Move | null;
-  moves: string[];
+  moves: string[];         // 中文记谱，只供显示
+  moveLog: Move[];         // 逐着坐标，回放与存局用
   red: boolean;   // 在线
   black: boolean;
   players: number; // 已坐下的座位数（1 或 2）
@@ -88,6 +90,7 @@ interface Snapshot {
 - 落子：`playMove(position, history, move)`；抛错即 `rejected`，房间不动；成功则更新局面、记谱（`toChineseNotation`，与本地对局同一套中文记谱）、`seq + 1`、`lastMove`，并取 `statusOf` / `judgeGame` 结果。
 - 时钟：房间持 `ClockState`（剩余毫秒、在走方与锚点）；第二人就座时开锚；落子前先判超时，判超时才扣时并换边；每秒检查在走方是否归零，归零即判 `timeout` 并广播。
 - 认输与求和：协议接线与广播；判罚与状态机见 `docs/design/modules/clock.md` §2/§4。
+- 终局存棋谱：收到带 `result` 的快照时，棋手客户端用 `startFen` / `moveLog` 与快照里的时钟剩余写进本地棋谱库，格式见 `docs/design/modules/replay.md` §1；写入走 `dedupe`，切页或刷新后重连再收到同一终局快照不会重复入库。
 - 广播：每次状态变化向房内两人发 `state`；第二人进房或重连时也先给先到者补一份 `state`（`players` 变了，先到者才能从等待进到对局）；连接/断开发 `presence`。
 - 在线状态只有一个权威：快照里的 `red` / `black`。`presence` 只是变更通知，客户端把两个字段合入当前快照，面板只读快照。
 - 心跳：30 秒 ping，连续两次无 pong 视为掉线，保留房间与 token 供重连。

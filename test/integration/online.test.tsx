@@ -11,6 +11,7 @@ import {
   applyMove,
   createClock,
   generateLegalMoves,
+  indexOf,
   parseFen,
   statusOf,
   toChineseNotation,
@@ -93,6 +94,7 @@ const VIEW_RECT = {
 function snapshot(overrides: Partial<Snapshot> = {}): Snapshot {
   return {
     room: 'ABC234',
+    startFen: INITIAL_FEN,
     fen: INITIAL_FEN,
     seq: 0,
     turn: 'red',
@@ -100,6 +102,7 @@ function snapshot(overrides: Partial<Snapshot> = {}): Snapshot {
     result: null,
     lastMove: null,
     moves: [],
+    moveLog: [],
     red: true,
     black: false,
     players: 1,
@@ -258,6 +261,36 @@ describe('F1-4 联机认输与求和', () => {
     await screen.findByText('黑方胜 · 认输');
     const button = screen.getByRole('button', { name: '认输' }) as HTMLButtonElement;
     expect(button.disabled).toBe(true);
+  });
+
+  it('终局快照写进棋谱库：着法与快照 moveLog 一致', async () => {
+    const socket = await seated();
+    const moveLog = [
+      { from: indexOf(1, 7), to: indexOf(1, 6) },
+      { from: indexOf(2, 2), to: indexOf(2, 3) },
+    ];
+    socket.serverSend({
+      type: 'state',
+      snapshot: snapshot({
+        players: 2,
+        black: true,
+        startFen: INITIAL_FEN,
+        moveLog,
+        moves: ['炮八进一', '炮2进1'],
+        result: { type: 'resign', winner: 'black' },
+      }),
+    });
+    await screen.findByText('黑方胜 · 认输');
+
+    const stored = JSON.parse(localStorage.getItem('xiangqi.records.v1') ?? '[]') as {
+      startFen: string;
+      moves: unknown[];
+      result: { type: string };
+    }[];
+    expect(stored).toHaveLength(1);
+    expect(stored[0]?.startFen).toBe(INITIAL_FEN);
+    expect(stored[0]?.moves).toEqual(moveLog);
+    expect(stored[0]?.result.type).toBe('resign');
   });
 
   it('被拒后暂时不能再提议，对方走一着后恢复', async () => {

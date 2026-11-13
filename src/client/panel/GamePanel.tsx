@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react';
 import type { Color, GameResult } from '../../shared/index.ts';
 import { formatClock, remainingOf } from '../../shared/index.ts';
 import type { GameSession } from '../game/session.ts';
+import { resultLabel } from './result-text.ts';
 
 export interface GamePanelProps {
   readonly session: GameSession;
@@ -19,34 +20,8 @@ function colorName(color: Color): string {
   return color === 'red' ? '红方' : '黑方';
 }
 
-function winnerName(winner: Color | null): string {
-  // 和棋类判罚 winner 为 null；胜负类判罚引擎一定给胜方。
-  return winner === null ? '双方' : colorName(winner);
-}
-
-function resultText(result: GameResult): string {
-  switch (result.type) {
-    case 'checkmate':
-      return `${winnerName(result.winner)}胜 · 将死`;
-    case 'stalemate':
-      return `${winnerName(result.winner)}胜 · 困毙`;
-    case 'perpetual':
-      return `${winnerName(result.winner)}胜 · 长将判负`;
-    case 'repetition':
-      return '和棋 · 三次重复局面';
-    case 'natural':
-      return '和棋 · 60 回合无吃子';
-    case 'timeout':
-      return `${winnerName(result.winner)}胜 · 超时`;
-    case 'resign':
-      return `${winnerName(result.winner)}胜 · 认输`;
-    case 'agreement':
-      return '和棋 · 双方同意';
-  }
-}
-
 function statusText(session: GameSession): string {
-  if (session.result !== null) return resultText(session.result);
+  if (session.result !== null) return resultLabel(session.result);
   const side = colorName(session.position.turn);
   if (session.status === 'check') return `${side}被将军`;
   // 从自定义起始局面进来时可能一开始就是终局，结果判定还没跑过。

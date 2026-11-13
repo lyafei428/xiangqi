@@ -21,6 +21,16 @@ export function createClock(now: number, perSide = CLOCK_MS): ClockState {
   return { redMs: perSide, blackMs: perSide, running: 'red', since: now };
 }
 
+/** 按存的剩余建时钟：续局时用，锚点取恢复时刻，关页期间不扣时。 */
+export function clockFrom(
+  redMs: number,
+  blackMs: number,
+  running: Color | null,
+  now: number,
+): ClockState {
+  return { redMs: Math.max(0, redMs), blackMs: Math.max(0, blackMs), running, since: now };
+}
+
 export function remainingOf(clock: ClockState, color: Color, now: number): number {
   const base = color === 'red' ? clock.redMs : clock.blackMs;
   if (clock.running !== color) return Math.max(0, base);

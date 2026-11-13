@@ -10,8 +10,9 @@
 | F1-2 | 同房走子同步与重连 | 两台设备同房看到同一局面；非法着法被拒绝；断线后带 token 重连恢复 | 打开页面 → 联机 | F1.2 |
 | F1-3 | 本地计时与认输 | 红方时钟归零显示「黑方胜 · 超时」并锁盘；认输立刻结束 | 打开页面 → 对弈 | F1.4、F1.5 |
 | F1-4 | 联机计时、认输与求和 | 双方看到同一时钟；归零判负；求和被接受判和；被拒后再次提议被拒，对方走一着后可再提议 | 打开页面 → 联机 | F1.4、F1.5 |
+| F1-5 | 棋谱回放、导入导出与续局 | 终局后棋谱页列出该局；回放可停在任意一步；导出文件重新导入能完整回放；关页重开棋盘与时钟接上 | 打开页面 → 对弈 / 棋谱 | F1.6 |
 
-用例实现：`test/integration/local-play.test.tsx`（F1-1、F1-3）；`test/online.test.ts` 与 `test/integration/online.test.tsx`（F1-2、F1-4）。
+用例实现：`test/integration/local-play.test.tsx`（F1-1、F1-3、F1-5 的续局）；`test/online.test.ts` 与 `test/integration/online.test.tsx`（F1-2、F1-4）；`test/integration/replay.test.tsx`（F1-5 的列表、回放与导入导出）。
 
 ## 教学（需求 F2）
 

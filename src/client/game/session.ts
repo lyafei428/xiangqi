@@ -67,6 +67,46 @@ export function createSession(startFen: string = INITIAL_FEN, now = Date.now()):
     clock: createClock(now, CLOCK_MS),
   };
 }
+/**
+ * 续局：按着法重放出局面与记谱，再挂上存下来的时钟。
+ * 记录被改坏（解析失败或走法非法）返回 null，由调用方丢弃并开新局。
+ */
+export function restoreSession(
+  startFen: string,
+  moves: readonly Move[],
+  clock: ClockState,
+): GameSession | null {
+  try {
+    let position = parseFen(startFen);
+    let history: readonly HistoryEntry[] = [];
+    const notations: string[] = [];
+    let lastMove: Move | null = null;
+    for (const move of moves) {
+      notations.push(toChineseNotation(position, move));
+      const played = playMove(position, history, move);
+      position = played.position;
+      history = played.history;
+      lastMove = move;
+    }
+    const result = judgeGame(position, history, startFen);
+    return {
+      startFen,
+      position,
+      history,
+      notations,
+      lastMove,
+      result,
+      status: statusOf(position),
+      selected: null,
+      targets: [],
+      // 重放出来已经是终局时停表，避免续局页面继续走秒。
+      clock: result === null ? clock : { ...clock, running: null },
+    };
+  } catch {
+    return null;
+  }
+}
+
 
 function targetsFrom(position: Position, from: number): number[] {
   return generateLegalMoves(position)

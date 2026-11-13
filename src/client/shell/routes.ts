@@ -9,7 +9,9 @@ export type Route =
   | { readonly name: 'drill'; readonly seed?: number; readonly kind?: DrillKind }
   | { readonly name: 'missions' }
   | { readonly name: 'mission'; readonly id: string }
-  | { readonly name: 'online' };
+  | { readonly name: 'online' }
+  | { readonly name: 'replay' }
+  | { readonly name: 'replayOne'; readonly id: number };
 
 const DRILL_KINDS: readonly DrillKind[] = ['move-pattern', 'legality', 'position', 'notation'];
 
@@ -38,6 +40,11 @@ export function parseHash(hash: string): Route {
   }
   if (path === '/missions') return { name: 'missions' };
   if (path === '/online') return { name: 'online' };
+  if (path === '/replay') return { name: 'replay' };
+  if (path.startsWith('/replay/')) {
+    const id = Number(decodeURIComponent(path.slice('/replay/'.length)));
+    return Number.isInteger(id) && id > 0 ? { name: 'replayOne', id } : { name: 'replay' };
+  }
   if (path.startsWith('/mission/')) {
     const id = decodeURIComponent(path.slice('/mission/'.length));
     return id === '' ? { name: 'missions' } : { name: 'mission', id };
@@ -66,5 +73,9 @@ export function routeHash(route: Route): string {
       return `#/mission/${encodeURIComponent(route.id)}`;
     case 'online':
       return '#/online';
+    case 'replay':
+      return '#/replay';
+    case 'replayOne':
+      return `#/replay/${String(route.id)}`;
   }
 }

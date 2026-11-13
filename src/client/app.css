@@ -1071,3 +1071,202 @@ button {
     border-left: 1px solid var(--line);
   }
 }
+
+/* 棋谱页：左列表、右回放 */
+
+.page-replay {
+  flex-direction: row;
+}
+
+.replay-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+}
+
+.replay-list {
+  flex: 0 0 300px;
+  width: 300px;
+  max-height: 100%;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.replay-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.replay-head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.file-btn {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.file-btn input[type='file'] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.replay-notice {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--panel, #f4f1ea);
+  font-size: 13px;
+}
+
+.replay-empty,
+.replay-hint {
+  margin: 0;
+  color: var(--muted, #6b6b6b);
+  font-size: 14px;
+}
+
+.replay-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.replay-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.replay-row[data-current='yes'] {
+  border-color: var(--accent, #b4552d);
+}
+
+.replay-open {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.replay-time {
+  font-size: 13px;
+  color: var(--muted, #6b6b6b);
+}
+
+.replay-result {
+  font-size: 14px;
+}
+
+.replay-steps {
+  font-size: 12px;
+  color: var(--muted, #6b6b6b);
+}
+
+.replay-board {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.replay-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.replay-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.replay-counter {
+  font-size: 13px;
+  color: var(--muted, #6b6b6b);
+  min-width: 96px;
+  text-align: center;
+}
+
+.replay-range {
+  width: 100%;
+}
+
+.replay-moves {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-height: 120px;
+  overflow: auto;
+}
+
+.replay-move {
+  border: 1px solid var(--line);
+  background: transparent;
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.replay-move[aria-current='true'] {
+  border-color: var(--accent, #b4552d);
+  font-weight: 600;
+}
+
+.replay-broken {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+@media (max-width: 720px) {
+  .page-replay {
+    flex-direction: column;
+  }
+
+  .replay-main {
+    flex-direction: column;
+    overflow: auto;
+  }
+
+  .replay-list {
+    flex: 0 0 auto;
+    width: auto;
+    max-height: 40vh;
+  }
+
+  .replay-board {
+    min-height: 60vh;
+  }
+}

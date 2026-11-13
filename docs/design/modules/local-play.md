@@ -10,7 +10,7 @@ Survey evidence: 已核对 `docs/design/architecture.md`（分层、技术栈、
 
 - 规则只从 `src/shared/` 取。走法、合法着法、将军、终局、记谱全部调用引擎，客户端不复制任何判罚逻辑。
 - 本地双人的对局数据只有一个 reducer 状态对象。布局变化只改 CSS 与棋盘像素尺寸，不重置状态，也不重挂载棋盘。
-- 本模块含计时与认输；求和与联机计时见 `docs/design/modules/clock.md`；联机与棋谱持久化不在本模块。
+- 本模块含计时与认输；求和与联机计时见 `docs/design/modules/clock.md`；存局与回放见 `docs/design/modules/replay.md`；联机与棋谱持久化不在本模块。
 
 ## 2. 文件划分
 

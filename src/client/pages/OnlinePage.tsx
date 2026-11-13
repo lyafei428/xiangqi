@@ -15,22 +15,8 @@ import { boardSize } from '../board/geometry.ts';
 import { useStageSize } from '../board/useStageSize.ts';
 import { createOnlineState, onlineReducer } from '../online/session.ts';
 import { OnlineSocket, loadStored } from '../online/socket.ts';
-
-const RESULT_REASON: Readonly<Record<ResultType, string>> = {
-  checkmate: '将死',
-  stalemate: '困毙',
-  perpetual: '长将',
-  repetition: '三次重复',
-  natural: '60 回合无吃子',
-  timeout: '超时',
-  resign: '认输',
-  agreement: '双方同意',
-};
-
-function resultText(result: GameResult): string {
-  const winner = result.winner === null ? '和棋' : `${result.winner === 'red' ? '红方' : '黑方'}胜`;
-  return `${winner} · ${RESULT_REASON[result.type]}`;
-}
+import { resultLabel } from '../panel/result-text.ts';
+import { saveRecord } from '../storage/records.ts';
 
 /** 以收到快照的时刻为锚做本地投影；归零仍由服务端裁决。 */
 function projectedMs(
@@ -52,6 +38,7 @@ export function OnlinePage() {
   const [now, setNow] = useState(() => Date.now());
   const socketRef = useRef<OnlineSocket | null>(null);
   const receivedAtRef = useRef(Date.now());
+  const savedKeyRef = useRef<string | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const stage = useStageSize(stageRef);
 
@@ -82,6 +69,29 @@ export function OnlinePage() {
   useEffect(() => {
     setSelected(null);
   }, [snapshot?.seq]);
+
+  // 终局存棋谱：只有棋手存（观战者不参与对局，也没有 token）。
+  // 挂载期用 savedKeyRef 挡重复；跨挂载（切页、刷新重连）靠 saveRecord 的 dedupe：
+  // 同一局内容不变，而组件会被重建，挂载期标记拦不住第二次。
+  useEffect(() => {
+    if (snapshot === null || snapshot.result === null || state.color === null) return;
+    const key = `${snapshot.room}:${String(snapshot.seq)}`;
+    if (savedKeyRef.current === key) return;
+    savedKeyRef.current = key;
+    saveRecord(
+      {
+        id: null,
+        startFen: snapshot.startFen,
+        moves: snapshot.moveLog,
+        result: snapshot.result,
+        redMs: snapshot.clock.redMs,
+        blackMs: snapshot.clock.blackMs,
+        savedAt: Date.now(),
+      },
+      undefined,
+      { dedupe: true },
+    );
+  }, [snapshot, state.color]);
 
   const targets = useMemo(() => {
     if (position === null || selected === null) return [];
@@ -207,7 +217,7 @@ export function OnlinePage() {
   const size = boardSize(stage.width, stage.height);
   const statusText =
     snapshot.result !== null
-      ? resultText(snapshot.result)
+      ? resultLabel(snapshot.result)
       : `轮到${snapshot.turn === 'red' ? '红方' : '黑方'}`;
   const receivedAt = receivedAtRef.current;
   // 未坐满不算开局：服务端不扣时，客户端也不投影，否则等对手时会看到自己掉秒。

@@ -279,6 +279,7 @@ export function snapshotOf(room: RoomState, now = Date.now()): Snapshot {
   };
   return {
     room: room.code,
+    startFen: room.startFen,
     fen: toFen(room.position),
     seq: room.seq,
     turn: room.position.turn,
@@ -286,6 +287,7 @@ export function snapshotOf(room: RoomState, now = Date.now()): Snapshot {
     result: room.result,
     lastMove: room.lastMove,
     moves: [...room.moves],
+    moveLog: room.history.map((entry) => entry.move),
     red: room.red?.connected ?? false,
     black: room.black?.connected ?? false,
     players: (room.red === null ? 0 : 1) + (room.black === null ? 0 : 1),

@@ -17,10 +17,12 @@ Survey evidence: 已核对 `docs/design/architecture.md`（技术栈、响应式
 | `#/missions` | 对弈题列表 |
 | `#/mission/<id>` | 单道对弈题 |
 | `#/online` | 联机大厅 / 房间 |
+| `#/replay` | 棋谱列表 |
+| `#/replay/<id>` | 单局回放 |
 
 - hash 变化用 `hashchange` 订阅；未知路由按对弈页渲染，不改写地址。这是地址栏兜底，无观察来源、也无用例断言。
 - 练习路由可带 `?seed=<n>&kind=<kind>`，用于复现同一道题；不带时随机出题。场景：`test/integration/drill.test.tsx` 用固定 seed 进入并确定作答（复现命令 `npm run test:ui`）；没有这个查询面，页面每次随机出题，用例无法确定答案。
-- 不引路由库：七条路由用 `parseHash` / `routeHash` 两个纯函数足够。
+- 不引路由库：九条路由用 `parseHash` / `routeHash` 两个纯函数足够。
 
 ## 2. 状态归属
 
@@ -32,12 +34,13 @@ Survey evidence: 已核对 `docs/design/architecture.md`（技术栈、响应式
 | 练习会话 | 练习页内部 | 离开即复位 |
 | 对弈题会话 | 题目页内部 | 离开即复位 |
 | 联机会话 | 联机页内部（token 在 sessionStorage） | 断线后带 token 重连 |
+| 棋谱库与未完成对局 | `localStorage`（`src/client/storage/records.ts`） | 关页保留；重开时恢复未完成局 |
 
 对局是唯一需要跨页保留的状态：切到课程看一课再回来，棋盘与着法仍在。本次会话看过的课只在会话内保留；跨会话进度持久化不在本批，见 `docs/design/modules/lessons.md` §4。
 
 ## 3. 导航与布局
 
-- 顶部一条导航：对弈 / 联机 / 课程 / 练习；当前项用 `aria-current="page"` 标记。
+- 顶部一条导航：对弈 / 联机 / 课程 / 练习 / 棋谱；当前项用 `aria-current="page"` 标记。
 - 桌面：导航横排；内容区沿用对弈页的「棋盘 + 面板」两栏。
 - 平板 / 手机：导航仍在顶部，内容区改为上下结构，棋盘尺寸规则复用 `docs/design/modules/board-ui.md` §5。
 - 课程页与练习页的棋盘都在内容区内，尺寸由同一 `boardSize` 计算。
@@ -55,6 +58,9 @@ Survey evidence: 已核对 `docs/design/architecture.md`（技术栈、响应式
 | `src/client/pages/MissionsPage.tsx` | 对弈题列表。 |
 | `src/client/pages/MissionPage.tsx` | 单道对弈题。 |
 | `src/client/pages/OnlinePage.tsx` | 联机大厅与房间。 |
+| `src/client/pages/ReplayPage.tsx` | 棋谱列表、回放、导入导出。 |
+| `src/shared/record.ts` | 棋谱记录格式、校验与逐步重放。纯函数。 |
+| `src/client/storage/records.ts` | `localStorage` 里的棋谱库与未完成对局。 |
 | `src/client/App.tsx` | 壳：路由订阅、导航、对局状态与课程进度。 |
 
 命名：`parseHash`、`routeHash`、`useRoute` 为新增名字，项目内无同名先例（checked, none found）。
@@ -67,7 +73,7 @@ Survey evidence: 已核对 `docs/design/architecture.md`（技术栈、响应式
 |---|---|
 | F4.1 三端同一套界面 | 一套组件 + 三档 CSS，无第二套页面 |
 | F4.2 切换不丢状态 | 对局状态在 App 级；切页不重建；跨会话进度不在本批 |
-| F5.1 界面简约 | 导航四项（对弈 / 联机 / 课程 / 练习），不附加装饰控件 |
+| F5.1 界面简约 | 导航五项（对弈 / 联机 / 课程 / 练习 / 棋谱），不附加装饰控件 |
 
 ## 6. 集成测试设计
 

@@ -35,8 +35,18 @@ test('联机路由', () => {
   assert.deepEqual(parseHash('#/online'), { name: 'online' });
 });
 
+test('棋谱路由', () => {
+  assert.deepEqual(parseHash('#/replay'), { name: 'replay' });
+  assert.deepEqual(parseHash('#/replay/1700000000000'), { name: 'replayOne', id: 1_700_000_000_000 });
+  assert.deepEqual(parseHash('#/replay/'), { name: 'replay' });
+  assert.deepEqual(parseHash('#/replay/abc'), { name: 'replay' });
+  assert.deepEqual(parseHash('#/replay/0'), { name: 'replay' });
+  assert.equal(routeHash({ name: 'replay' }), '#/replay');
+  assert.equal(routeHash({ name: 'replayOne', id: 12 }), '#/replay/12');
+});
+
 test('routeHash 与 parseHash 往返一致', () => {
-  for (const hash of ['#/play', '#/learn', '#/lesson/horse', '#/drill?seed=3&kind=notation', '#/missions', '#/mission/mission-iron-bolt', '#/online']) {
+  for (const hash of ['#/play', '#/learn', '#/lesson/horse', '#/drill?seed=3&kind=notation', '#/missions', '#/mission/mission-iron-bolt', '#/online', '#/replay', '#/replay/1700000000000']) {
     assert.equal(routeHash(parseHash(hash)), hash);
   }
 });

@@ -5,6 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, act } from '@testing-library/react';
 import { App } from '../../src/client/App.tsx';
+import { INITIAL_FEN, indexOf } from '../../src/shared/index.ts';
 
 class ResizeObserverStub {
   observe(): void {}
@@ -122,6 +123,80 @@ describe('F1-3 本地计时与认输', () => {
     fireEvent.click(screen.getByRole('button', { name: '认输' }));
     expect(screen.getByRole('status').textContent).toContain('黑方胜 · 认输');
     expect(container.querySelectorAll('.piece[tabindex="0"]')).toHaveLength(0);
+  });
+});
+
+describe('F1-5 关页重开后接着下', () => {
+  const MOVES = [
+    { from: indexOf(1, 7), to: indexOf(1, 6) },
+    { from: indexOf(1, 2), to: indexOf(1, 3) },
+  ];
+
+  function storeCurrent(overrides: Record<string, unknown> = {}): void {
+    localStorage.setItem(
+      'xiangqi.current.v1',
+      JSON.stringify({
+        id: null,
+        startFen: INITIAL_FEN,
+        moves: MOVES,
+        result: null,
+        redMs: 500_000,
+        blackMs: 400_000,
+        savedAt: Date.now(),
+        ...overrides,
+      }),
+    );
+  }
+
+  it('局面、记谱与双方剩余都接上', () => {
+    storeCurrent();
+    const { container } = setup();
+    expect(container.querySelector('.moves')?.textContent).toContain('炮八进一');
+    expect(container.querySelector('.moves')?.textContent).toContain('炮2进1');
+    // 走了两着后轮到红方；两侧剩余分别按 08:20 / 06:40 接上（允许走秒）。
+    expect(screen.getByRole('status').textContent).toContain('红方走棋');
+    const clocks = screen.getByLabelText('双方用时').textContent ?? '';
+    expect(clocks).toMatch(/红 08:(20|19)/);
+    expect(clocks).toContain('黑 06:40');
+  });
+
+  it('未完成局损坏时丢弃并开新局', () => {
+    localStorage.setItem(
+      'xiangqi.current.v1',
+      '{"id":null,"startFen":"bad","moves":[],"result":null,"redMs":0,"blackMs":0,"savedAt":0}',
+    );
+    const { container } = setup();
+    expect(container.querySelectorAll('.piece')).toHaveLength(32);
+    const stored = JSON.parse(localStorage.getItem('xiangqi.current.v1') ?? 'null') as {
+      startFen?: string;
+      moves?: unknown[];
+    } | null;
+    // 坏记录被换成新开的空局，而不是原样留着。
+    expect(stored?.startFen).toBe(INITIAL_FEN);
+    expect(stored?.moves).toHaveLength(0);
+  });
+
+  it('未完成局的着法非法时丢弃并开新局', () => {
+    // 坐标合法、结构能过，只有逐步重放才发现走不通。
+    storeCurrent({ moves: [{ from: indexOf(0, 9), to: indexOf(0, 9) + 1 }] });
+    const { container } = setup();
+    expect(container.querySelectorAll('.piece')).toHaveLength(32);
+    const stored = JSON.parse(localStorage.getItem('xiangqi.current.v1') ?? 'null') as {
+      moves?: unknown[];
+    } | null;
+    expect(stored?.moves).toHaveLength(0);
+  });
+
+  it('终局转存棋谱并清掉未完成局', () => {
+    setup();
+    fireEvent.click(screen.getByRole('button', { name: '认输' }));
+    expect(localStorage.getItem('xiangqi.current.v1')).toBeNull();
+    const records = JSON.parse(localStorage.getItem('xiangqi.records.v1') ?? '[]') as {
+      result?: { type?: string };
+      moves?: unknown[];
+    }[];
+    expect(records).toHaveLength(1);
+    expect(records[0]?.result?.type).toBe('resign');
   });
 });
 

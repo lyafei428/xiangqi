@@ -5,6 +5,8 @@ import type { Color, GameResult, GameStatus, Move } from './types.ts';
 
 export interface Snapshot {
   readonly room: string;
+  /** 本局起始局面：回放与存谱要用，不能从当前局面反推。 */
+  readonly startFen: string;
   readonly fen: string;
   readonly seq: number;
   readonly turn: Color;
@@ -12,6 +14,8 @@ export interface Snapshot {
   readonly result: GameResult | null;
   readonly lastMove: Move | null;
   readonly moves: readonly string[];
+  /** 逐着坐标，与 `moves` 逐着对齐；回放与存谱用。 */
+  readonly moveLog: readonly Move[];
   readonly red: boolean;
   readonly black: boolean;
   readonly players: number;
