@@ -1,4 +1,4 @@
-// 联机页：大厅（建房 / 加入）与房间（棋盘 + 面板）。
+// 联机页：大厅（建房 / 随机匹配 / 加入）与房间（棋盘 + 面板）。
 
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import type { Color, GameResult, HistoryEntry, ResultType } from '../../shared/index.ts';

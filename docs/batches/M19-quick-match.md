@@ -10,6 +10,9 @@
 **状态行**：（主 agent 写入时更新）
 <§2 模板占位：本批条目（覆盖） / 设计档落点 / 机制设计 / 受影响文件与测试覆盖 / 验收对照 / 关键决策 / 上抛项>
 ## §3 设计评审（评审子代理）
+**状态行**：评审通过
+
+
 
 ### 轮次 1（评审子代理）
 
@@ -32,6 +35,92 @@
 
 VERDICT: changes-required
 
+### 轮次 2（评审子代理）
+
+第 2 轮（设计评审 · 联机随机匹配修复轮）——只核第 1 轮 2🔴 5🟡 3🔵 的处置。
+
+评审面说明：spawn 里点名的 `scripts/.tmp-append.mjs` 与 `scripts/.doc-edit.mjs` 在仓库里不存在（`scripts/` 只有 acceptance/、acceptance.mjs、build-standalone.mjs、dev.mjs、pwa-icons.mjs；两个路径直接读取均报 ENOENT），无物可评。修复实际落在 `docs/design/modules/online.md`，下表按该文件本轮实时读取状态逐条核对。
+
+| # | Orig# | File | Severity | Status | Notes |
+|---|-------|------|----------|--------|-------|
+| 1 | 1 | docs/design/modules/online.md | 🔴 | Fixed | 大厅控件已落地且两处一致：§4「大厅（建房 / 随机匹配 / 输房间码）与房间（棋盘 + 面板）同页切换」；§5「大厅三张卡：」→「**创建房间**：…按钮下方一行勾选「允许随机匹配（不勾则只能凭房间码进）」，默认不勾」与「**随机匹配**：「随机匹配」按钮。发 `quick-match`」。与 `docs/requirements/xiangqi.md` F1.2「建房时勾了「允许随机匹配」的房才会被陌生人配进来」对齐；卡片样式落点也给了（`.online-cards` / `.online-card`）。 |
+| 2 | 2 | docs/design/modules/online.md | 🔴 | Fixed | 增量口径与用例齐了：「本批的增量是 **F1-2 扩写两行**：一行「终局后同房间再来一局」，一行「随机匹配」」；§9 新增行「F1-2（随机匹配）｜两个客户端 → 匹配池 → 房间层就座｜先点「随机匹配」的人进房等；后点的人配进同一间房、颜色不撞；建房时没勾「允许随机匹配」的房配不进来｜打开页面 → 联机 → 随机匹配｜F1.2」；§8 新增「F1.2 随机匹配」落点（`findOpenMatchable` + `test/online.test.ts` 三条 + 前端三条）。`test/RTM.md` F1-2 的那两条断言现在有着落。 |
+| 3 | 3 | docs/design/modules/online.md | 🟡 | Fixed | §7 文案清单已含「「随机匹配」「允许随机匹配（不勾则只能凭房间码进）」」；命名行已含「`quick-match`、`matchable`、`findOpenMatchable`」，并给了复用答案「「随机匹配」按钮与「创建房间」按钮同一套 `.btn` 样式与同一张大厅卡片结构（existing），不新造按钮样式」。 |
+| 4 | 4 | docs/design/modules/online.md | 🟡 | Fixed | §4 socket 补了待匹配意图：「这次「来匹配」的意图一直留到收到 `joined` 才清——握手后、`joined` 前掉线时，重连重发 `quick-match` 而不是拿空 `join` 另开一间房（服务端可能已经把人配进了另一间）」。 |
+| 5 | 5 | docs/design/modules/online.md | 🟡 | Fixed | §3 补了自匹配排除：「先退掉发起者自己已经占着的房，再由 `Rooms.findOpenMatchable()` 挑…——不退这一步，同一连接匹配第二次会配到自己那间（自己坐红又坐黑，看着配上了其实没有对手）」；§8 有对应用例「同一连接匹配两次不会配到自己那间」。 |
+| 6 | 6 | docs/design/modules/online.md | 🟡 | Fixed | §1 给出复现路径：「（复现：观战端直接断网，30 秒内恢复；服务端心跳两次超时后旧连接才释放）」，与 §3「30 秒 ping，连续两次无 pong 视为掉线」自洽。 |
+| 7 | 7 | docs/design/modules/online.md | 🟡 | Fixed | §3 改成两种情形分写并禁止单一门控：「进房时是座位数变了（`players` 1→2，先到者才能从等待进到对局），重连时座位数不变、变的是在线位（`red` / `black`），两种情形都要补，不能按 `players` 变化做门控。」 |
+| 8 | 8 | docs/design/modules/online.md | 🔵 | Fixed | §3 时钟句已改顺：「落子前先结清在走方已用时间：归零即判 `timeout` 并广播，未归零则落子并换边；另每秒检查在走方是否归零。」 |
+| 9 | 9 | docs/design/modules/online.md | 🔵 | Fixed | §7 自指句已消：「文案与对弈页那枚「新局」同名同字（两处各在自己的页面里，不复用组件）」。 |
+| 10 | 10 | docs/design/modules/online.md | 🔵 | Fixed | §7 已点名余量最小者并给了触发规则：「这三个文件任一越过 500 行就同批拆出，不拖到下一批」；本轮实测 `test/room.test.ts` 462 行、`test/integration/online.test.tsx` 500 行，与档内数字一致（另有 #13 的遗漏）。 |
+| 11 | (new) | docs/design/modules/online.md | 🟡 | New: §9「实现分工」没跟新增的两行——三条里只有观战：「`test/integration/online.test.tsx`：jsdom 假 socket 验观战视角（棋盘只读、无认输与求和按钮、面板显示「观战中」）。」随机匹配与再来一局的落点只散在 §8。advisory：在实现分工补一句，指到 `test/online.test.ts` / `test/room.test.ts` / `test/integration/online.test.tsx`。 |
+| 12 | (new) | docs/design/modules/online.md | 🔵 | New: 「两行的业务结果与 `test/RTM.md` 的 F1-2 逐字对齐」不成立——是改写：`test/RTM.md` 原文「随机匹配：两人先后点「随机匹配」进同一间房且颜色不撞；没勾「允许随机匹配」的房不会被配进来」，档内写成「建房时没勾「允许随机匹配」的房配不进来」。语义对齐、逐字不成立，建议改口径为「覆盖同批断言」或直接抄 RTM 原文。 |
+| 13 | (new) | docs/design/modules/online.md | 🔵 | New: 「余量最小的是 `test/room.test.ts` 与 `test/integration/online.test.tsx`（本批判定时刻分别 462 / 500 行）」漏了 `src/client/pages/OnlinePage.tsx`（本轮实测 486 行，余量 14 行 < `test/room.test.ts` 的 38 行），而三张卡的大厅规格恰好落在这个文件上。建议把这一个也补进那句。 |
+| 14 | (new) | src/client/pages/OnlinePage.tsx | 🟡 | Coordination item（非缺陷）：本轮新增的大厅规格在实现上还没落地——该文件首行仍是「// 联机页：大厅（建房 / 加入）与房间（棋盘 + 面板）。」，行数与上轮判定时一致（486）。收口前确认三卡与勾选已实现（是否另有落点未核，超出本次只读面）。 |
+
+计数：🔴 未决 0 · 新增 🔴 0 · 🟡 2（#11、#14，均 advisory，不阻断） · 🔵 3（#12、#13、#10 附注）。第 1 轮 2🔴 全部 Fixed，5🟡 与 3🔵 全部已处置；文件分档结论经本轮实测复核仍成立（无一文件超过 500 行）。
+
+VERDICT: pass
+
 ## §4 用户批准（主 agent）
+
+## 用户确认
+
+- 2026-11-14 用户原话：「联机中增加随机分配功能，可以自动分配等待中的棋手，同时该棋手创建房间时允许别人不经过房间号就能匹配」。
+- 追问「房主能不能拒绝陌生人随机匹配」后裁定：「默认关闭，创建房间时要勾上才会被匹配」。已按此实现：勾选框默认不勾，勾了才发 `matchable: true`；点「随机匹配」本身视为同意被配。
+
 ## §5 实施记录（实施者：主 agent ∥ coder）
+**状态行**：实施完成
+
+
+
+## 实施记录
+
+**改了什么**
+
+| 文件 | 改动 |
+|---|---|
+| `src/shared/protocol.ts` | `join` 增 `matchable?: boolean`（只在建房时生效）；新增 client 消息 `quick-match`；`Snapshot` 增 `matchable` |
+| `src/server/room.ts` | `RoomState` / `createRoom` / `snapshotOf` 带上 `matchable` |
+| `src/server/rooms.ts` | `create(..., matchable)`；新增 `findOpenMatchable()`：`matchable` 为真、只有红方一席、红方在线、对局未结束 |
+| `src/server/server.ts` | `quick-match` 分支：先退掉发起者自己占着的房，再找等待房（找到坐黑方，找不到建房并标可匹配）；两条路都走 `join` |
+| `src/client/online/socket.ts` | `quickMatch()`；`pendingQuickMatch` 留到 `joined` 才清（握手后掉线会重发 `quick-match`，不会拿空 `join` 另开房） |
+| `src/client/pages/OnlinePage.tsx` | 大厅三卡：创建（带「允许随机匹配」勾选，默认关）/ 随机匹配 / 加入 |
+| `src/client/styles/drill.css` | `.online-matchable` 勾选行 |
+| `test/online.test.ts` | 三条：两人先后匹配进同一房且颜色不撞、未勾可匹配的房配不进来、同一连接匹配两次不配到自己那间 |
+| `test/integration/online.test.tsx` | 三条：默认不带 `matchable`、勾上带 `true`、点「随机匹配」发 `quick-match` 不发 `join` |
+
+**两个评审抓出的真缺陷**（不是文档问题，是实现 bug）：
+
+1. 同一连接连点两次随机匹配，会配到自己刚建的那间房，自己坐红又坐黑——看着配上了，其实没有对手。修法：匹配前先退掉自己占着的房。
+2. 握手后、`joined` 前掉线，重连拿空 `join` 会另开一间房，而服务端可能已把人配进另一间。修法：`pendingQuickMatch` 留到 `joined` 才清。
+
+**验证**：`npm run check` → tsc 通过、277 单测 0 失败、81 前端用例 0 失败。
+
+**没做的**：单文件版未重打；联机服务仍未随站点部署（台账 #13）。
+
 ## §6 验证与收口（父代理）
+
+## 验证与收口
+
+```
+npm run check
+  tsc --noEmit              通过
+  node --test               277 通过 / 0 失败
+  vitest run                81 通过 / 0 失败（14 个文件）
+```
+
+**本批新增的用例**
+
+| 位置 | 验什么 |
+|---|---|
+| `test/online.test.ts`：随机匹配：第一个等、第二个直接配上，颜色不撞 | 匹配池的配对与颜色分配 |
+| `test/online.test.ts`：随机匹配不碰没勾「允许匹配」的房 | 默认关闭这条口径 |
+| `test/online.test.ts`：随机匹配不会把自己配到自己那间房 | 同一连接匹配两次的自匹配缺陷 |
+| `test/integration/online.test.tsx`：不勾时 join 不带 matchable=true | 勾选默认关 |
+| `test/integration/online.test.tsx`：勾上后 join 带 matchable=true | 勾选生效 |
+| `test/integration/online.test.tsx`：点「随机匹配」发 quick-match 不发 join | 两个入口不混 |
+
+两轮设计评审：第 1 轮 2🔴 5🟡 3🔵（大厅控件未落档、无验收落点等），第 2 轮 pass；评审顺带查出两个实现缺陷（自匹配、重连丢意图）已修并补用例。
+
+**没做的**：单文件版未重打；联机服务仍未随站点部署（台账 #13），随机匹配目前只能在 `npm run dev` 下实测。

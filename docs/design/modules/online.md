@@ -175,7 +175,7 @@ interface Snapshot {
 
 命名：`OnlinePage`、`createOnlineServer`、`RoomState`、`joinRoom`、`applyRoomMove`、`rematchRoom`、`snapshotOf`、`useOnlineSocket`、`quick-match`、`matchable`、`findOpenMatchable` 为新增名字，项目内无同名先例（checked, none found）。「随机匹配」按钮与「创建房间」按钮同一套 `.btn` 样式与同一张大厅卡片结构（existing），不新造按钮样式。
 
-文件分档结论：本批涉及的服务端、共享、页面、客户端联机模块、测试文件与 `scripts/dev.mjs` 都没有跨过 500 行（代码结构线），也没有 300 行以上的单函数——**本批不需要拆分方案**。余量最小的是 `test/room.test.ts` 与 `test/integration/online.test.tsx`（本批判定时刻分别 462 / 500 行），新增用例优先落在 `test/online.test.ts`；这三个文件任一越过 500 行就同批拆出，不拖到下一批。各文件的实测行数不进本档（量在评审时现取），这里只留结论。
+文件分档结论：本批涉及的服务端、共享、页面、客户端联机模块、测试文件与 `scripts/dev.mjs` 都没有跨过 500 行（代码结构线），也没有 300 行以上的单函数——**本批不需要拆分方案**。余量最小的是 `src/client/pages/OnlinePage.tsx`（486 行，三卡大厅正落在它身上）、`test/room.test.ts` 与 `test/integration/online.test.tsx`（本批判定时刻分别 462 / 500 行），新增用例优先落在 `test/online.test.ts`；这三个文件任一越过 500 行就同批拆出，不拖到下一批。各文件的实测行数不进本档（量在评审时现取），这里只留结论。
 
 ## 8. 验收对照
 
@@ -195,7 +195,7 @@ interface Snapshot {
 
 ## 9. 集成测试设计
 
-起点：`test/RTM.md` 的「对弈」故事。本批的增量是 **F1-2 扩写两行**：一行「终局后同房间再来一局」，一行「随机匹配」；两行的业务结果与 `test/RTM.md` 的 F1-2 逐字对齐；F1-4 的行归 `docs/design/modules/clock.md` §8 拥有，本档只引用不重写；F1-6 观战行不破坏、不冗余；F1-3 属本地，在 `docs/design/modules/clock.md` §8；壳的 `F4-1` 不受影响（断言不涉及导航项数）。
+起点：`test/RTM.md` 的「对弈」故事。本批的增量是 **F1-2 扩写两行**：一行「终局后同房间再来一局」，一行「随机匹配」；两行的业务结果覆盖 `test/RTM.md` 的 F1-2 同一批断言；F1-4 的行归 `docs/design/modules/clock.md` §8 拥有，本档只引用不重写；F1-6 观战行不破坏、不冗余；F1-3 属本地，在 `docs/design/modules/clock.md` §8；壳的 `F4-1` 不受影响（断言不涉及导航项数）。
 
 | 行 | 验的交互 | 用户可见结果 | 入口 | 需求 |
 |---|---|---|---|---|
@@ -207,6 +207,7 @@ interface Snapshot {
 
 实现分工：
 
+- `test/online.test.ts` 与 `test/integration/online.test.tsx`：本批新增的两行——随机匹配（三条服务端：两次匹配进同一房且颜色不撞、未勾可匹配的房配不进来、同一连接匹配两次不配到自己那间；三条前端：默认不带 `matchable`、勾上带 `matchable: true`、点「随机匹配」发 `quick-match`）与再来一局（`test/room.test.ts` 的重开三态）。
 - `test/room.test.ts`：观战的房间层行为（第三人得 `spectator` 角色、八人后 `spectators-full`、观战不写在线位、`spectators === 0` 才回收），并在此断言「两名棋手断开后观战仍在、房间不回收」。
 - `test/online.test.ts`：真 ws 开三端（两棋手 + 一观战），断言观战端收到 `state`、发 `move` 得 `not-in-room`、观战数进出。
 - `test/integration/online.test.tsx`：jsdom 假 socket 验观战视角（棋盘只读、无认输与求和按钮、面板显示「观战中」）。
