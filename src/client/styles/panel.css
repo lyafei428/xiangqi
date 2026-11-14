@@ -222,8 +222,13 @@
 }
 
 .new-game:disabled {
-  /* 对局还没结束时的新局：看得见、按不动。 */
-  opacity: 0.45;
+  /* 对局还没结束时的新局：必须一眼看出「这里有个按钮，只是还不能按」。
+     只降透明度的话，深色面板上它会淡成一片背景，用户会认为按钮不存在。 */
+  opacity: 1;
+  color: var(--muted);
+  border-style: dashed;
+  background: transparent;
+  box-shadow: none;
   cursor: not-allowed;
 }
 

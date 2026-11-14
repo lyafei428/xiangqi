@@ -387,19 +387,17 @@ export function OnlinePage() {
             >
               着法
             </button>
-            {/* 新局常驻：一局打完后不该还要猜按钮藏在哪；对局中置灰而不是隐藏，
-                这样「结束就能重开」这件事一直是看得见的。观战者没有座位，不显示。 */}
-            {spectating ? null : (
-              <button
-                type="button"
-                className="new-game"
-                onClick={() => socketRef.current?.rematch()}
-                disabled={!over}
-                title={over ? undefined : '对局还没结束'}
-              >
-                新局
-              </button>
-            )}
+            {/* 新局常驻、对所有身份都渲染：对局中置灰、终局后可点。
+                观战者也看得到（置灰并说明原因）——「别人有我没有」比「按不动」更让人困惑。 */}
+            <button
+              type="button"
+              className="new-game"
+              onClick={() => socketRef.current?.rematch()}
+              disabled={spectating || !over}
+              title={spectating ? '观战中不能开新局' : over ? undefined : '对局还没结束'}
+            >
+              新局
+            </button>
             <button type="button" className="new-game" onClick={leaveRoom}>
               离开房间
             </button>
