@@ -63,6 +63,36 @@ export function App() {
   const sound = useSoundEnabled();
   const route = useRoute();
   const savedRef = useRef<string>('');
+  const settingsRef = useRef<HTMLDetailsElement | null>(null);
+
+  // 设置浮层：点空白处或按 Esc 收起。原生 <details> 只会被 summary 关掉，
+  // 展开后点到别处不关，会一直挡在棋盘上。
+  useEffect(() => {
+    const close = (): void => {
+      const element = settingsRef.current;
+      if (element !== null) element.open = false;
+    };
+    const onPointerDown = (event: PointerEvent): void => {
+      const element = settingsRef.current;
+      if (element === null || !element.open) return;
+      if (event.target instanceof Node && element.contains(event.target)) return;
+      close();
+    };
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape') return;
+      const element = settingsRef.current;
+      if (element === null || !element.open) return;
+      close();
+      // 焦点还回开关上，键盘用户不会掉到文档开头。
+      element.querySelector('summary')?.focus();
+    };
+    window.addEventListener('pointerdown', onPointerDown, true);
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('pointerdown', onPointerDown, true);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, []);
 
   useGameSound(session, sound);
 
@@ -144,7 +174,7 @@ export function App() {
             </a>
           ))}
         </span>
-        <details className="settings">
+        <details className="settings" ref={settingsRef}>
           <summary className="settings-toggle">设置</summary>
           <div className="settings-body">
             <label className="settings-row">

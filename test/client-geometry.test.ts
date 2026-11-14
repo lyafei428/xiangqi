@@ -78,3 +78,11 @@ test('可用宽大于高时以高为准', () => {
 test('可用宽窄于按高算出的宽：以宽为准，不溢出', () => {
   assert.deepEqual(boardSize(344, 668), { width: 344, height: 344 * (10 / 9) });
 });
+
+test('可用高还没量到（0）时按宽定尺寸，不把棋盘塌成 0', () => {
+  // 舞台高由内容撑开、内容又由舞台定尺寸时，这一支就是死循环的出口。
+  const size = boardSize(376, 0);
+  assert.equal(size.width, 376);
+  assert.ok(size.height > 0);
+  assert.equal(size.height, 376 * (10 / 9));
+});

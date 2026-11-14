@@ -120,6 +120,7 @@ interface Snapshot {
 
 - 联机页不保留本地对局状态；离开房间发 `leave` 并清 `sessionStorage`。
 - 刷新页面：`sessionStorage` 有 `{room, token}` 就自动带 token 重连，回到房间。
+- 手机档棋盘：房间页复用 `play` 页的舞台与尺寸规则（`docs/design/modules/board-ui.md` §5）；建房后棋盘才出现，尺寸靠「每次渲染重新量」拿到，不能只在挂载时量一次。
 
 ## 6. 开发运行
 

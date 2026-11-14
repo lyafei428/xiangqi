@@ -164,3 +164,37 @@
   text-decoration: none;
 }
 
+
+/* 课程翻页：讲完一节直接往下一节走，不必先回目录。 */
+.lesson-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  max-width: 1280px;
+  margin: 28px auto 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.lesson-nav .btn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+}
+
+.lesson-nav-gap {
+  flex: 1 1 auto;
+}
+
+@media (max-width: 767px) {
+  .lesson-nav {
+    margin-top: 20px;
+  }
+
+  .lesson-nav .btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}

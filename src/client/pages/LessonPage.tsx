@@ -88,6 +88,16 @@ export function LessonPage({ id, onVisited }: LessonPageProps) {
     return null;
   }, [id]);
 
+  // 上一课 / 下一课：按索引顺序（章内连排，跨章接续），不必先回目录再点进来。
+  const neighbours = useMemo(() => {
+    const flat = lessonIndex.chapters.flatMap((chapter) =>
+      chapter.lessons.map((lesson) => ({ id: lesson.id, title: lesson.title, chapter: chapter.number })),
+    );
+    const at = flat.findIndex((lesson) => lesson.id === id);
+    if (at < 0) return { previous: null, next: null };
+    return { previous: flat[at - 1] ?? null, next: flat[at + 1] ?? null };
+  }, [id]);
+
   if (error !== null) {
     return (
       <div className="page page-lesson">
@@ -155,6 +165,24 @@ export function LessonPage({ id, onVisited }: LessonPageProps) {
           </a>
         </aside>
       </div>
+      <nav className="lesson-nav" aria-label="课程翻页">
+        {neighbours.previous === null ? (
+          <span className="lesson-nav-gap" />
+        ) : (
+          <a className="btn" href={`#/lesson/${encodeURIComponent(neighbours.previous.id)}`}>
+            ← 上一课：{neighbours.previous.title}
+          </a>
+        )}
+        {neighbours.next === null ? (
+          <a className="btn" href="#/learn">
+            课程目录
+          </a>
+        ) : (
+          <a className="btn" href={`#/lesson/${encodeURIComponent(neighbours.next.id)}`}>
+            下一课：{neighbours.next.title} →
+          </a>
+        )}
+      </nav>
     </div>
   );
 }

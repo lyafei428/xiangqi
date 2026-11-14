@@ -33,8 +33,9 @@
     position: static;
   }
 
+  /* 给确定高度：height:auto 会让「舞台高由内容定、内容尺寸又由舞台定」互相等成 0，棋盘直接消失。 */
   .demo-board {
-    height: auto;
+    height: min(56vh, 460px);
   }
 
   .page-drill {
@@ -49,6 +50,8 @@
   }
 
   .drill-board .board-fit {
+    /* 同上：练习页在手机上原本只有 2px 高，棋盘缩成 2×2。 */
+    height: min(58vh, 460px);
     overflow: visible;
   }
 

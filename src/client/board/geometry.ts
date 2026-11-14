@@ -97,7 +97,13 @@ export function boardSize(
   areaHeight: number,
   maxHeight: number = MAX_BOARD_HEIGHT,
 ): BoardSize {
+  const widthRoom = Math.max(0, areaWidth);
+  // 可用高还没量到（0）时只按宽度定尺寸：舞台高度由内容撑开、内容尺寸又由舞台决定时，
+  // 这一支会互相等成 0——课程页与练习页在手机上就是这么「没有棋盘」的。
+  if (areaHeight <= 0) {
+    return { width: widthRoom, height: widthRoom * (VIEW_HEIGHT / VIEW_WIDTH) };
+  }
   const heightLimit = Math.max(0, Math.min(areaHeight, maxHeight));
-  const width = Math.max(0, Math.min(areaWidth, heightLimit * (VIEW_WIDTH / VIEW_HEIGHT)));
+  const width = Math.min(widthRoom, heightLimit * (VIEW_WIDTH / VIEW_HEIGHT));
   return { width, height: width * (VIEW_HEIGHT / VIEW_WIDTH) };
 }
