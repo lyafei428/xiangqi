@@ -48,6 +48,9 @@
 **分档结论**：改动都落在既有文件内，`EvalBar.tsx`、`panel.css` 均在 500 行档内，无新增 300 行以上单函数——**不需要拆分方案**。
 
 ## §3 设计评审（评审子代理）
+**状态行**：评审通过
+
+
 
 ### 轮次 1（评审子代理）
 
@@ -69,6 +72,80 @@
 
 VERDICT: changes-required
 
+### 轮次 2（评审子代理）
+
+**第 2 轮（修复轮）—— 只核第 1 轮 1🔴 5🟡 3🔵 的处置**（对象：胜率条移到常驻区 + 三段布局 · 已实现 · 范围：`docs/design/modules/ai.md` §9、`docs/requirements/xiangqi.md`）
+
+| # | Orig# | File | Severity | Status | Notes |
+|---|-------|------|----------|--------|-------|
+| 1 | 1 | docs/design/modules/ai.md | 🔴 | Fixed | 落点矛盾消解：显示表「放在常驻区而不是可收起的着法区」，文件表改为「`EvalBar` 插在常驻区——`.clock-row` 之后、`.panel-actions` 之前」，两处同一落点、同一锚点。 |
+| 2 | 2 | docs/design/modules/ai.md | 🟡 | Fixed | 验收显示行补上核心断言：「首次进入对弈页（着法区收起）三段条仍在、红黑两个数字可读」。 |
+| 3 | 3 | docs/design/modules/ai.md | 🟡 | Fixed | 破坏格补了结论：「条从着法区搬到常驻区这一改**不破坏任何既有用例**：现存用例只断言着法区里的记谱与记谱框，不观察 `.eval-bar` 的宿主位置」。 |
+| 4 | 4 | docs/design/modules/ai.md | 🟡 | Fixed | 逐页锚点已给：联机「`EvalBar` 插在常驻区——房间行之后、`.panel-actions` 之前」；回放「`EvalBar` 插在回放控制区内——`.replay-range` 与 `.replay-moves` 之间」。备注：回放一处按字面读是「回放控制区」而非显示表的「常驻区」，另两页的宿主已由显示表覆盖，属精度措辞、不另立条目。 |
+| 5 | 5 | docs/design/modules/ai.md | 🟡 | Unfixed | 手机档仍只写「| 手机档 | 概率条占一行 20px，数字与条同行；记谱字不因此缩小。 |」，未交代 F4.6「375×667 视口下棋盘第 10 行完整可见，页面无纵向滚动」的垂直预算；本轮无任何处置说明（零理由）。 |
+| 6 | 6 | docs/design/modules/ai.md | 🟡 | Fixed | 补了两行三问答复：「| 「红 62%」/「黑 38%」 | `none found`：新文案，由 `EvalBar` 渲染，四页共用同一组件因此同一处文案。 |」与 aria-label 一行（数字取整同源于 `percentText`）。 |
+| 7 | 7 | docs/design/modules/ai.md | 🔵 | Fixed | 分档结论不再是预测值：「分档结论：本批落地的文件都不跨 500 行档，也没有 300 行以上的单函数，**不需要拆分方案**。」——行数与预期增量已移出设计档。备注：行数实测不在本轮评审范围，未复核。 |
+| 8 | 8 | docs/design/modules/ai.md | 🔵 | Fixed | 文件表已把三个 hook 归位：「| `src/client/panel/useEval.ts` | 新增：`useEvalEnabled`（`useSyncExternalStore` + 模块级 store）、`useMoveEvals`（前缀缓存，给记谱逐格）、`useEvalPoint`（给条上的数字） |」。命名行「新增 hook，同上文件」措辞未改（上一行是 `prefs.ts`），但落点已由文件表兜住。 |
+| 9 | 9 | docs/design/modules/ai.md | 🔵 | Unfixed | 先例行仍只覆盖概率模型与记谱：「对齐：概率就是评估值的一次单调映射，不另立第二套局面判断；显示挂在既有的记谱区与面板顶部，不新开一栏。」——本次落点（常驻区三段条）仍无先例坐标；本轮无处置说明（零理由）。 |
+| N1 | (new) | docs/design/modules/ai.md | 🟡 | New: 第 2 条的修复只落到「验收」一侧 | 验收显示行加了首屏断言，但集成测试设计的「缺失」行仍是旧描述：「一行：F5-7 的集成行——对弈页走两着，断言「两格都有百分比」「概率条数字与末格一致」…」，「着法区收起时条仍在」这条没进该行；照「缺失」一行写用例会漏掉本次改动的核心断言。建议给该行加一句。 |
+| N2 | (new) | docs/design/modules/ai.md | 🔵 | New: 既有计数漂移（非本次修复引入） | 「`EvalBar` | `none found`：新增组件，住在 `src/client/panel/EvalBar.tsx`；三个页面共用。」与「四页共用同一组件因此同一处文案」对不上（三 vs 四）。R7c 数值漂移。 |
+
+计数：已修 7（含唯一 🔴）· Unfixed 2（🟡1 · 🔵1）· New 2（🟡1 · 🔵1）。唯一 Critical（条落点两处互斥）已消解，其余为 🟡/🔵 建议项，不阻断本轮。
+
+VERDICT: pass
+
 ## §4 用户批准（主 agent）
+
+## 用户确认
+
+- 2026-11-14 用户原话：「胜率出现在各个对局中，目前只看到在棋谱中有，同时红黑双方概率在两边，星条在中间」。
+- 这是一条直接改动令：条要在各对局可见、布局改成红 / 条 / 黑。按此实施，未再走方案确认。
+- 需求 F1.10 的默认可见集因此改写（加入「胜率条」），属用户本轮指令的直接后果，已在 `docs/requirements/xiangqi.md` 落档。
+
 ## §5 实施记录（实施者：主 agent ∥ coder）
+**状态行**：实施完成
+
+
+
+## 实施记录
+
+**改了什么**
+
+| 文件 | 改动 |
+|---|---|
+| `src/client/panel/EvalBar.tsx` | 三段布局：`红 x%` / `.eval-track` / `黑 y%`；去掉 `.eval-numbers` 包裹 |
+| `src/client/styles/panel.css` | `.eval-bar` 注释与间距；`.eval-num` / `.eval-num-red` / `.eval-num-black` 取代旧的四个类 |
+| `src/client/panel/GamePanel.tsx` | 条从 `panel-body` 移到 `panel-focus`（`.clock-row` 与 `.panel-actions` 之间） |
+| `src/client/pages/OnlinePage.tsx` | 同上（房间行与 `.panel-actions` 之间） |
+| `test/integration/eval.test.tsx` | 新增断言：首屏着法区收起时条仍在、且不在 `.panel-body` 内；`.eval-numbers` 断言改整条 `.eval-bar` 文本 |
+| `docs/requirements/xiangqi.md` | F1.10 默认可见集加入「胜率条」 |
+| `docs/design/modules/{ai,online,replay}.md` | 落点、锚点、验收、先例、文案三问逐条对齐 |
+
+**实测读数**
+
+- `#/play`（着法区收起）：`.eval-bar` 父节点 `panel-focus`，尺寸 287×20；三段横坐标 红 1111 / 条 1161（宽 186）/ 黑 1358。
+- `#/ai`：同样落在 `panel-focus`。
+- `#/replay`：仍在滑条与记谱之间。
+- `scripts/acceptance.mjs`「手机一屏（375×667，F4.6）」：`boardBottom` 512 ≤ 667，`navClipped` / `boardClipped` 均为 no——加条后一屏仍装得下。
+
+**验证**：`npm run check` → tsc 通过、274 单测 0 失败、78 前端用例 0 失败；`node scripts/acceptance.mjs` 全阈值通过。
+
+**没做的**：单文件版未重打（等用户口径）。
+
 ## §6 验证与收口（父代理）
+
+## 验证与收口
+
+```
+npm run check
+  tsc --noEmit                     通过
+  node --test                      274 通过 / 0 失败
+  vitest run                       78 通过 / 0 失败（14 个文件）
+
+node scripts/acceptance.mjs
+  全部阈值通过（手机一屏 375×667：boardBottom 512 ≤ 667）
+```
+
+**本批新增/改写的用例**：`test/integration/eval.test.tsx` 的第一条——首屏着法区收起时断言三段条在 `.panel-focus` 内、不在 `.panel-body` 内，红黑两个数字可读；再走两着断言逐格百分比与条上数字同源。
+
+**没做的**：单文件版 `standalone/index.html` 未重打——用户的要求仍是「此添加非单页文件中」，重打与否等其确认。

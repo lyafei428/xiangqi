@@ -233,7 +233,7 @@ F1-7 四个业务结果各自的落点：
 每一着后给出红方与黑方的胜率，四个棋局页面都显示。概率来自**静态评估**，不跑搜索——理由在下面「为什么不做搜索」。
 
 Closest precedent: `src/shared/ai/evaluate.ts`（局面评估，红正黑负、出口切行棋方视角）与 `src/client/panel/GamePanel.tsx`（记谱按回合两列渲染）。
-对齐：概率就是评估值的一次单调映射，不另立第二套局面判断；显示挂在既有的记谱区与面板顶部，不新开一栏。
+对齐：概率就是评估值的一次单调映射，不另立第二套局面判断；显示挂在既有的记谱区与面板常驻行（与计时行同处，不新开一栏）；三段条本身无先例，参照的是 `.clock-row` 那一行的版式，不另立容器。
 偏离：评估原本只服务搜索，现在要给人看——所以必须**标定**（分差 → 百分比）并把常数集中在一处；搜索侧不需要这个映射。
 
 Survey evidence: 已核对 `docs/design/modules/board-ui.md`（棋盘与面板的渲染归属）、`docs/design/modules/local-play.md`（`HistoryEntry` 每着都带走完后的 FEN）、`docs/requirements/xiangqi.md` F5.1 与 F5.7。相关：FEN 逐着可得、记谱区已有两列结构两处被沿用；其余来源与本题无关。
@@ -260,7 +260,7 @@ Survey evidence: 已核对 `docs/design/modules/board-ui.md`（棋盘与面板�
 | 记谱每一格（单列：联机 / 回放） | 同样跟一个小字百分比，同样是红方视角。这两页的记谱本来就是平铺一列（`src/client/pages/OnlinePage.tsx` 的 `{index + 1}. {move}`、回放页的 `replay-moves`），没有第二列可对齐。 |
 | 常驻区（状态行与计时行之下、按钮行之上） | 一行三段：左「红 62%」、中间概率条（宽度按百分比分配，左红右黑）、右「黑 38%」，黑方数字是红方的补数。放在常驻区而不是可收起的着法区——2026-11-14 用户裁定：着法区在对弈/人机/联机三页默认收起，条放里面等于看不见。F1.10 的默认可见集随之加入「胜率条」。 |
 | 终局后 | 条按结果贴边：红胜满红、黑胜满黑、和棋对半；数字与结果文案并列，不重复解释。 |
-| 手机档 | 概率条占一行 20px，数字与条同行；记谱字不因此缩小。 |
+| 手机档 | 概率条占一行 20px，数字与条同行；记谱字不因此缩小。这 20px 挤在既有常驻行里，不新增行高：`scripts/acceptance.mjs` 的「手机一屏（375×667，F4.6）」实测棋盘 `boardBottom` 512 ≤ 667、`navClipped` 与 `boardClipped` 均为 no——F4.6 的「第 10 行完整可见、页面无纵向滚动」在加条之后仍然成立。 |
 
 - 开关：`xiangqi.eval.v1`，默认开；设置浮层里「胜率 开/关」。关掉后条与记谱数字都不渲染（不留空位）。
 - 着色按 `docs/design/modules/theme.md` §2 的「结果着色」：红方数字用 `--red-text`、黑方用 `--black-text`，条本身用两个色块加 `--line` 分隔，不新增颜色。
@@ -290,7 +290,7 @@ Survey evidence: 已核对 `docs/design/modules/board-ui.md`（棋盘与面板�
 |---|---|
 | `redExpectation` | `none found`：新增纯函数，住在 `src/shared/ai/probability.ts`；不碰 DOM，可直接单测。 |
 | `EVAL_SCALE` | `none found`：新增常量（400），同上文件，标定只此一处。 |
-| `EvalBar` | `none found`：新增组件，住在 `src/client/panel/EvalBar.tsx`；三个页面共用。 |
+| `EvalBar` | `none found`：新增组件，住在 `src/client/panel/EvalBar.tsx`；四个棋局页共用（对弈与人机经 `GamePanel`，另加联机、回放）。 |
 | `xiangqi.eval.v1` | `none found`：新存储键，读写都在 `src/client/storage/prefs.ts`，与另外三个开关同处。 |
 | `useMoveEvals` / `useEvalPoint` | `none found`：新增 hook，同上文件；前者给记谱逐格（前缀缓存），后者给条上的数字——三个页面共用同一段增量逻辑，分放三处会漂。 |
 | `useEvalEnabled` | `none found`：新增 hook，住在 `src/client/panel/useEval.ts`；沿用 `src/client/board/useMoveTrail.ts` 的定式（`useSyncExternalStore` + 模块级 store），理由同它注释里那句「多个页面要读同一个值」——联机页与回放页也要读到开关状态。 |
@@ -333,6 +333,6 @@ Survey evidence: 已核对 `docs/design/modules/board-ui.md`（棋盘与面板�
 |---|---|
 | 破坏 | **有，一处**：`test/integration/navigation.test.tsx` 对 `.move-red` / `.move-black` 用 `toBe` 断言整段文本（F4-1 的「切页回来记谱不变」）。百分比必须渲染在这两个 span **之外**的兄弟节点上（`.move-eval`），格子文本保持原样；若放进格子里，那三处断言要同批改。本批取前者。条从着法区搬到常驻区这一改**不破坏任何既有用例**：现存用例只断言着法区里的记谱与记谱框，不观察 `.eval-bar` 的宿主位置，条相关的查询全在新增的 `test/integration/eval.test.tsx` 里。 |
 | 冗余 | 无：不复制任何既有对局用例 |
-| 缺失 | 一行：F5-7 的集成行——对弈页走两着，断言「两格都有百分比」「概率条数字与末格一致」「关掉开关后两者都不显示、重开页面仍是关」；同一行再带两条最小观察：联机页收到快照后条在且数字与末格一致、回放页游标走到终局后条与结果一致 |
+| 缺失 | 一行：F5-7 的集成行——首次进入对弈页（着法区收起）先断言「三段条在、红黑两个数字可读」，再走两着断言「两格都有百分比」「概率条数字与末格一致」「关掉开关后两者都不显示、重开页面仍是关」；同一行再带两条最小观察：联机页收到快照后条在且数字与末格一致、回放页游标走到终局后条与结果一致 |
 
 该行的断言只取业务可观察结果（有没有数字、数字是否一致、开关是否记住），不取内部浮点精度；映射精度留给 `test/probability.test.ts`。
