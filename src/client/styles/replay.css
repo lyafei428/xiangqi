@@ -20,7 +20,13 @@
 }
 
 .replay-tab[aria-pressed='true']:hover:not(:disabled) {
-  filter: brightness(1.12);
+  /* 手机上的 :hover 是“粘”的——点过之后一直生效。通用 hover 会把底色换成
+     --sunken-bg，而这里的字是 --on-accent（白），浅色主题下就变成白字压浅灰、
+     完全看不见。选中态自己接住 hover，只提亮不换底。 */
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: var(--on-accent);
+  filter: brightness(1.08);
 }
 
 .replay-main {
