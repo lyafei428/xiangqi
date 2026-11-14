@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   HIT_RADIUS,
   MIN_BOARD_WIDTH,
+  MIN_GRID_WIDTH,
   boardSize,
   clientToViewPoint,
   mirrorSquare,
@@ -58,13 +59,22 @@ test('可用区比上限矮时按高度收宽度', () => {
   assert.deepEqual(boardSize(800, 600), { width: 540, height: 600 });
 });
 
-test('手机档：格宽不小于 40，容器更窄也不缩棋盘', () => {
-  const size = boardSize(320, 334);
-  assert.equal(size.width, MIN_BOARD_WIDTH);
-  assert.equal(size.width / 9, 40);
-  assert.equal(size.height, 400);
+test('手机档：可用宽比 360 还窄时，棋盘跟着缩，绝不超出可用区', () => {
+  const size = boardSize(344, 500);
+  assert.equal(size.width, 344);
+  assert.ok(size.width <= 344, '棋盘不能宽过可用区');
+  assert.ok(size.width / 9 < MIN_GRID_WIDTH, '这一档格宽低于 40：宁可小一点也不能看不全');
+
+  // 320 的小屏同理：按可用宽收，不横向溢出。
+  const small = boardSize(320, 334);
+  assert.equal(small.width, 300.6);
+  assert.ok(small.width <= 320);
 });
 
-test('可用宽大于高时以高为准，宽度仍守 40px 下限', () => {
+test('可用宽大于高时以高为准', () => {
   assert.deepEqual(boardSize(2000, 400), { width: 360, height: 400 });
+});
+
+test('可用宽窄于按高算出的宽：以宽为准，不溢出', () => {
+  assert.deepEqual(boardSize(344, 668), { width: 344, height: 344 * (10 / 9) });
 });

@@ -85,8 +85,12 @@ export function squareAtClientPoint(clientX: number, clientY: number, rect: Rect
 
 /**
  * 可用区域 → 棋盘像素尺寸。
- * 保持 9:10；高度不超过上限；宽度不足 360 时按 360 给，交给舞台横向滚动，
- * 格宽下限 40 是手机可点性的硬指标，不能靠缩小棋盘换适配。
+ * 保持 9:10；高度不超过上限；**宽度永远不超过可用宽**。
+ *
+ * 40px 格宽（MIN_GRID_WIDTH）是理想值，不是硬下限：把它当下限用过一次，
+ * 360px 的手机可用宽只有 344，棋盘被撑到 360 直接超出屏幕右边八像素——
+ * 棋盘看不全比格子小 2px 严重得多，对弈时你连自己的两翼都看不到。
+ * 现在的口径：先按高度收，再被可用宽夹住；手机上多数情况仍落在 39–40px。
  */
 export function boardSize(
   areaWidth: number,
@@ -94,6 +98,6 @@ export function boardSize(
   maxHeight: number = MAX_BOARD_HEIGHT,
 ): BoardSize {
   const heightLimit = Math.max(0, Math.min(areaHeight, maxHeight));
-  const width = Math.max(MIN_BOARD_WIDTH, Math.min(areaWidth, heightLimit * (VIEW_WIDTH / VIEW_HEIGHT)));
+  const width = Math.max(0, Math.min(areaWidth, heightLimit * (VIEW_WIDTH / VIEW_HEIGHT)));
   return { width, height: width * (VIEW_HEIGHT / VIEW_WIDTH) };
 }

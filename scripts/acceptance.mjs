@@ -29,8 +29,10 @@ const VIEWPORTS = [
   { name: 'desktop 1440×900', width: 1440, height: 900, mobile: false },
   { name: 'tablet   834×1112', width: 834, height: 1112, mobile: false },
   { name: 'phone    375×812', width: 375, height: 812, mobile: true },
+  { name: 'phone    360×740', width: 360, height: 740, mobile: true },
 ];
 
+// 360px 的手机把左右内边距让给棋盘后正好 40px 一格（F4.3）；0.05 是亚像素容差。
 const THRESHOLDS = { cellPx: 39.95, requests: 6, cls: 0.05, moveMs: 16, frameMs: 32, lcpMs: 2000, contrast: 4.5 };
 
 /** 4G 快档：下行 1.6 Mbps、RTT 150ms，配 4× CPU 降速，取手机档的保守值。 */
@@ -253,10 +255,15 @@ async function measureViewports(cdp, traffic) {
       const board = document.querySelector('svg');
       const width = board ? board.getBoundingClientRect().width : 0;
       const nav = document.querySelector('.app-nav');
+      const box = board ? board.getBoundingClientRect() : null;
+      const stage = document.querySelector('.board-fit');
       return {
         cellPx: width / 9,
         boardWidth: width,
         navClipped: nav ? nav.scrollWidth > nav.clientWidth + 1 : false,
+        // 棋盘看不全 = 它有边跑到视口或舞台外面。对弈时看不全棋盘是致命的。
+        boardClipped: box !== null && (box.right > window.innerWidth + 1 || box.bottom > window.innerHeight + 1),
+        stageOverflow: stage !== null && box !== null && (box.width > stage.clientWidth + 1 || box.height > stage.clientHeight + 1),
       };
     })()`);
     readings.push({ viewport: viewport.name, requests: traffic.requests, ...page });
@@ -642,10 +649,13 @@ function report(data) {
       cellPx: row.cellPx.toFixed(1),
       requests: String(row.requests),
       navClipped: row.navClipped ? 'yes' : 'no',
+      boardClipped: row.boardClipped ? 'yes' : 'no',
     })),
   );
   for (const row of data.viewports) {
-    if (row.cellPx < THRESHOLDS.cellPx) failures.push(`${row.viewport}: 格宽 ${row.cellPx.toFixed(2)} < 39.95`);
+    if (row.cellPx < THRESHOLDS.cellPx) failures.push(`${row.viewport}: 格宽 ${row.cellPx.toFixed(2)} < ${THRESHOLDS.cellPx}`);
+    if (row.boardClipped) failures.push(`${row.viewport}: 棋盘超出视口（手机上看不全）`);
+    if (row.stageOverflow) failures.push(`${row.viewport}: 棋盘比舞台大，要横向滚动才看得全`);
     if (row.requests > THRESHOLDS.requests) failures.push(`${row.viewport}: 请求 ${row.requests} > 6`);
     if (row.navClipped) failures.push(`${row.viewport}: 导航溢出`);
   }

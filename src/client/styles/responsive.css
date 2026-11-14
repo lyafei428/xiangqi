@@ -109,10 +109,23 @@
   .nav-link {
     font-size: 14px;
     padding: 5px 7px;
+    /* 375 以下的机器上宽度不够时，字会被挤成竖排两行（「对」/「弈」）——
+       宁可窄一点、密一点，也不能让入口变成读不出来的两行。 */
+    white-space: nowrap;
   }
 
+  .theme-select {
+    font-size: 13px;
+    padding: 4px 8px;
+  }
+
+  /*
+   * 手机档左右不留边：棋盘按整屏宽算，360 的机器正好 40px 一格（需求 F4.3）。
+   * 留 8px 边的话可用宽只剩 344，要么格宽掉到 38，要么棋盘被顶出屏幕——
+   * 两者都会打破 F4.3 或「完整可见」，把边让给棋盘是唯一两边都满足的解法。
+   */
   .board-stage {
-    padding: 8px;
+    padding: 8px 0;
   }
 
   .panel {
@@ -196,6 +209,25 @@
 
   .lesson-demo .drill-link {
     margin: 0 10px;
+  }
+}
+
+/* 窄于 420：七项导航 + 配色开关一行装不下来，靠收紧字号与内边距挤进去，不做隐藏。 */
+@media (max-width: 420px) {
+  .app-nav {
+    gap: 4px;
+    padding: 0 6px;
+  }
+
+  .nav-link {
+    font-size: 13px;
+    padding: 4px 4px;
+  }
+
+  .theme-select {
+    font-size: 12px;
+    padding: 4px 6px;
+    max-width: 92px;
   }
 }
 
