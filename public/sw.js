@@ -1,8 +1,8 @@
 // service worker：预缓存 / 旧缓存清理 / 离线回退。
 // 纯静态文件，不经打包——放在 public/ 原样拷进 dist/，因此文件名与 Vite 的哈希产物无关。
 
-// 发版只改这一行版本号：activate 会把名字对不上的旧缓存整批删掉。
-const CACHE = 'xiangqi-v1';
+// 缓存名跟 package.json 的版本走：发版改 version，缓存名自动变，旧缓存才会被清。
+const CACHE = 'xiangqi-0.1.0';
 
 // 壳的入口。hash 路由不经过服务器，所有导航请求拿到的都是同一份 HTML，
 // 所以预缓存与离线回退都只认这一个键。

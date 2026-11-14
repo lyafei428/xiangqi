@@ -75,6 +75,6 @@
 |---|---|---|---|---|
 | F5-1 | 4G 快档首屏 | 首屏可交互时间低于 2 秒，请求不超过 6 个 | 打开页面 | F5.2 |
 | F5-2 | 走子流畅 | 单步到画面 < 16ms；连走无掉帧 | 打开页面 → 对弈 | F5.3 |
-| F5-3 | 布局稳定 | 加载期 CLS < 0.05 | 打开页面 | F5.4 |
+| F5-3 | 布局稳定 | 加载期 CLS < 0.05；Lighthouse 手机档 Performance ≥ 90 | 打开页面 | F5.4 |
 
 用例实现：`scripts/acceptance.mjs`；自证用 `node scripts/acceptance.mjs --self-test`。

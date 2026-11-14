@@ -68,6 +68,7 @@ xiangqi/
 | `docs/design/modules/ai.md` | 人机对战的引擎、Worker 与人机页 |
 | `docs/design/modules/pwa-rules.md` | PWA 安装与离线、规则页 |
 | `docs/design/acceptance.md` | 发布前验收：三端与性能的阈值与取数方法 |
+| `docs/release.md` | 发布手册：发版前检查、版本与缓存绑定、部署、发版后自检、回滚 |
 | `docs/design/modules/online.md` | 联机协议、服务端房间、观战与联机页 |
 | `docs/design/modules/replay.md` | 棋谱格式、存局与回放 |
 | `docs/design/modules/lessons.md` | 课程内容与课程页 |

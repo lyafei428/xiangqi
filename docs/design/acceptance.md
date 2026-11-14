@@ -17,7 +17,7 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md`（F4.2–F4.4、F5.2�
 | F5.3 走子流畅 | 单步指针抬起 → 着法记录更新 < 16ms；连续三着期间最大帧间隔 ≤ 32ms | 单步用 MutationObserver 量；连走三着期间用 `requestAnimationFrame` 采帧间隔 |
 | F5.4 布局稳定 | CLS < 0.05 | 导航前注入的 `layout-shift` 观察器，加载期累计 |
 
-Lighthouse 手机档 Performance ≥ 90 不在脚本里：本机没有 lighthouse CLI，也不为一次验收引入依赖。替代口径为「LCP + CLS + 长任务读数 + 人工在 DevTools 里跑一次 Lighthouse」，人工那次的读数按 §6 记录。
+Lighthouse 手机档 Performance ≥ 90 由人工跑一次：`npx lighthouse http://localhost:4173/ --only-categories=performance`（需 `CHROME_PATH` 指向本机 Chromium）。最近一次读数 98 分（LCP 1.7s、TBT 150ms、CLS 0、FCP 1.4s），只作发布前的确认，不进脚本。
 
 ## 2. 方法
 

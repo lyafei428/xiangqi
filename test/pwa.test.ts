@@ -94,6 +94,14 @@ test('sw.js 有版本常量，install / activate / fetch 三个监听齐备', ()
   }
 });
 
+// 缓存名和包版本绑在一起：发版只改 version，缓存名跟着变，旧缓存才会被 activate 清掉。
+// 拆成两处手改的话，忘了其中一处就是「用户还跑旧包」这种最难查的线上问题。
+test('sw.js 的缓存名等于 package.json 的版本', () => {
+  const pkg = JSON.parse(readText('package.json')) as { version: string };
+  const cache = /const CACHE = '([^']+)';/.exec(sw)?.[1];
+  assert.equal(cache, `xiangqi-${pkg.version}`, '缓存名与 package.json 版本不一致');
+});
+
 test('sw.js 的预缓存清单含首页、manifest 与图标', () => {
   const body = /const PRECACHE = \[([\s\S]*?)\];/.exec(sw)?.[1];
   assert.ok(body !== undefined, 'sw.js 里找不到 PRECACHE 清单');
