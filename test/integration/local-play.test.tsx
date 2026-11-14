@@ -139,7 +139,7 @@ describe('F1-3 本地计时与认输', () => {
     expect(container.querySelectorAll('.piece[tabindex="0"]')).toHaveLength(0);
   });
 
-  it('终局把结果放大到棋盘中央，2 秒后收回', () => {
+  it('终局把结果放大到棋盘中央，3 秒后收回', () => {
     vi.useFakeTimers();
     try {
       const { container } = setup();
@@ -149,9 +149,9 @@ describe('F1-3 本地计时与认输', () => {
       fireEvent.click(screen.getByRole('button', { name: '认输' }));
       expect(pop()?.textContent).toBe('黑方胜 · 认输');
 
-      // 2 秒内一直在：这段是停留，不是一闪而过。
+      // 3 秒内一直在：这段是停留，不是一闪而过。
       act(() => {
-        vi.advanceTimersByTime(1900);
+        vi.advanceTimersByTime(2900);
       });
       expect(pop()).not.toBeNull();
 

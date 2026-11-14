@@ -10,7 +10,7 @@ import type { GameResult } from '../../shared/index.ts';
 import { resultLabel } from './result-text.ts';
 
 /** 放大停留时长：短了看不清，长了挡着复盘。 */
-const HOLD_MS = 2000;
+const HOLD_MS = 3000;
 /** 缩回去的时长：够看出「它飞去了状态行」，又不拖沓。 */
 const FLY_MS = 420;
 
