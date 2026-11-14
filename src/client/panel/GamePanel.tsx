@@ -200,6 +200,8 @@ export function GamePanel(props: GamePanelProps) {
           </button>
         </div>
 
+        {showEval && currentEval !== null ? <EvalBar red={currentEval} /> : null}
+
         <div className="panel-actions">
           <button
             type="button"
@@ -223,8 +225,6 @@ export function GamePanel(props: GamePanelProps) {
             收起着法
           </button>
         </div>
-
-        {showEval && currentEval !== null ? <EvalBar red={currentEval} /> : null}
 
         <div className="moves" ref={movesRef} aria-label="着法记录">
           {rounds.length === 0 ? (

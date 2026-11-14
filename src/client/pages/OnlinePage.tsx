@@ -402,6 +402,8 @@ export function OnlinePage() {
               {snapshot.players < 2 ? '把房间码发给对手' : '对手已加入'}
             </span>
           </p>
+          {showEval && currentEval !== null ? <EvalBar red={currentEval} /> : null}
+
           <div className="panel-actions">
             <button
               type="button"
@@ -435,7 +437,6 @@ export function OnlinePage() {
               收起着法
             </button>
           </div>
-          {showEval && currentEval !== null ? <EvalBar red={currentEval} /> : null}
           <div className="moves">
             {snapshot.moves.length === 0 ? (
               <p className="moves-empty">尚未走子</p>

@@ -169,9 +169,9 @@ describe('F5-7 每步胜率', () => {
     // 条上的数字取的就是末格那个数：两处同一口径，读起来才是同一个判断。
     expect(barRed(view.container)).toBe(last);
 
-    const numbers = view.container.querySelector('.eval-numbers')?.textContent ?? '';
-    expect(numbers).toContain(`红 ${String(last)}%`);
-    expect(numbers).toContain(`黑 ${String(100 - (last ?? 0))}%`);
+    const barText = view.container.querySelector('.eval-bar')?.textContent ?? '';
+    expect(barText).toContain(`红 ${String(last)}%`);
+    expect(barText).toContain(`黑 ${String(100 - (last ?? 0))}%`);
 
     // 记谱格文本仍是纯记谱：百分比是它的兄弟节点（切页不变的对局用例按整段文本比对）。
     expect(view.container.querySelector('.move-row .move-red')?.textContent).toBe(FIRST_NOTATION);
@@ -245,7 +245,7 @@ describe('F5-7 每步胜率', () => {
 
     // 结果是红胜：条贴满红，两个数字收敛到 100 / 0。
     expect(barRed(view.container)).toBe(100);
-    const numbers = view.container.querySelector('.eval-numbers')?.textContent ?? '';
+    const numbers = view.container.querySelector('.eval-bar')?.textContent ?? '';
     expect(numbers).toContain('红 100%');
     expect(numbers).toContain('黑 0%');
   });

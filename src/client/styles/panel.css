@@ -164,13 +164,14 @@
   background: var(--accent-strong);
 }
 
-/* 每步胜率：两色概率条 + 「红 x% · 黑 y%」。
-   条在可收起的着法区顶部，不占常驻条：F1.10 把对弈/人机页的默认可见集定死，不因它添一条。 */
+/* 每步胜率：左「红 x%」、中间两色概率条、右「黑 y%」。
+   2026-11-14 用户裁定：这一条要在四个棋局页的常驻区里看得见（此前只在可收起的着法区里，
+   对弈/人机/联机三页默认是收起的，等于看不见）。F1.10 的默认可见集因此改口径。 */
 .eval-bar {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   /* 手机档也占一行 20px：数字与条同行，记谱字不因此缩小。 */
   min-height: 20px;
 }
@@ -201,26 +202,19 @@
   border-left: 1px solid var(--line);
 }
 
-.eval-numbers {
+.eval-num {
   flex: 0 0 auto;
-  display: flex;
-  gap: 4px;
-  margin: 0;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-.eval-red-text {
+.eval-num-red {
   color: var(--red-text);
 }
 
-.eval-black-text {
+.eval-num-black {
   color: var(--black-text);
-}
-
-.eval-sep {
-  color: var(--muted-2);
 }
 
 .moves {
