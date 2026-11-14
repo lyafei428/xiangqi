@@ -44,12 +44,15 @@ export interface GameSession {
   readonly selected: number | null;
   readonly targets: readonly number[];
   readonly clock: ClockState;
+  /** 计时是否已开跑：首着之前不开表，避免「一刷新就走秒」。 */
+  readonly started: boolean;
 }
 
 export type GameAction =
   | { readonly type: 'select'; readonly square: number; readonly now?: number }
   | { readonly type: 'tap'; readonly square: number; readonly now?: number }
   | { readonly type: 'play'; readonly move: Move; readonly now?: number }
+  | { readonly type: 'start'; readonly now?: number }
   | { readonly type: 'tick'; readonly now: number }
   | { readonly type: 'resign'; readonly now?: number }
   | { readonly type: 'reset'; readonly startFen?: string };
@@ -66,7 +69,9 @@ export function createSession(startFen: string = INITIAL_FEN, now = Date.now()):
     status: statusOf(position),
     selected: null,
     targets: [],
-    clock: createClock(now, CLOCK_MS),
+    // 开局表不走：等「开始」或第一着（createClock 默认让红方立刻走秒，刷新一次就白丢时间）。
+    clock: { ...createClock(now, CLOCK_MS), running: null },
+    started: false,
   };
 }
 /**
@@ -103,6 +108,7 @@ export function restoreSession(
       targets: [],
       // 重放出来已经是终局时停表，避免续局页面继续走秒。
       clock: result === null ? clock : { ...clock, running: null },
+      started: clock.running !== null || moves.length > 0,
     };
   } catch {
     return null;
@@ -140,22 +146,34 @@ function selectSquare(state: GameSession, square: number, now: number): GameSess
 }
 
 function playTurn(state: GameSession, move: Move, now: number): GameSession {
-  const notation = toChineseNotation(state.position, move);
+  // 还没按「开始」就落子：这一着即视为开始，别让表停在原地。
+  const base = state.started ? state : startClock(state, now);
+  const notation = toChineseNotation(base.position, move);
   // 非法着法由 playMove 抛错：history 是重复与自然限着的输入，不能混进假着法。
-  const { position, history } = playMove(state.position, state.history, move);
-  const played = switchClock(state.clock, now);
-  const result = judgeGame(position, history, state.startFen);
+  const { position, history } = playMove(base.position, base.history, move);
+  const played = switchClock(base.clock, now);
+  const result = judgeGame(position, history, base.startFen);
   return {
-    ...state,
+    ...base,
     position,
     history,
-    notations: [...state.notations, notation],
+    notations: [...base.notations, notation],
     lastMove: move,
     result,
     status: statusOf(position),
     selected: null,
     targets: [],
     clock: result === null ? played : stopClock(played, now),
+  };
+}
+
+/** 开表：把时钟锚点挪到现在，由轮到的一方开始走秒。 */
+function startClock(state: GameSession, now: number): GameSession {
+  if (state.started) return state;
+  return {
+    ...state,
+    started: true,
+    clock: { ...state.clock, running: state.position.turn, since: now },
   };
 }
 
@@ -192,6 +210,10 @@ export function sessionReducer(state: GameSession, action: GameAction): GameSess
       // 在 reducer 里被挡下，而不是把 playMove 的抛错变成整页崩掉。
       if (!isLegal(state.position, action.move)) return state;
       return playTurn(state, action.move, now);
+    }
+    case 'start': {
+      if (state.result !== null) return state;
+      return startClock(state, action.now ?? Date.now());
     }
     case 'tick': {
       const expired = timedOutState(state, action.now);

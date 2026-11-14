@@ -349,6 +349,7 @@ export function AiPage() {
           })
         }
         onReset={newGame}
+        onStart={() => dispatch({ type: 'start', now: Date.now() })}
         onResign={resign}
       />
     </div>

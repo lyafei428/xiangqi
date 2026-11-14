@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import type { GameResult } from '../src/shared/index.ts';
 import type { GameSession } from '../src/client/game/session.ts';
-import { createSession } from '../src/client/game/session.ts';
+import { createSession, sessionReducer } from '../src/client/game/session.ts';
 import { GamePanel } from '../src/client/panel/GamePanel.tsx';
 import { resultTone } from '../src/client/panel/result-text.ts';
 
@@ -23,6 +23,7 @@ function statusTextOf(result: GameResult): string {
       now={Date.now()}
       onToggle={() => {}}
       onReset={() => {}}
+      onStart={() => {}}
       onResign={() => {}}
     />,
   );
@@ -80,12 +81,13 @@ describe('模式标签', () => {
   function renderPanel(modeLabel?: string): void {
     render(
       <GamePanel
-        session={createSession()}
+        session={sessionReducer(createSession(), { type: 'start', now: Date.now() })}
         open
         now={Date.now()}
         modeLabel={modeLabel}
         onToggle={() => {}}
         onReset={() => {}}
+        onStart={() => {}}
         onResign={() => {}}
       />,
     );
@@ -103,13 +105,16 @@ describe('模式标签', () => {
   });
 
   it('resignDisabled 置灰认输按钮，默认不置灰', () => {
+    // 开局先按「开始」才走表，认输按钮也是开始后才在。
+    const started = sessionReducer(createSession(), { type: 'start', now: Date.now() });
     render(
       <GamePanel
-        session={createSession()}
+        session={started}
         open
         now={Date.now()}
         onToggle={() => {}}
         onReset={() => {}}
+        onStart={() => {}}
         onResign={() => {}}
       />,
     );
@@ -117,12 +122,13 @@ describe('模式标签', () => {
     cleanup();
     render(
       <GamePanel
-        session={createSession()}
+        session={started}
         open
         now={Date.now()}
         resignDisabled
         onToggle={() => {}}
         onReset={() => {}}
+        onStart={() => {}}
         onResign={() => {}}
       />,
     );

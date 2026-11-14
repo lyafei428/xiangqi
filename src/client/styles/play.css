@@ -225,6 +225,12 @@
   gap: 4px;
 }
 
+/* 两组选项放一行并隔开：靠一条竖线分组，不靠两个文字标签各占一列。 */
+.ai-controls .mission-actions + .mission-actions {
+  border-left: 1px solid var(--line);
+  padding-left: 10px;
+}
+
 .ai-controls .drill-hint {
   font-size: 12px;
 }
@@ -309,4 +315,59 @@
   .move-trail {
     display: none;
   }
+}
+
+/* 联机页的身份与在线状态：红黑各用自己的字色，在线绿、离线灰。 */
+.online-color {
+  margin: 0;
+  font-weight: 600;
+}
+
+.online-color.is-red {
+  color: var(--red-text);
+}
+
+.online-color.is-black {
+  color: var(--black-text);
+}
+
+.online-presence {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.presence-red {
+  color: var(--red-text);
+}
+
+.presence-black {
+  color: var(--black-text);
+}
+
+.presence-on {
+  color: var(--target-text);
+}
+
+.presence-off {
+  color: var(--muted-2);
+}
+
+.presence-sep {
+  color: var(--muted-2);
+}
+
+/* 开局前那个「开始」按钮：它替代认输的位置，样式与认输同尺寸。 */
+.start-clock {
+  border: 1px solid var(--accent-strong);
+  background: var(--accent-strong);
+  color: var(--on-accent);
+  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--raise-flat);
+  font-weight: 600;
+  cursor: pointer;
 }

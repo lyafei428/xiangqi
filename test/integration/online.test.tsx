@@ -412,7 +412,9 @@ describe('F1-6 联机观战：第三人只看不走', () => {
       red: false,
       black: true,
     });
-    await screen.findByText('红方离线 · 黑方在线');
+    // 在线状态拆成了几个着色片段（红/黑名字各自带字色、在线绿离线灰），按整段文本找不到。
+    await screen.findByText('红方');
+    expect(document.querySelector('.online-presence')?.textContent).toBe('红方离线·黑方在线');
     expect(screen.getByText('观战中 · 1 人观战')).toBeTruthy();
 
     // 又一名观战进来：面板上的观战数跟着快照变。

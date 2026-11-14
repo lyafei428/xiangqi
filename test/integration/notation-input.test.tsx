@@ -131,6 +131,8 @@ describe('F1-8 面板记谱输入走子', () => {
   it('终局时输入框置灰', () => {
     setup();
     expect(input().disabled).toBe(false);
+    // 先按「开始」再认输：开局表不走，认输按钮是开始后才出现的。
+    fireEvent.click(screen.getByRole('button', { name: '开始' }));
     fireEvent.click(screen.getByRole('button', { name: '认输' }));
     expect(input().disabled).toBe(true);
   });

@@ -4,6 +4,11 @@ import { CLOCK_MS, INITIAL_FEN, indexOf } from '../src/shared/index.ts';
 import type { GameSession } from '../src/client/game/session.ts';
 import { checkSquareOf, createSession, sessionReducer } from '../src/client/game/session.ts';
 
+/** 已经按下「开始」的一局：时钟在走，才谈得上切表与超时。 */
+function started(startFen: string = INITIAL_FEN, now = 0): GameSession {
+  return sessionReducer(createSession(startFen, now), { type: 'start', now });
+}
+
 const at = (x: number, y: number): number => indexOf(x, y);
 
 function tap(session: GameSession, square: number): GameSession {
@@ -126,16 +131,21 @@ test('自定义起始局面在复位后保留', () => {
   assert.equal(reset.startFen, fen);
 });
 
-test('新局带 15 分钟时钟，红方在走', () => {
-  const session = createSession(INITIAL_FEN, 1_000);
-  assert.equal(session.clock.redMs, 900_000);
-  assert.equal(session.clock.blackMs, 900_000);
+test('新局带 15 分钟时钟，且建局时表不走——按下「开始」才由红方走秒', () => {
+  const fresh = createSession(INITIAL_FEN, 1_000);
+  assert.equal(fresh.clock.redMs, 900_000);
+  assert.equal(fresh.clock.blackMs, 900_000);
+  assert.equal(fresh.clock.running, null, '进页面不走秒，刷新不白丢时间');
+  assert.equal(fresh.started, false);
+
+  const session = started(INITIAL_FEN, 1_000);
   assert.equal(session.clock.running, 'red');
   assert.equal(session.clock.since, 1_000);
+  assert.equal(session.started, true);
 });
 
 test('走子后时钟切给黑方', () => {
-  const base = createSession(INITIAL_FEN, 0);
+  const base = started(INITIAL_FEN, 0);
   const picked = sessionReducer(base, { type: 'tap', square: at(1, 7), now: 2_000 });
   const moved = sessionReducer(picked, { type: 'tap', square: at(1, 6), now: 2_000 });
   assert.equal(moved.clock.running, 'black');
@@ -144,7 +154,7 @@ test('走子后时钟切给黑方', () => {
 });
 
 test('tick 未归零不改状态；归零判超时给对方', () => {
-  const session = createSession(INITIAL_FEN, 0);
+  const session = started(INITIAL_FEN, 0);
   const early = sessionReducer(session, { type: 'tick', now: 1_000 });
   assert.equal(early.result, null);
 
@@ -163,7 +173,7 @@ test('认输：行棋方认输，判对方胜并锁盘', () => {
 });
 
 test('走子与认输的时间由动作带入，结果可复现', () => {
-  const base = createSession(INITIAL_FEN, 1_000);
+  const base = started(INITIAL_FEN, 1_000);
   const picked = sessionReducer(base, { type: 'tap', square: at(1, 7), now: 6_000 });
   const moved = sessionReducer(picked, { type: 'tap', square: at(1, 6), now: 6_000 });
   assert.equal(moved.clock.since, 6_000);
@@ -176,7 +186,7 @@ test('走子与认输的时间由动作带入，结果可复现', () => {
 });
 
 test('旗落后不再接受着法：点自己棋子直接判超时', () => {
-  const base = createSession(INITIAL_FEN, 0);
+  const base = started(INITIAL_FEN, 0);
   const late = sessionReducer(base, { type: 'tap', square: at(1, 7), now: 900_000 });
   assert.deepEqual(late.result, { type: 'timeout', winner: 'black' });
   assert.equal(late.history.length, 0);
@@ -184,10 +194,12 @@ test('旗落后不再接受着法：点自己棋子直接判超时', () => {
 });
 
 test('新局重置时钟与结果', () => {
-  const over = sessionReducer(createSession(), { type: 'resign' });
+  const over = sessionReducer(started(), { type: 'resign' });
   const fresh = sessionReducer(over, { type: 'reset' });
   assert.equal(fresh.result, null);
-  assert.equal(fresh.clock.running, 'red');
+  // 新局回到未开表：与刚进页面一致，等「开始」或第一着再走秒。
+  assert.equal(fresh.clock.running, null);
+  assert.equal(fresh.started, false);
   assert.equal(fresh.clock.redMs, 900_000);
 });
 
@@ -217,7 +229,7 @@ test('play 动作：终局后不再接受着法', () => {
 });
 
 test('play 动作：走子切时钟，时间由动作带入', () => {
-  const base = createSession(INITIAL_FEN, 1_000);
+  const base = started(INITIAL_FEN, 1_000);
   const moved = playMoveAction(base, at(1, 7), at(1, 6), 6_000);
   assert.equal(moved.clock.running, 'black');
   assert.equal(moved.clock.since, 6_000);
@@ -226,7 +238,7 @@ test('play 动作：走子切时钟，时间由动作带入', () => {
 });
 
 test('play 动作：旗落后不再落子，直接判超时', () => {
-  const base = createSession(INITIAL_FEN, 0);
+  const base = started(INITIAL_FEN, 0);
   const late = playMoveAction(base, at(1, 7), at(1, 6), 900_000);
   assert.deepEqual(late.result, { type: 'timeout', winner: 'black' });
   assert.equal(late.history.length, 0);

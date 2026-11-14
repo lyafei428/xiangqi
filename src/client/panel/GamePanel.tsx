@@ -27,6 +27,7 @@ export interface GamePanelProps {
   readonly onToggle: () => void;
   readonly onReset: () => void;
   readonly onResign: () => void;
+  readonly onStart: () => void;
 }
 
 function colorName(color: Color): string {
@@ -98,6 +99,7 @@ export function GamePanel(props: GamePanelProps) {
     onToggle,
     onReset,
     onResign,
+    onStart,
   } = props;
   const movesRef = useRef<HTMLDivElement | null>(null);
   const rounds = toRounds(session.notations);
@@ -172,14 +174,21 @@ export function GamePanel(props: GamePanelProps) {
           <span className={`clock clock-black${blackMs < 60_000 ? ' is-low' : ''}`}>
             黑 {formatClock(blackMs)}
           </span>
-          <button
-            type="button"
-            className="resign"
-            onClick={onResign}
-            disabled={over || resignDisabled}
-          >
-            认输
-          </button>
+          {/* 开局先按「开始」才走表：刷新页面不该白丢时间。 */}
+          {session.started ? (
+            <button
+              type="button"
+              className="resign"
+              onClick={onResign}
+              disabled={over || resignDisabled}
+            >
+              认输
+            </button>
+          ) : (
+            <button type="button" className="start-clock" onClick={onStart}>
+              开始
+            </button>
+          )}
         </div>
 
         <div className="panel-actions">

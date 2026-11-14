@@ -262,6 +262,8 @@ describe('F1-7 人机页：走子、回子与思考锁', () => {
 describe('F1-7 人机页：终局', () => {
   it('认输即终局：不再发请求、锁盘并写入棋谱库', () => {
     const { board, container } = open();
+    // 先按「开始」再认输：开局表不走，认输按钮是开始后才出现的。
+    fireEvent.click(screen.getByRole('button', { name: '开始' }));
     fireEvent.click(screen.getByRole('button', { name: '认输' }));
 
     expect(screen.getByRole('status').textContent).toContain('黑方胜 · 认输');

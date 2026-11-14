@@ -315,7 +315,7 @@ export function OnlinePage() {
               {state.error}
             </p>
           )}
-          <p className="online-color">{identityText}</p>
+          <p className={`online-color${state.color === null ? '' : ` is-${state.color}`}`}>{identityText}</p>
           <p className={`status-line${snapshot.result === null ? '' : ` is-result is-${resultTone(snapshot.result)}`}`}>
             <span
               className={`turn-dot ${
@@ -329,7 +329,15 @@ export function OnlinePage() {
             {statusText}
           </p>
           <p className="online-presence">
-            红方{snapshot.red ? '在线' : '离线'} · 黑方{snapshot.black ? '在线' : '离线'}
+            <span className="presence-red">红方</span>
+            <span className={snapshot.red ? 'presence-on' : 'presence-off'}>
+              {snapshot.red ? '在线' : '离线'}
+            </span>
+            <span className="presence-sep">·</span>
+            <span className="presence-black">黑方</span>
+            <span className={snapshot.black ? 'presence-on' : 'presence-off'}>
+              {snapshot.black ? '在线' : '离线'}
+            </span>
           </p>
           <div className="clock-row" aria-label="双方用时">
             <span className={`clock clock-red${redMs < 60_000 ? ' is-low' : ''}`}>
@@ -381,7 +389,7 @@ export function OnlinePage() {
             </button>
             {over && !spectating ? (
               <button type="button" className="new-game" onClick={() => socketRef.current?.rematch()}>
-                再来一局
+                新局
               </button>
             ) : null}
             <button type="button" className="new-game" onClick={leaveRoom}>

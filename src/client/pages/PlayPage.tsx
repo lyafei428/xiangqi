@@ -74,6 +74,7 @@ export function PlayPage({ session, dispatch }: PlayPageProps) {
           })
         }
         onReset={() => dispatch({ type: 'reset' })}
+        onStart={() => dispatch({ type: 'start', now: Date.now() })}
         onResign={() => dispatch({ type: 'resign', now: Date.now() })}
       />
     </div>

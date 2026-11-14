@@ -48,7 +48,14 @@ function setup(): { board: Element; container: HTMLElement } {
   const board = view.container.querySelector('.board');
   if (board === null) throw new Error('棋盘未渲染');
   vi.spyOn(board, 'getBoundingClientRect').mockReturnValue(VIEW_RECT);
+  startClock();
   return { board, container: view.container };
+}
+
+/** 开局先按「开始」：表不开，认输按钮还没出现在常驻条上。 */
+function startClock(): void {
+  const button = screen.queryByRole('button', { name: '开始' });
+  if (button !== null) fireEvent.click(button);
 }
 
 function tap(board: Element, x: number, y: number): void {
