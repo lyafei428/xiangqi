@@ -366,134 +366,55 @@ async function measureLessonContinuity(cdp) {
 }
 
 async function measureTouch(cdp) {
-  // 不打开触摸仿真，CDP 派发的 touch 事件不会合成出 pointer 事件，棋盘收不到。
+  // 合成触摸的两条前提：开触摸仿真（否则不合成 pointer 事件）；不开 mobile 视口仿真
+  // （开了以后 CDP 的 touch 坐标与布局坐标对不上，事件会落到别的格子）。
   await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
-  await setViewport(cdp, VIEWPORTS[2]);
+  await cdp.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 1, mobile: false });
   await freshLoad(cdp, '/play');
-  // 用棋盘栅格算格心，不用棋子包围盒：棋子 bbox 包含文字外沿，落点可能跨到邻格。
-  const geometry = await evaluate(cdp, `(() => {
-    const board = document.querySelector('svg').getBoundingClientRect();
-    const cellW = board.width / 9;
-    const cellH = board.height / 10;
-    const at = (col, row) => ({ x: board.x + (col - 0.5) * cellW, y: board.y + (row - 0.5) * cellH });
-    const from = at(3, 7);
-    return { x: from.x, y: from.y, step: cellH };
-  })()`);
-
-  const before = await evaluate(cdp, `document.querySelector('.moves').textContent.trim()`);
-  // 对照实验：先在 1440 下点同一枚子，再缩到 375 点一次——看失败是「宽度」还是「在 375 挂载」。
-  await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
-  await delay(300);
-  const widePoint = await evaluate(cdp, `(() => {
-    const board = document.querySelector('svg').getBoundingClientRect();
-    return { x: board.x + (board.width / 9) * 2.5, y: board.y + (board.height / 10) * 6.5 };
-  })()`);
-  await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: widePoint.x, y: widePoint.y, button: 'left', clickCount: 1 });
-  await delay(80);
-  const wideSelected = await evaluate(cdp, `document.querySelectorAll('.piece-selected').length`);
-  await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: widePoint.x, y: widePoint.y, button: 'left', clickCount: 1 });
-  await delay(120);
-  await setViewport(cdp, VIEWPORTS[2]);
-  await delay(300);
-  const narrowPoint = await evaluate(cdp, `(() => {
-    const board = document.querySelector('svg').getBoundingClientRect();
-    return { x: board.x + (board.width / 9) * 2.5, y: board.y + (board.height / 10) * 6.5 };
-  })()`);
-  await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: narrowPoint.x, y: narrowPoint.y, button: 'left', clickCount: 1 });
-  await delay(80);
-  const narrowSelected = await evaluate(cdp, `document.querySelectorAll('.piece-selected').length`);
-  await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: narrowPoint.x, y: narrowPoint.y, button: 'left', clickCount: 1 });
-  await delay(120);
-  await freshLoad(cdp, '/play');
+  // 先点新局：上一段测试的残局还在时轮到谁走都不一样，触摸选中会被回合规则挡掉。
   await evaluate(cdp, `(() => {
-    window.__ev = [];
-    window.__err = [];
-    window.__cap = [];
-    const original = Element.prototype.setPointerCapture;
-    Element.prototype.setPointerCapture = function (pointerId) {
-      try { original.call(this, pointerId); window.__cap.push('ok'); }
-      catch (error) { window.__cap.push('err:' + error.name); throw error; }
-    };
-    window.addEventListener('error', (event) => window.__err.push(String(event.message)));
-    for (const type of ['pointerdown', 'pointerup', 'touchstart', 'touchend', 'mousedown', 'mouseup']) {
-      document.addEventListener(type, (event) => window.__ev.push(type + ':' + (event.pointerType || '') + '@' + Math.round(event.clientX) + ',' + Math.round(event.clientY)), true);
-    }
+    const button = [...document.querySelectorAll('button')].find((item) => item.textContent.trim() === '新局');
+    if (button) button.click();
     return true;
   })()`);
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: geometry.x, y: geometry.y }] });
-  await delay(120);
-  const probe = await evaluate(cdp, `(() => ({
-    selected: document.querySelectorAll('.piece-selected').length,
-    hit: (document.elementFromPoint(${geometry.x}, ${geometry.y}) || {}).tagName || 'none',
-    under: (() => {
-      const element = document.elementFromPoint(${geometry.x}, ${geometry.y});
-      const piece = element && element.closest ? element.closest('.piece') : null;
-      return piece ? piece.getAttribute('aria-label') : 'none';
-    })(),
-    events: window.__ev,
-    errors: window.__err,
-    captures: window.__cap,
-    svg: (() => {
-      const svg = document.querySelector('svg.board') || document.querySelector('svg');
-      const rect = svg.getBoundingClientRect();
-      const piece = document.querySelector('[aria-label="红方兵，第 3 列第 7 行"]');
-      const box = piece.getBoundingClientRect();
-      return {
-        rect: [Math.round(rect.x), Math.round(rect.y), Math.round(rect.width), Math.round(rect.height)],
-        viewBox: svg.getAttribute('viewBox'),
-        piece: [Math.round(box.x), Math.round(box.y), Math.round(box.width), Math.round(box.height)],
-        stageScroll: (() => { const stage = document.querySelector('.board-stage'); return stage ? [stage.scrollLeft, stage.scrollTop, stage.clientWidth] : null; })(),
-        windowScroll: [window.scrollX, window.scrollY],
-      };
-    })(),
-  }))()`);
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-  await delay(80);
-  // 对照：同一个点在鼠标下能不能选中——用来区分「触控路径不对」和「375 下的格子映射不对」。
-  await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: geometry.x, y: geometry.y, button: 'left', clickCount: 1 });
-  await delay(100);
-  const mouseProbe = await evaluate(cdp, `document.querySelectorAll('.piece-selected').length`);
-  await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 1, y: 1, button: 'none' });
-  await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: 1, y: 1, button: 'left', clickCount: 1 });
-  await delay(80);
-  // 再对照一次：同样 375 宽，但不开 mobile 仿真。区分「375 布局本身」与「移动仿真下的坐标换算」。
-  await cdp.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 1, mobile: false });
-  await delay(300);
-  const desktopStyle = await evaluate(cdp, `(() => {
-    const board = document.querySelector('svg').getBoundingClientRect();
-    const cellW = board.width / 9;
-    const cellH = board.height / 10;
-    return { x: board.x + 2.5 * cellW, y: board.y + 6.5 * cellH };
-  })()`);
-  await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: desktopStyle.x, y: desktopStyle.y, button: 'left', clickCount: 1 });
-  await delay(100);
-  const nonMobileProbe = await evaluate(cdp, `document.querySelectorAll('.piece-selected').length`);
-  await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: desktopStyle.x, y: desktopStyle.y, button: 'left', clickCount: 1 });
-  await delay(80);
-  await setViewport(cdp, VIEWPORTS[2]);
   await delay(200);
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: geometry.x, y: geometry.y - geometry.step }] });
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-  await delay(250);
+
+  const cell = await evaluate(cdp, `(() => {
+    const board = document.querySelector('svg').getBoundingClientRect();
+    return { x: board.x, y: board.y, w: board.width, h: board.height };
+  })()`);
+  const at = (col, row) => ({ x: cell.x + (col - 0.5) * (cell.w / 9), y: cell.y + (row - 0.5) * (cell.h / 10) });
+  const tap = async (point) => {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] });
+    await delay(60);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await delay(150);
+  };
+
+  // 点选走子：先点兵，再点它前面一格。
+  const before = await evaluate(cdp, `document.querySelector('.moves').textContent.trim()`);
+  await tap(at(3, 7));
+  await tap(at(3, 6));
   const afterTap = await evaluate(cdp, `document.querySelector('.moves').textContent.trim()`);
 
-  // 拖动：按下 → 分几步移到目标 → 抬起。
-  const dragFrom = await evaluate(cdp, `(() => {
-    const piece = document.querySelector('[aria-label="红方兵，第 5 列第 7 行"]').getBoundingClientRect();
-    const board = document.querySelector('svg').getBoundingClientRect();
-    return { x: piece.x + piece.width / 2, y: piece.y + piece.height / 2, step: board.height / 10 };
-  })()`);
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: dragFrom.x, y: dragFrom.y }] });
+  // 拖动走子：按下 → 分四步移到目标 → 抬起。
+  // 红方刚走完，轮到黑方：拖黑方卒（第 3 列第 4 行）向前一格。
+  const dragFrom = at(3, 4);
+  const dragTo = at(3, 5);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [dragFrom] });
   for (let part = 1; part <= 4; part += 1) {
-    const y = dragFrom.y - (dragFrom.step * part) / 4;
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: dragFrom.x, y }] });
+    const point = {
+      x: dragFrom.x + ((dragTo.x - dragFrom.x) * part) / 4,
+      y: dragFrom.y + ((dragTo.y - dragFrom.y) * part) / 4,
+    };
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [point] });
     await delay(30);
   }
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await delay(250);
   const afterDrag = await evaluate(cdp, `document.querySelector('.moves').textContent.trim()`);
 
-  // 按钮不靠 hover：新局与导航各派一次触摸，看可见结果。
+  // 按钮与导航不靠 hover：各派一次触摸，看可见结果。
   const newGame = await evaluate(cdp, `(() => {
     const button = [...document.querySelectorAll('button')].find((item) => item.textContent.trim() === '新局');
     if (!button) return null;
@@ -502,9 +423,8 @@ async function measureTouch(cdp) {
   })()`);
   let resetByTouch = false;
   if (newGame !== null) {
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: newGame.x, y: newGame.y }] });
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-    await delay(250);
+    await tap(newGame);
+    await delay(150);
     resetByTouch = (await evaluate(cdp, `document.querySelector('.moves').textContent.trim()`)).includes('尚未走子');
   }
 
@@ -516,18 +436,12 @@ async function measureTouch(cdp) {
   })()`);
   let navByTouch = false;
   if (navLink !== null) {
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: navLink.x, y: navLink.y }] });
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-    await delay(300);
+    await tap(navLink);
+    await delay(150);
     navByTouch = (await evaluate(cdp, `location.hash`)) === '#/rules';
   }
 
   return {
-    probe,
-    mouseProbe,
-    nonMobileProbe,
-    wideSelected,
-    narrowSelected,
     tapMoved: before !== afterTap && !afterTap.includes('尚未走子'),
     dragMoved: afterDrag !== afterTap,
     resetByTouch,
@@ -654,13 +568,9 @@ function report(data) {
   if (!data.lesson.preserved) failures.push('缩放后课程演示步数变了');
 
   console.log('\n触摸交互');
-  console.log('探针：', JSON.stringify(data.touch.probe), '鼠标对照：', data.touch.mouseProbe, '窄宽非 mobile：', data.touch.nonMobileProbe, '1440 选中：', data.touch.wideSelected, '375 选中：', data.touch.narrowSelected);
   console.table([data.touch]);
-  // 合成触摸只作读数，不作判据：CDP 的合成触摸能到棋盘（pointerdown 触发、setPointerCapture 成功），
-  // 但应用没有进入选中态。是真 bug 还是仿真差异，需要真机点一次才能定——记 unverified。
-  if (!data.touch.tapMoved || !data.touch.dragMoved) {
-    console.warn('  ! 合成触摸未能触发选中：F4.4 记 unverified，不作通过/不通过');
-  }
+  if (!data.touch.tapMoved) failures.push('合成触摸点选没有走子');
+  if (!data.touch.dragMoved) failures.push('合成触摸拖动没有走子');
   if (!data.touch.resetByTouch) failures.push('触摸点「新局」没有生效');
   if (!data.touch.navByTouch) failures.push('触摸点导航没有换页');
 

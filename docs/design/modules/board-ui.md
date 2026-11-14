@@ -59,7 +59,7 @@ row = round((screenY - 50) / 100)    // 0..9
 
 - 高亮一律用 `generateLegalMoves`。伪合法的 `generateMoves` 含送将着法，画成可落点后点击必被引擎拒绝，等于教出错着。
 - 命中区按半径 45 换算。格宽 40px 的最小档约为 36px 直径；44px 是触控理想值，与需求 F4.3 的 40px 格宽下限在 360px 宽棋盘上不能同时成立，按格宽下限优先。
-- `touch-action: manipulation` 消 300ms 延迟；拖动时该元素临时 `touch-action: none`。
+- `touch-action: none` 常开（交互态）：手势进行中把 `touch-action` 从 `manipulation` 改成 `none`，浏览器会直接给这个 pointer 发 `pointercancel`，拖动拖到一半就断、落子永远发生不了。代价是手指从棋盘上开始拖不能滚动页面——棋盘本身按可视高度适配，不需要在它上面滚。
 - **禁止 hover-only 交互**：触屏上没有 hover，任何信息都必须点击可见。
 
 ## 4. 三种模式

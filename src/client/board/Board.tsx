@@ -202,7 +202,9 @@ export function Board(props: BoardProps) {
       height={size.height}
       role="group"
       aria-label="中国象棋棋盘"
-      style={{ touchAction: interactive ? (drag === null ? 'manipulation' : 'none') : 'auto' }}
+      // 全程 none，不跟着拖动状态切：手势进行中改 touch-action 会让浏览器直接
+      // 取消这个 pointer（pointercancel），拖到一半就断，落子永远发生不了。
+      style={{ touchAction: interactive ? 'none' : 'auto' }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
