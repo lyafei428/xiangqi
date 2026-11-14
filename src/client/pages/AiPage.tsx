@@ -53,6 +53,7 @@ export function AiPage() {
   const [collapsedByLeave, setCollapsedByLeave] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const stageRef = useRef<HTMLDivElement | null>(null);
+  const controlsRef = useRef<HTMLDivElement | null>(null);
   const stage = useStageSize(stageRef);
   const engineRef = useRef<AiEngine | null>(null);
   const levelRef = useRef(level);
@@ -203,13 +204,22 @@ export function AiPage() {
   }, [hasMoves]);
 
   // 选过之后鼠标移出控件组就收起；键盘焦点还在组里时不收，免得一 Tab 出去界面就跳。
-  const closeOnLeave = (event: React.PointerEvent<HTMLDivElement>): void => {
+  //
+  // 不用「指针离开」事件：它只在指针确实悬停过该元素时才发，二次展开（点摘要进来）
+  // 或键盘选择之后，指针从没进过控件组，离开事件根本不会来——这就是「二次选择概率不隐藏」。
+  // 改成听全局指针移动：只要指针落在组外就收，与它此前在哪无关。
+  useEffect(() => {
     if (!picked || hasMoves) return;
-    const next = event.relatedTarget;
-    if (next instanceof Node && event.currentTarget.contains(next)) return;
-    setControlsOpen(false);
-    setCollapsedByLeave(true);
-  };
+    const onMove = (event: PointerEvent): void => {
+      const box = controlsRef.current;
+      if (box === null) return;
+      if (event.target instanceof Node && box.contains(event.target)) return;
+      setControlsOpen(false);
+      setCollapsedByLeave(true);
+    };
+    window.addEventListener('pointermove', onMove, { passive: true });
+    return () => window.removeEventListener('pointermove', onMove);
+  }, [picked, hasMoves]);
 
   // 记一笔「这一局已经在控件组里选过」，收起才有依据。
   const chooseLevel = (item: AiLevel): void => {
@@ -225,7 +235,7 @@ export function AiPage() {
     <div className="page page-play page-ai" data-panel={panelOpen ? 'open' : 'closed'}>
       <main className="board-stage">
         {showControls ? (
-          <div className="ai-controls" onPointerLeave={closeOnLeave}>
+          <div className="ai-controls" ref={controlsRef}>
             <div className="mission-actions" role="radiogroup" aria-label="难度">
               <span className="drill-hint" style={{ alignSelf: 'center' }}>
                 难度

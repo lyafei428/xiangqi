@@ -532,7 +532,7 @@ async function click(cdp, x, y) {
 }
 
 /**
- * F5-4：深色令牌层的对比度与「无图片、无渐变」。
+ * F5-4：令牌层的对比度与「无图片、无渐变」，深浅两套各量一遍。
  * 读数在页面里算：从 :root 取变量值，按 WCAG 2.1 的相对亮度公式算比。
  * 断言集与禁止组合写在 docs/design/modules/theme.md §3。
  */
@@ -540,7 +540,9 @@ async function measureTheme(cdp) {
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
   await freshLoad(cdp, '/play');
   await delay(400);
-  return evaluate(cdp, `(() => {
+
+  const readOnce = async () =>
+    evaluate(cdp, `(() => {
     const root = getComputedStyle(document.documentElement);
     const read = (name) => root.getPropertyValue(name).trim();
     const lin = (c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
@@ -562,7 +564,6 @@ async function measureTheme(cdp) {
       const lo = Math.min(a, b);
       return Math.round(((hi + 0.05) / (lo + 0.05)) * 100) / 100;
     };
-    // 断言集：theme.md §3 里断言列为「过」的行。
     const pairs = [
       ['--text', '--page-bg'],
       ['--text', '--panel-bg'],
@@ -583,16 +584,17 @@ async function measureTheme(cdp) {
       ['--board-ink', '--board-bg'],
     ];
     const readings = pairs.map(([fg, bg]) => ({ pair: fg + ' on ' + bg, ratio: ratio(fg, bg) }));
-
-    // 禁止组合：拿它们当字色就不该出现，只作证据，不参与断言。
-    const forbidden = [
-      ['--on-accent', '--accent'],
-      ['--red', '--panel-bg'],
-      ['--black', '--panel-bg'],
-    ].map(([fg, bg]) => ({ pair: fg + ' on ' + bg, ratio: ratio(fg, bg) }));
-
-    return { readings, forbidden, tokens: { page: read('--page-bg'), panel: read('--panel-bg') } };
+    return { readings, page: read('--page-bg') };
   })()`);
+
+  const out = {};
+  for (const scheme of ['dark', 'light']) {
+    await cdp.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: scheme }] });
+    await delay(120);
+    out[scheme] = await readOnce();
+  }
+  await cdp.send('Emulation.setEmulatedMedia', { features: [] });
+  return out;
 }
 
 async function measurePhoneOneScreen(cdp) {
@@ -683,17 +685,20 @@ function report(data) {
   if (data.fluency.firstMoveMs >= THRESHOLDS.moveMs) failures.push(`单步时延 ${data.fluency.firstMoveMs.toFixed(1)}ms 不低于 16ms`);
   if (data.fluency.maxFrameGapMs > THRESHOLDS.frameMs) failures.push(`连续走子最大帧间隔 ${data.fluency.maxFrameGapMs.toFixed(1)}ms > 32ms`);
 
-  console.log(`\n视觉基准与对比度（F5-4）`);
-  console.table(data.theme.readings);
-  for (const row of data.theme.readings) {
-    // 读不出数说明 token 名改过或值不是 6 位十六进制：这本身就是缺陷，不当作通过。
-    if (row.ratio === null) failures.push(`${row.pair} 读不出对比度（token 缺失或不是十六进制）`);
-    else if (row.ratio < THRESHOLDS.contrast) failures.push(`${row.pair} 对比度 ${row.ratio} 低于 ${THRESHOLDS.contrast}`);
+  for (const scheme of ['dark', 'light']) {
+    const label = scheme === 'dark' ? '深色' : '浅色';
+    console.log(`\n视觉基准与对比度（F5-4，${label}）`);
+    console.table(data.theme[scheme].readings);
+    for (const row of data.theme[scheme].readings) {
+      // 读不出数说明 token 名改过或值不是 6 位十六进制：这本身就是缺陷，不当作通过。
+      if (row.ratio === null) failures.push(`${label}：${row.pair} 读不出对比度（token 缺失或不是十六进制）`);
+      else if (row.ratio < THRESHOLDS.contrast) failures.push(`${label}：${row.pair} 对比度 ${row.ratio} 低于 ${THRESHOLDS.contrast}`);
+    }
+    if (data.theme[scheme].page === '') failures.push(`${label}：:root 读不到 --page-bg，配色没生效`);
   }
-  // 禁止组合只作证据：它们本来就该不达标，达标了反而说明 token 用错。
-  for (const row of data.theme.forbidden) {
-    if (row.ratio !== null && row.ratio >= THRESHOLDS.contrast) failures.push(`${row.pair} 是禁止组合却达标（${row.ratio}），检查 token 是否用错`);
-  }
+  // 两套配色必须真的是两套：页面底一样就说明媒体查询没接上。
+  if (data.theme.dark.page === data.theme.light.page) failures.push('深浅两套配色的 --page-bg 相同，prefers-color-scheme 没生效');
+
   const css = readdirSync(join(repoRoot, 'src/client/styles'))
     .filter((name) => name.endsWith('.css'))
     .map((name) => readFileSync(join(repoRoot, 'src/client/styles', name), 'utf8'))
@@ -701,7 +706,16 @@ function report(data) {
   for (const pattern of ['linear-gradient', 'radial-gradient', 'url(']) {
     if (css.includes(pattern)) failures.push(`样式表里出现了 ${pattern}（F5.5 要求无渐变、无装饰图片）`);
   }
-  if (data.theme.tokens.page === '' || data.theme.tokens.panel === '') failures.push('深色令牌层没有生效（:root 读不到 --page-bg / --panel-bg）');
+  // 棋盘色只许落在棋盘上：拿它们当界面文字或填充底，深色下会掉到 2.4:1 与 1.0:1。
+  // 这条与配色方案无关，所以查源码而不是查对比度（浅色下黑字压白底反而是对的）。
+  const boardTokens = ['--red', '--black', '--target'];
+  for (const token of boardTokens) {
+    const asText = new RegExp(`color:\\s*var\\(\\${token}\\)`);
+    const asFill = new RegExp(`background(-color)?:\\s*var\\(\\${token}\\)`);
+    if (asText.test(css)) failures.push(`界面文字用了棋盘色 ${token}：深底上读不出来，请改用 ${token}-text`);
+    if (asFill.test(css)) failures.push(`界面底色用了棋盘色 ${token}：请改用 --raise-bg / --sunken-bg`);
+  }
+  if (/background(-color)?:\s*var\(--accent\)/.test(css)) failures.push('填充底用了 --accent：白字只有 3.37:1，用 --accent-strong');
 
   console.log(`\n手机一屏（375×667，F4.6）`);
   console.table(

@@ -342,17 +342,15 @@ describe('F1-10 人机页专注：难度与阵营收为一行摘要', () => {
     const summary = (): HTMLElement | null => screen.queryByRole('button', { name: /难度 .* · 改/ });
     const controls = (): Element | null => container.querySelector('.ai-controls');
 
-    // 没选过：鼠标移开不收——否则用户还没选就被迫点摘要展开。
-    const before = controls();
-    if (before === null) throw new Error('控件组没渲染');
-    fireEvent.pointerLeave(before);
+    // 没选过：指针在组外移动也不收——否则用户还没选就被迫点摘要展开。
+    expect(controls()).not.toBeNull();
+    fireEvent.pointerMove(document.body);
     expect(levelGroup()).not.toBeNull();
 
-    // 选过难度：移开就收成摘要。
+    // 选过难度：指针落到组外就收成摘要（不依赖「先悬停再离开」）。
     fireEvent.click(screen.getByRole('radio', { name: '高手' }));
-    const afterPick = controls();
-    if (afterPick === null) throw new Error('控件组没渲染');
-    fireEvent.pointerLeave(afterPick);
+    expect(controls()).not.toBeNull();
+    fireEvent.pointerMove(document.body);
     expect(levelGroup()).toBeNull();
     expect(summary()?.textContent).toBe('难度 高手 · 执红 · 改');
 

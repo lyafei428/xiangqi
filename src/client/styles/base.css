@@ -36,6 +36,7 @@
   /* 深底上投影看不出来：立体改成内描边，分层靠线 + 底色差。棋盘的外投影是唯一例外。 */
   --raise: 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
   --raise-flat: 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+  --board-shadow: 0 2px 6px rgba(0, 0, 0, 0.28), 0 14px 40px rgba(0, 0, 0, 0.32);
   --radius: 12px;
   /* 按钮用胶囊（站点 --dsl-button-border-radius: 4096px）；卡片与输入框不用它。 */
   --radius-pill: 4096px;
@@ -43,6 +44,38 @@
   --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   --font-board: 'STKaiti', 'KaiTi', 'Songti SC', serif;
 }
+
+/*
+ * 浅色：跟系统走（prefers-color-scheme）。取值对齐站点浅色令牌：页面与卡面都是白，
+ * 层次靠 1px 描边；按钮面用一档灰。蓝与红压深到在三种面上都过 4.5:1。
+ */
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --page-bg: #ffffff;
+    --panel-bg: #ffffff;
+    --raise-bg: #f5f6f7;
+    --sunken-bg: #eceef0;
+    --line: rgba(0, 0, 0, 0.1);
+    --text: #0f1115;
+    --muted: #61666b;
+    /* 站点浅色的 caption 是 #adb2b8，在白底上只有 2.3:1；这里压到 5.1。 */
+    --muted-2: #6a6e74;
+    /* 站点浅色 brand 是 #3964fe，按钮面上一档灰时只有 4.46；这一档在三种面上都过。 */
+    --accent: #3358e0;
+    --accent-strong: #3964fe;
+    --on-accent: #ffffff;
+    --low: #d81b1b;
+    --red-text: #b3261e;
+    --black-text: #22262b;
+    --target-text: #2f6f4f;
+    --raise: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 1px 2px rgba(16, 24, 40, 0.06),
+      0 8px 24px rgba(16, 24, 40, 0.06);
+    --raise-flat: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 1px 2px rgba(16, 24, 40, 0.06);
+    --board-shadow: 0 2px 6px rgba(16, 24, 40, 0.06), 0 14px 40px rgba(16, 24, 40, 0.08);
+  }
+}
+
 
 * {
   box-sizing: border-box;

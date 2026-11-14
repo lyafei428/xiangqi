@@ -149,7 +149,8 @@
 }
 
 .turn-over {
-  background: var(--accent);
+  /* 与主按钮同一档：--accent 只做描边与链接，不作填充底。 */
+  background: var(--accent-strong);
 }
 
 .moves {

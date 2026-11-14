@@ -1,0 +1,204 @@
+/* 对弈页 */
+
+.page-play {
+  flex-direction: row;
+  /* 对局页不滚页面：整屏高度留给棋盘与常驻条（F4.6）。 */
+  overflow: hidden;
+}
+
+.page-ai {
+  overflow: hidden;
+}
+
+.board-stage {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  padding: 16px;
+}
+
+/* 人机页把难度/阵营放在棋盘上方：纵向排布，让 .board-fit 拿到扣除控件后的真实高度，
+   否则棋盘按整高算尺寸，底行会被裁掉。 */
+.page-ai .board-stage {
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-controls {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-bg);
+  box-shadow: var(--raise-flat);
+}
+
+/* 走完第一着后的难度与阵营摘要：一行、可点开改。 */
+.ai-summary {
+  flex: 0 0 auto;
+  align-self: center;
+  border: 1px solid var(--line);
+  background: var(--panel-bg);
+  color: var(--muted);
+  border-radius: 999px;
+  box-shadow: var(--raise-flat);
+  padding: 5px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.ai-summary:hover {
+  color: var(--text);
+}
+
+
+.board-fit {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  overflow: auto;
+}
+
+.board-slot {
+  margin: auto;
+  /* 舞台比棋盘高时上下居中；不居中时底边会留一大块死白。 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.board {
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--board-bg);
+  /* 全站唯一的外投影：深色桌面上要把棋盘读成一张纸；浅色下自动变轻。 */
+  box-shadow: var(--board-shadow);
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.board-bg {
+  fill: var(--board-bg);
+}
+
+.board-line {
+  stroke: var(--board-line);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+.marker {
+  fill: none;
+  stroke: var(--board-line);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.river-text {
+  fill: var(--board-ink);
+  font-family: var(--font-board);
+  font-size: 42px;
+  letter-spacing: 10px;
+  opacity: 0.85;
+}
+
+.last-move {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  opacity: 0.55;
+}
+
+.target-dot {
+  fill: var(--target);
+  opacity: 0.45;
+}
+
+.target-capture {
+  fill: none;
+  stroke: var(--target);
+  stroke-width: 4;
+  opacity: 0.75;
+}
+
+.piece {
+  cursor: pointer;
+}
+
+.piece:focus {
+  outline: none;
+}
+
+.piece-disc {
+  fill: var(--piece-face);
+  stroke: var(--piece-edge);
+  stroke-width: 3;
+}
+
+.piece-text {
+  font-family: var(--font-board);
+  font-size: 48px;
+  font-weight: 600;
+}
+
+.piece-red .piece-text {
+  fill: var(--red);
+}
+
+.piece-black .piece-text {
+  fill: var(--black);
+}
+
+.piece-selected {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 4.5;
+}
+
+.piece-check {
+  fill: rgb(179 38 30 / 14%);
+  stroke: var(--red);
+  stroke-width: 3;
+}
+
+.keyboard-cursor {
+  fill: none;
+  stroke: var(--target);
+  stroke-width: 3;
+  stroke-dasharray: 8 6;
+}
+
+.board-mark {
+  fill: none;
+  stroke-width: 3;
+  stroke-dasharray: 8 6;
+}
+
+.board-mark-select {
+  stroke: var(--accent);
+}
+
+.board-mark-correct {
+  stroke: var(--target);
+  stroke-dasharray: none;
+}
+
+.board-mark-wrong {
+  stroke: var(--red);
+  stroke-dasharray: none;
+}
+
+.drag-ghost {
+  opacity: 0.8;
+  pointer-events: none;
+}
+
