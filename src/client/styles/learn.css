@@ -1,0 +1,166 @@
+/* 课程目录 */
+
+.page-learn {
+  display: block;
+  overflow-y: auto;
+  padding: 24px 16px 40px;
+}
+
+.learn-inner {
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+.chapter {
+  margin-top: 26px;
+}
+
+.chapter-title {
+  margin: 0 0 10px;
+  font-size: 18px;
+}
+
+.lesson-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lesson-item {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-bg);
+  box-shadow: var(--raise);
+  padding: 12px 14px;
+}
+
+.lesson-link {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.lesson-visited {
+  color: var(--target);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.lesson-summary {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* 单课 */
+
+.page-lesson {
+  display: block;
+  overflow-y: auto;
+  padding: 20px 16px 40px;
+}
+
+.lesson-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 520px);
+  gap: 28px;
+  align-items: start;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.lesson-text {
+  min-width: 0;
+}
+
+.lesson-meta {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.lesson-section {
+  margin-top: 18px;
+}
+
+.lesson-section h2 {
+  margin: 0 0 8px;
+  font-size: 17px;
+}
+
+.lesson-section p,
+.lesson-note p {
+  margin: 0 0 8px;
+  line-height: 1.7;
+}
+
+.lesson-note {
+  margin-top: 18px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--line);
+  background: var(--panel-bg);
+  box-shadow: var(--raise-flat);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.lesson-demo {
+  position: sticky;
+  top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.demo {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-bg);
+  box-shadow: var(--raise);
+  padding: 12px;
+}
+
+.demo-board {
+  height: min(52vh, 480px);
+  display: flex;
+  overflow: auto;
+}
+
+.demo-text {
+  min-height: 2.6em;
+  margin: 10px 2px 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.demo-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.demo-controls .btn {
+  flex: 1;
+  padding: 8px 10px;
+}
+
+.drill-link {
+  text-align: center;
+  text-decoration: none;
+}
+

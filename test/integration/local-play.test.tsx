@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// 集成用例 F1-1（本地双人走完一局并判和）与 F1-3（计时与认输）。
+// 集成用例 F1-1（本地双人走完一局并判和）、F1-3（计时与认输）与 F1-10（着法区默认收起）。
 // 指针事件走的是真实事件链，不直接调用 reducer：Board → session → 引擎 → 记谱 → 面板。
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -52,6 +52,18 @@ function setup(): { board: Element; container: HTMLElement } {
 function tap(board: Element, x: number, y: number): void {
   fireEvent.pointerDown(board, { clientX: x, clientY: y, pointerId: 1, button: 0 });
   fireEvent.pointerUp(board, { clientX: x, clientY: y, pointerId: 1, button: 0 });
+}
+
+/**
+ * 着法区按开关的 aria-controls 找：这条线是「按钮管着哪一块」的成文关系，
+ * 不另挑类名，换结构时用例跟着关系走。
+ */
+function movesBody(toggle: HTMLElement): HTMLElement {
+  const id = toggle.getAttribute('aria-controls');
+  if (id === null) throw new Error('着法开关没有 aria-controls');
+  const element = document.getElementById(id);
+  if (element === null) throw new Error('着法开关指向的着法区不存在');
+  return element;
 }
 
 describe('F1-1 本地双人走完一局并判和', () => {
@@ -197,6 +209,44 @@ describe('F1-5 关页重开后接着下', () => {
     }[];
     expect(records).toHaveLength(1);
     expect(records[0]?.result?.type).toBe('resign');
+  });
+});
+
+describe('F1-10 对弈页专注：着法区默认收起', () => {
+  it('进入看不到着法记录与记谱框，点「着法」两者出现，点「收起着法」收起', () => {
+    setup();
+    const toggle = (): HTMLElement => screen.getByRole('button', { name: '着法' });
+
+    // 收起态：记录与记谱框仍在页面的着法区里，只是这块不显示——role 查询会跳过整块，
+    // 与用户（和读屏）看不到是同一件事。
+    expect(toggle().getAttribute('aria-expanded')).toBe('false');
+    expect(movesBody(toggle()).hidden).toBe(true);
+    expect(movesBody(toggle()).querySelector('.moves')).not.toBeNull();
+    expect(movesBody(toggle()).querySelector('.notation-input')).not.toBeNull();
+    expect(screen.queryByRole('textbox', { name: '记谱输入' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '收起着法' })).toBeNull();
+
+    // 收起的是着法区，不是整块面板：行棋方、计时、认输、新局仍留在常驻区。
+    expect(screen.getByRole('status').textContent).toContain('红方走棋');
+    expect(screen.getByLabelText('双方用时')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '认输' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '新局' })).toBeTruthy();
+
+    // 点「着法」：着法记录与记谱框一起出现，收起按钮跟着出现。
+    fireEvent.click(toggle());
+    expect(toggle().getAttribute('aria-expanded')).toBe('true');
+    expect(movesBody(toggle()).hidden).toBe(false);
+    expect(screen.getByText('着法记录')).toBeTruthy();
+    expect(screen.getByText('尚未走子')).toBeTruthy();
+    const field = screen.getByRole('textbox', { name: '记谱输入' }) as HTMLInputElement;
+    expect(field.disabled).toBe(false);
+
+    // 点「收起着法」：两块一起收回去，开关报回未展开。
+    fireEvent.click(screen.getByRole('button', { name: '收起着法' }));
+    expect(toggle().getAttribute('aria-expanded')).toBe('false');
+    expect(movesBody(toggle()).hidden).toBe(true);
+    expect(screen.queryByRole('textbox', { name: '记谱输入' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '收起着法' })).toBeNull();
   });
 });
 

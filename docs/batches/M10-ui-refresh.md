@@ -64,7 +64,30 @@
 
 RTM 同步：新增 F1-10、F4-6 两行；F4-4 收窄为格宽下限；F4-5 补「着法」抽屉开合；用例实现清单补 F1-10。
 
+**设计评审通过**（第二轮 `VERDICT: pass`，剩余 5 🟡 / 1 🔵 全为 advisory）。通过后当轮已落地的修订：
+
+- 人机行的「难度与阵营」从「默认收起」列移出，改为表下一句：未走子时常驻、走完第一着收为一行摘要；
+- `docs/design/modules/board-ui.md` §2 渲染层次第 1 层「木纹底」改为「棋盘底色」；
+- ≥1024 档写明：侧栏常驻不变，收起的是侧栏内的着法记录与记谱输入；
+- 样式拆分的构建口径补进文件表（生产合成一张 CSS，dev 分请求不计入 F5.2）；
+- `docs/design/modules/local-play.md` §2 文件表更正 App.tsx 职责并补两个页面的归属。
+
+**实施决定（评审通过后新增，落在这里而不是改设计档）**
+
+面板结构拆成「常驻条 + 可收起的着法区」，因为原结构把状态行、计时、认输、新局都放在 `panel-body` 里——窄屏收起时这些会一起消失，与 F1.10 的「常驻清单」冲突。
+
+| 区域 | 内容 | 行为 |
+|---|---|---|
+| 常驻条 | 标题、模式、状态行、双方计时、认输、新局 | 任何档位、任何展开态都可见；`<768` 时是贴底条 |
+| 着法区 | 着法记录、记谱输入 | 默认收起；「着法」按钮切换 |
+| 抽屉（`<768`） | 着法区 | `position: fixed` 贴底、`max-height: 50dvh`、自身滚动；展开时盖住棋盘下沿，不挤棋盘 |
+
+按钮文案：常驻条上的切换按钮叫「着法」（带 `aria-expanded`）；抽屉内另有一个「收起着法」按钮——抽屉展开时贴底条被盖住，需要抽屉自己的关闭入口。两个名字不重复，避免 `getByRole` 单匹配撞车。
+
 ## §3 设计评审（评审子代理）
+**状态行**：评审通过
+
+
 
 ### 轮次 1（评审子代理）
 
@@ -95,6 +118,72 @@ RTM 同步：新增 F1-10、F4-6 两行；F4-4 收窄为格宽下限；F4-5 补�
 
 VERDICT: changes-required
 
+### 轮次 2（评审子代理）
+
+## 第二轮复核（原 16 项 + 新记 5 项）
+
+| # | Orig# | 文件 | 级别 | 状态 | 说明 |
+|---|-------|------|------|------|------|
+| 1 | 1 | `docs/design/modules/board-ui.md` §2 + `docs/design/modules/ui-refresh.md` §2 | 🔴 | 已修 | `docs/design/modules/board-ui.md` 现为「可加一圈 1px 内阴影表现厚度；**不做外投影、不做渐变、不加纹理**」；`docs/design/modules/ui-refresh.md` §2 与偏差 ③ 同口径，并注明该节已同步改写。 |
+| 2 | 2 | `docs/design/modules/board-ui.md` §5 + `docs/design/modules/local-play.md` §5 | 🔴 | 已修 | `docs/design/modules/board-ui.md` §5 写入覆盖式几何（贴底 / `max-height: 50dvh` / `translateY(100%)` / 不参与布局也不可聚焦）；`docs/design/modules/local-play.md` §5 的 <768 行改为「覆盖式底部抽屉（`position: fixed`，`max-height: 50dvh`，自身滚动，不占棋盘高度），可收；细则见 `docs/design/modules/board-ui.md` §5」。 |
+| 3 | 3 | `docs/design/modules/ui-refresh.md` §6 | 🔴 | 已修 | 已给拆分计划：「过了 800 行硬上限，本批拆成上表八个样式文件（按现有分区估算，单文件均 < 500 行）；拆后 `src/client/app.css` 只剩八行引入」；`docs/design/modules/local-play.md` §2 同步。 |
+| 4 | 4 | `docs/design/modules/ui-refresh.md` §2 与现有件检查 | 🔴 | 已修 | 现称「`:root` 已有一层设计变量」并「沿用这套名字改值，只新增 `--raise` 与 `--radius`，不另起一套并行命名」；`--line` 明写旧值 `#d9c9a8`、「不存在两种 `--line` 并存」。 |
+| 5 | 5 | `docs/design/modules/ui-refresh.md` §3/§5 + `docs/requirements/xiangqi.md` F1.10 | 🔴 | 已修 | 「`/` 的规则：记谱区处于收起态时，先展开再聚焦输入框；已展开则只聚焦。幂等，不改变局面。」F1.8 受影响行写「断言不变：`/` 仍能聚焦输入框」。 |
+| 6 | 6 | `docs/design/modules/ui-refresh.md` §4/§5 + `test/RTM.md` F4-4 | 🟡 | 已修 | §4 现状改为「需要一条可复现的读数支撑」并给出 `node scripts/acceptance.mjs` 与「以读数为准修正本节」；§5 补 F1-7/F1-8/F4-4/F4-3/F4-5 受影响行；`test/RTM.md` F4-4 已收窄为「375 视口下格宽不低于 40px（棋盘完整可见归 F4-6）」。 |
+| 7 | 7 | `docs/design/modules/ui-refresh.md` §5 | 🟡 | 已修 | 起点改为「响应式故事 F4-3…F4-5（由 `scripts/acceptance.mjs` 实跑）与对弈故事（F1-1…F1-9，jsdom 用例）。页面壳故事 F4-1/F4-2 不在本批改动范围」，与 `test/RTM.md` 两节归属一致。 |
+| 8 | 8 | `docs/design/modules/ui-refresh.md` §4 | 🟡 | 已修 | 抽屉尺寸写全：`max-height: 50dvh`、自身纵向滚动、收起 `translateY(100%)` + `visibility: hidden`、展开时 `overscroll-behavior: contain`。 |
+| 9 | 9 | `docs/design/modules/ui-refresh.md` §4 | 🟡 | 已修 | 改为实测驱动：「`useStageSize` 实测棋盘舞台的盒子，页面壳保证舞台与常驻控件（顶栏、行棋方与计时条、新局/认输）不重叠」+「舞台的实测盒子才是唯一来源」。 |
+| 10 | 10 | `docs/requirements/xiangqi.md` + `docs/design/modules/ui-refresh.md` §1 | 🟡 | 已修 | 需求文档已有 F1.10 / F4.6 / F5.5 三行（编号用 F1.10，不再跳号）；设计 §1 只记落点，不再复制需求与验收口径。 |
+| 11 | 11 | `docs/design/modules/ui-refresh.md` §3 | 🟡 | 未修（残留） | 「\| 人机 \| 同上 + 难度与阵营（仅未走子时） \| 着法记录、记谱输入、难度与阵营（走第一着后收为一行摘要，点摘要可展开改） \|」——人机行的「难度与阵营」同时出现在常驻列与默认收起列，两列默认态互斥。需求 F1.10 已给定口径（未走子时显示），实现可判，故降为 🟡：删掉默认收起列里的「难度与阵营」，或单列一行写「走第一着后收为一行摘要」。 |
+| 12 | 12 | `docs/design/modules/ui-refresh.md` §2/§7 | 🟡 | 已修 | `--muted` 改 `#5b6472` 并标「在 `--page-bg` 上约 5.5:1，过 4.5:1」（按表值复算约 5.5:1，相符）；`--text` 约 14.5:1 亦复算相符；§7 给 F5.5 三条读数（对比度脚本、`url(`/渐变 grep、截图留档）。 |
+| 13 | 13 | `docs/design/modules/ui-refresh.md` §6 | 🟡 | 已修 | 「`scripts/acceptance.mjs` 实测 596 行，过了 500 行的主动复核档。本批只在它既有读数器旁加一段 F4-6 读数（约 30 行），按页拆开放到下一批。」 |
+| 14 | 14 | `docs/design/modules/ui-refresh.md` §4 | 🔵 | 已修 | 「本批只改「可用高」的来源」，公式、720 上限与 360 下限全部按 `docs/design/modules/board-ui.md` §5 不变。 |
+| 15 | 15 | `docs/design/modules/ui-refresh.md` 开头偏差句 | 🔵 | 已修 | 偏差改为三条并各自指向落点文档（`docs/design/modules/board-ui.md` §5 / §2 已同步改写），不再指错节。 |
+| 16 | 16 | `docs/design/modules/ui-refresh.md` §5/§6 | 🔵 | 已修 | 两行 F1-10 各带用例实现（`test/integration/local-play.test.tsx` / `test/integration/ai.test.tsx`），与 `test/RTM.md` 对弈节的用例实现行一致。 |
+| 17 | (新) | `docs/design/modules/board-ui.md` §2 | 🟡 | 新 | 渲染层次第 1 层仍写「1  木纹底（单色，不做纹理图）」，而 `docs/requirements/xiangqi.md` F5.5 明令「（无木纹、无重阴影、无渐变金属）」、`--board-bg` 已改为 `#f7f2e6`；`docs/design/modules/ui-refresh.md` §6 的文件表只列该档 §2 棋子材质与 §5，未把该层改名。 |
+| 18 | (新) | `docs/design/modules/local-play.md` §5 + `docs/design/modules/ui-refresh.md` §3 | 🟡 | 新 | ≥1024 档仍是「\| ≥1024px \| 右侧固定侧栏 320px，常驻，不提供收起 \|」，而 `docs/design/modules/ui-refresh.md` §3 说「≥1024px 与 768–1023px 两档的面板几何不变（右侧栏 / 底抽屉），只改默认收起；<768px 按 §4。」——该档「默认收起」收起的是什么没写死（侧栏常驻时收起后只剩「着法」按钮？）需一句话交代。 |
+| 19 | (新) | `docs/design/modules/ui-refresh.md` §6 + `docs/requirements/xiangqi.md` F5.2 | 🟡 | 新 | 拆分方案落到「只留八条 `@import`」，而 F5.2 的验收是「手机 4G 快档首屏 < 2s，请求数 ≤ 6」；设计没说构建产物是否仍是一张 CSS、dev 下的多请求是否不计入读数。 |
+| 20 | (新) | `docs/design/modules/local-play.md` §2 + `docs/design/modules/ui-refresh.md` §1 | 🟡 | 新 | `docs/design/modules/local-play.md` §2 文件表仍把面板收起记在「\| `src/client/App.tsx` \| 页面骨架、三档布局、面板收起、棋盘尺寸测量。 \|」，且表内无 `pages/` 两页；`docs/design/modules/ui-refresh.md` §1 把默认收起与「着法」切换放在 `GamePanel`、人机显隐放在 `AiPage`。本批两档都要改，这一行应随之更新。 |
+| 21 | (新) | `docs/design/modules/ui-refresh.md` §6 | 🔵 | 新 | 文件表仍写「\| `docs/requirements/xiangqi.md` \| 新增 F1.10、F4.6、F5.5 三行 \|」，而需求文档已有这三行，动作已完成。 |
+
+剩余问题计数：🔴 0 · 🟡 5 · 🔵 1。原 16 项：15 已修、1 残留（#11，降为 🟡，非阻塞）。
+
+VERDICT: pass
+
 ## §4 用户批准（主 agent）
 ## §5 实施记录（实施者：主 agent ∥ coder）
+
+实施者：主 agent（面板结构、变量层、对局页与窄屏样式）+ coder ×3（样式拆分、面板结构代码、F1-10 用例）。
+
+**改动清单**
+
+| 文件 | 改法 |
+|---|---|
+| `src/client/app.css` | 只剩八条 `@import`，顺序按原分节：base → shell → play → panel → learn → drill → responsive → replay |
+| `src/client/styles/base.css` | 变量层换灰白值，新增 `--raise`、`--raise-flat`、`--radius`、`--accent-strong`；补 `:focus-visible` 焦点环 |
+| `src/client/styles/shell.css` | 顶栏与页面壳换材料；主按钮改用 `--accent-strong`（过 4.5:1） |
+| `src/client/styles/play.css` | 对局页禁纵向滚动；棋盘加 1px 描边与圆角；棋盘在舞台内上下居中；`.ai-controls` 卡片化、新增 `.ai-summary` |
+| `src/client/styles/panel.css` | 面板拆成常驻条与着法区；新增 `.panel-focus`、`.panel-actions`、`.panel-body-head`、`.panel-close`；时钟与按钮同行、`nowrap` |
+| `src/client/styles/responsive.css` | 窄屏常驻条；着法区改 `position: fixed` 覆盖式抽屉（`max-height: 50dvh`、自身滚动）；≥1024 收起时侧栏 264px；手机档隐去品牌名，七项导航单行装下 |
+| `src/client/panel/GamePanel.tsx` | 结构拆分：常驻区含状态行、计时、认输、着法开关、新局；着法区含记录与记谱输入，`hidden={!open}` |
+| `src/client/pages/PlayPage.tsx`、`AiPage.tsx` | 面板初始收起；人机页按 `hasMoves` 在控件组与一行摘要间切换 |
+| `scripts/acceptance.mjs` | 新增 `measurePhoneOneScreen`：375×667 下棋盘底边、页面滚动高度、开合抽屉前后棋盘的底边 |
+| `test/integration/{local-play,ai}.test.tsx` | 各一条 F1-10 用例 |
+| `test/integration/notation-input.test.tsx` | 入口适配：收起态先点「着法」再敲记谱；`/` 一例改为收起 → 按 `/` 展开并聚焦 → 收起 → 再按 `/` |
+
+**实施决定（与设计档的差异，逐条说明）**
+
+- 棋子的「描边内 1px 内阴影」没有做：SVG 元素没有 inset 阴影，加一层圆环要改 `src/client/board/Board.tsx`，而它不在本批文件表里。F5.5 的「卡片与控件具轻浮雕层次」由卡片、面板、按钮承担，需求验收不受影响；棋子仍用 3px 描边表现厚度。
+- 收起用 `hidden` 属性而不是 `translateY(100%)`：两者同样满足「不参与布局、不可聚焦、不进可访问树」，`hidden` 更直接，代价是没有滑动动画。
+- 面板常驻条的 `认输` 留在计时行（桌面上三者同行），窄屏跟着常驻条走；`新局` 与「着法」成对放在 `.panel-actions`。
+- 人机页的摘要判定用 `session.notations.length > 0`，因此执黑时 AI 的先手也会让控件收起——口径是「这一局已经开走了」，与 F1.10 的「走第一着后」一致。
+
+**验证读数**
+
+- `npm run check`：`node --test` 251 通过 / 0 失败；`vitest` 12 文件 66 用例通过 / 0 失败。
+- `npm run build`：退出码 0，产物只有一张 CSS（八份被合成）。
+- `node scripts/acceptance.mjs`（冻结构建后跑，全部阈值通过）：三视口格宽 72 / 72 / 40 px、请求 5 / 6 / 6、首屏 LCP 1116ms、CLS 0.000；触摸四项全 true；F4.6 读数 375×667 下棋盘 102→502（视口 667）、页面滚动高 667 = 可视高、开合抽屉棋盘底边不变。
+- 样式拆分逐字节核对：八份按 `@import` 顺序拼接与拆分前 `app.css` 逐字节相同（21251 = 21251 字节）。
+- 实机目视：1440 宽桌面（面板收起 / 展开两态）与 375×667 手机（常驻条、覆盖式抽屉）各截图确认。
+
 ## §6 验证与收口（父代理）

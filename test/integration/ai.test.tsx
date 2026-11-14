@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// 集成用例 F1-7：人机页的难度与阵营、思考锁、请求规则与终局存谱。
+// 集成用例 F1-7：人机页的难度与阵营、思考锁、请求规则与终局存谱；F1-10：难度与阵营收成一行摘要。
 // 假 Worker 代替真线程：用例自己掌握「什么时候回子」，才能验「思考中点击不发 play」。
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -300,6 +300,38 @@ describe('F1-7 人机页：终局', () => {
     expect(screen.queryByText('AI 出错，请点新局重开')).toBeNull();
     expect(screen.getByRole('status').textContent).toContain('红方走棋');
     expect(notations(container)).toContain('尚未走子');
+  });
+});
+
+describe('F1-10 人机页专注：难度与阵营收为一行摘要', () => {
+  it('未走子时两组控件都在页上，走一着后收成摘要，点摘要再展开', () => {
+    const { board } = open();
+    const levelGroup = (): HTMLElement | null => screen.queryByRole('radiogroup', { name: '难度' });
+    const sideGroup = (): HTMLElement | null => screen.queryByRole('radiogroup', { name: '阵营' });
+    const summary = (): HTMLElement | null =>
+      screen.queryByRole('button', { name: '难度 高手 · 执红 · 改' });
+
+    // 未走子：难度与阵营就在页上（不属「默认收起」），摘要还没出现。
+    expect(levelGroup()).not.toBeNull();
+    expect(sideGroup()).not.toBeNull();
+    expect(summary()).toBeNull();
+    fireEvent.click(screen.getByRole('radio', { name: '高手' }));
+
+    // 走第一着：两组控件收成一行摘要，摘要写的是当下这一局的档位与阵营，不是默认值。
+    playerMove(board);
+    expect(levelGroup()).toBeNull();
+    expect(sideGroup()).toBeNull();
+    expect(summary()?.textContent).toBe('难度 高手 · 执红 · 改');
+
+    // 点摘要：控件展开回来，档位与阵营仍是走子前那一组。
+    const button = summary();
+    if (button === null) throw new Error('摘要按钮不在页上');
+    fireEvent.click(button);
+    expect(levelGroup()).not.toBeNull();
+    expect(sideGroup()).not.toBeNull();
+    expect((screen.getByRole('radio', { name: '高手' }) as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByRole('radio', { name: '执红' }) as HTMLInputElement).checked).toBe(true);
+    expect(summary()).toBeNull();
   });
 });
 

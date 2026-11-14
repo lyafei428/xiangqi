@@ -1,0 +1,55 @@
+:root {
+  /* 灰白基准：页面底、卡片面、分隔线、字色四层各一档，层级靠 --raise 才分得出。 */
+  --page-bg: #f4f5f7;
+  --panel-bg: #fbfbfc;
+  --board-bg: #f7f2e6;
+  --board-line: #b9a98d;
+  --piece-face: #fdfcf7;
+  --piece-edge: #9a9184;
+  --red: #b3261e;
+  --black: #22262b;
+  --accent: #b0742a;
+  /* 强调色作底、白字压在上面时用的深一档：本色作底只有 3.8:1。 */
+  --accent-strong: #966023;
+  --target: #2f6f4f;
+  --text: #1f2328;
+  /* 次要信息：在 --page-bg 上约 5.5:1，在 --panel-bg 上更高；低于此值就过不了 4.5:1。 */
+  --muted: #5b6472;
+  --line: #e2e4e8;
+  /* 轻浮雕：内高光 + 近层 + 远层。只给卡片与面板，棋盘与棋子不投影。 */
+  --raise: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 1px 2px rgba(16, 24, 40, 0.06),
+    0 8px 24px rgba(16, 24, 40, 0.06);
+  --raise-flat: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 1px 2px rgba(16, 24, 40, 0.06);
+  --radius: 10px;
+  --font-ui: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-board: 'STKaiti', 'KaiTi', 'Songti SC', serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--page-bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+/* 键盘与触点共用一套焦点环：灰白底上只有这一处高对比色。 */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

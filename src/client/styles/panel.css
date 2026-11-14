@@ -1,0 +1,312 @@
+/* 面板（对弈）：常驻条 + 可收起的着法区。 */
+
+.panel {
+  flex: 0 0 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  padding: 12px 16px 14px;
+  background: var(--panel-bg);
+  border-left: 1px solid var(--line);
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.panel-mode {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* 常驻区：状态、计时、认输、着法开关在任何展开态下都在。 */
+.panel-focus {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+/* 常驻操作行：着法开关与新局成对，收起时不空掉整列。 */
+.panel-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.panel-actions > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.panel-toggle {
+  /* 侧栏常驻时它就是展开着法区的开关，不该被藏起来。 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  background: var(--panel-bg);
+  color: var(--text);
+  border-radius: var(--radius);
+  box-shadow: var(--raise-flat);
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.panel-toggle:hover {
+  background: #f0f1f4;
+}
+
+.panel-toggle[aria-expanded='true'] {
+  background: #e9ebef;
+}
+
+/* 收起时不参与布局、不可聚焦：hidden 属性由结构保证，这里只兜底。 */
+.panel-body[hidden] {
+  display: none;
+}
+
+.panel-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.panel-body-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.panel-body-title {
+  letter-spacing: 1px;
+}
+
+.panel-close {
+  margin-left: auto;
+  border: 1px solid var(--line);
+  background: var(--panel-bg);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.panel-close:hover {
+  color: var(--text);
+  background: #f0f1f4;
+}
+
+.status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.status-line.is-result {
+  color: var(--accent);
+}
+
+.turn-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.turn-red {
+  background: var(--red);
+}
+
+.turn-black {
+  background: var(--black);
+}
+
+.turn-over {
+  background: var(--accent);
+}
+
+.moves {
+  flex: 1 1 auto;
+  min-height: 120px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #f7f8fa;
+  box-shadow: var(--raise-flat);
+  padding: 8px 10px;
+}
+
+.moves-empty {
+  margin: 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.moves-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 14px;
+}
+
+.move-row {
+  display: grid;
+  grid-template-columns: 2.2em 1fr 1fr;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.move-no {
+  color: var(--muted);
+}
+
+.move-red {
+  color: var(--red);
+}
+
+.move-black {
+  color: var(--black);
+}
+
+.new-game {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  background: var(--panel-bg);
+  color: var(--text);
+  padding: 7px 14px;
+  border-radius: var(--radius);
+  box-shadow: var(--raise-flat);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.new-game:hover {
+  background: #f0f1f4;
+}
+
+.new-game:active {
+  transform: translateY(1px);
+}
+
+/* 记谱输入 */
+
+.notation {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.notation-input {
+  border: 1px solid var(--line);
+  background: #f7f8fa;
+  color: var(--text);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 14px;
+}
+
+.notation-input:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.notation-error {
+  margin: 0;
+  color: var(--red);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.notation-example {
+  margin-left: 6px;
+  color: var(--muted);
+  /* 面板宽度不足时整句换行，不从例子中间拆开。 */
+  white-space: nowrap;
+}
+
+.clock-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.clock {
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #f7f8fa;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.clock-row .resign {
+  margin-left: auto;
+  padding: 5px 9px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.clock-row .resign + .resign {
+  margin-left: 0;
+}
+
+.clock.is-low {
+  color: #a12f2f;
+  border-color: #a12f2f;
+}
+
+.resign {
+  border: 1px solid var(--line);
+  background: var(--panel-bg);
+  color: var(--text);
+  padding: 7px 12px;
+  border-radius: var(--radius);
+  box-shadow: var(--raise-flat);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.resign:hover:not(:disabled) {
+  background: #f0f1f4;
+}
+
+.resign:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn.small {
+  padding: 4px 10px;
+  font-size: 13px;
+  margin-left: 8px;
+}

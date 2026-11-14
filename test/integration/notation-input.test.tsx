@@ -61,6 +61,14 @@ function setup(): { container: HTMLElement } {
   return { container: view.container };
 }
 
+/**
+ * 着法区默认收起（F1.10 的专注态）：要敲记谱先点常驻条上的「着法」展开。
+ * 收起态的输入框不可聚焦，直接对它敲字不是用户走得到的路径。
+ */
+function openMoves(): void {
+  fireEvent.click(screen.getByRole('button', { name: '着法' }));
+}
+
 function input(): HTMLInputElement {
   return screen.getByLabelText('记谱输入') as HTMLInputElement;
 }
@@ -80,6 +88,7 @@ function notations(container: HTMLElement): string {
 describe('F1-8 面板记谱输入走子', () => {
   it('输入「炮二平五」回车后炮落到中路，着法记录出现该步', () => {
     const { container } = setup();
+    openMoves();
     submit('炮二平五');
 
     expect(notations(container)).toContain('炮二平五');
@@ -93,6 +102,7 @@ describe('F1-8 面板记谱输入走子', () => {
 
   it('输入「炮二平九」不落子，提示留在输入框下方', () => {
     const { container } = setup();
+    openMoves();
     submit('炮二平九');
 
     expect(notations(container)).toContain('尚未走子');
@@ -107,6 +117,7 @@ describe('F1-8 面板记谱输入走子', () => {
 
   it('输入法未上屏的回车不提交', () => {
     const { container } = setup();
+    openMoves();
     const field = input();
     field.focus();
     fireEvent.change(field, { target: { value: '炮二平五' } });
@@ -124,17 +135,25 @@ describe('F1-8 面板记谱输入走子', () => {
     expect(input().disabled).toBe(true);
   });
 
-  it('按 / 聚焦记谱输入；面板收起时先展开再聚焦', () => {
+  it('按 / 聚焦记谱输入；着法区收起时先展开再聚焦', () => {
     setup();
     expect(document.activeElement).not.toBe(input());
 
+    // 进页面是专注态：着法区收起，开关的 aria-expanded 与 body 的 hidden 同源。
+    const toggle = (): HTMLElement => screen.getByRole('button', { name: '着法' });
+    const body = (): Element | null => document.querySelector('.panel-body');
+    expect(toggle().getAttribute('aria-expanded')).toBe('false');
+    expect(body()?.hasAttribute('hidden')).toBe(true);
+
     fireEvent.keyDown(document.body, { key: '/' });
     expect(document.activeElement).toBe(input());
+    expect(toggle().getAttribute('aria-expanded')).toBe('true');
+    expect(body()?.hasAttribute('hidden')).toBe(false);
 
-    fireEvent.click(screen.getByRole('button', { name: '收起' }));
-    expect(screen.getByRole('button', { name: '展开' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '收起着法' }));
+    expect(toggle().getAttribute('aria-expanded')).toBe('false');
     fireEvent.keyDown(document.body, { key: '/' });
-    expect(screen.getByRole('button', { name: '收起' })).toBeTruthy();
+    expect(toggle().getAttribute('aria-expanded')).toBe('true');
     expect(document.activeElement).toBe(input());
   });
 

@@ -182,6 +182,7 @@ async function main() {
     const lesson = await measureLessonContinuity(cdp);
     const touch = await measureTouch(cdp);
     const fluency = await measureFluency(cdp);
+    const oneScreen = await measurePhoneOneScreen(cdp);
 
     let selfTest = null;
     if (SELF_TEST) {
@@ -189,7 +190,7 @@ async function main() {
       selfTest = { ...slow, failedAsExpected: slow.lcp >= THRESHOLDS.lcpMs };
     }
 
-    report({ viewports, firstPaint, continuity, lesson, touch, fluency, selfTest });
+    report({ viewports, firstPaint, continuity, lesson, touch, fluency, oneScreen, selfTest });
   } finally {
     cdp.close();
     await browser.cleanup();
@@ -525,6 +526,34 @@ async function click(cdp, x, y) {
   await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
 }
 
+async function measurePhoneOneScreen(cdp) {
+  await cdp.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 1, mobile: true });
+  await freshLoad(cdp, '/play');
+  await delay(600);
+  const read = (label) =>
+    evaluate(cdp, `(() => {
+      const board = document.querySelector('svg');
+      const box = board ? board.getBoundingClientRect() : null;
+      const doc = document.scrollingElement;
+      return {
+        label: ${JSON.stringify(label)},
+        boardTop: box ? Math.round(box.top) : -1,
+        boardBottom: box ? Math.round(box.bottom) : -1,
+        viewport: window.innerHeight,
+        scrollHeight: doc ? doc.scrollHeight : -1,
+        clientHeight: doc ? doc.clientHeight : -1,
+      };
+    })()`);
+  const closed = await read('收起');
+  await evaluate(cdp, `document.querySelector('.panel-toggle').click()`);
+  await delay(200);
+  const open = await read('展开');
+  await evaluate(cdp, `document.querySelector('.panel-close').click()`);
+  await delay(200);
+  const again = await read('再收起');
+  return { closed, open, again };
+}
+
 function report(data) {
   const failures = [];
 
@@ -577,6 +606,16 @@ function report(data) {
   console.log(`\n走子流畅：单步 ${data.fluency.firstMoveMs.toFixed(1)}ms（阈值 <16ms），连走三着最大帧间隔 ${data.fluency.maxFrameGapMs.toFixed(1)}ms（阈值 ≤32ms，采样 ${data.fluency.frameCount} 帧）`);
   if (data.fluency.firstMoveMs >= THRESHOLDS.moveMs) failures.push(`单步时延 ${data.fluency.firstMoveMs.toFixed(1)}ms 不低于 16ms`);
   if (data.fluency.maxFrameGapMs > THRESHOLDS.frameMs) failures.push(`连续走子最大帧间隔 ${data.fluency.maxFrameGapMs.toFixed(1)}ms > 32ms`);
+
+  console.log(`\n手机一屏（375×667，F4.6）`);
+  console.table([data.oneScreen.closed, data.oneScreen.open, data.oneScreen.again]);
+  const oneScreen = data.oneScreen.closed;
+  if (oneScreen.boardBottom < 0) failures.push('375×667 下没有读到棋盘');
+  if (oneScreen.boardBottom > oneScreen.clientHeight) failures.push(`375×667 下棋盘底边 ${oneScreen.boardBottom} 超出可视区 ${oneScreen.clientHeight}`);
+  if (oneScreen.boardTop < 0) failures.push(`375×667 下棋盘顶边 ${oneScreen.boardTop} 被裁`);
+  if (oneScreen.scrollHeight > oneScreen.clientHeight + 1) failures.push(`375×667 下页面可纵向滚动（${oneScreen.scrollHeight} > ${oneScreen.clientHeight}）`);
+  if (data.oneScreen.open.boardBottom !== oneScreen.boardBottom) failures.push('展开「着法」后棋盘被挤小了');
+  if (data.oneScreen.again.boardBottom !== oneScreen.boardBottom) failures.push('收起「着法」后棋盘没有回到原位');
 
   if (data.selfTest !== null) {
     console.log(`\n正控（${data.selfTest.label}）：LCP ${Math.round(data.selfTest.lcp)}ms —— ${data.selfTest.failedAsExpected ? '如预期判负，量尺有效' : '没判负，F5.2 的检查是空转'}`);

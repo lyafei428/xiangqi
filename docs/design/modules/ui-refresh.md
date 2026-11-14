@@ -43,6 +43,7 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md` §3 的 F1.1–F1.10�
 
 - 立体只做「内高光 + 两层投影」，够看出浮起，又不吃棋盘线条。
 - 棋子按 `docs/design/modules/board-ui.md` §2 的材质：圆形底 + 单字 + 中性描边 + 描边内 1px 内阴影；不做外投影、不做渐变、不加纹理。
+- 棋盘底色按 `--board-bg`（`#f7f2e6`，单色无纹理）：`docs/design/modules/board-ui.md` §2 渲染层次第 1 层的旧名「木纹底」已按本次材料改为「棋盘底色」，需求 F5.5 的「无木纹」由此对齐。
 - 明令不做：木纹、皮革、金属渐变、发光描边、装饰性插画。理由：教学工具，马腿、河界、九宫线要一眼读准。
 
 ## 3. 对局专注
@@ -50,10 +51,12 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md` §3 的 F1.1–F1.10�
 | 页 | 常驻 | 默认收起 |
 |---|---|---|
 | 对弈 | 棋盘、行棋方与双方计时、新局、认输 | 着法记录、记谱输入 |
-| 人机 | 同上 + 难度与阵营（仅未走子时） | 着法记录、记谱输入、难度与阵营（走第一着后收为一行摘要，点摘要可展开改） |
+| 人机 | 同上 + 难度与阵营（仅未走子时） | 着法记录、记谱输入 |
+
+- 人机页的难度与阵营：未走子时常驻；玩家走完第一着后收为一行摘要（显示当前难度与阵营），点摘要展开可改。它不属「默认收起」——进入页面时它就在。
 
 - 「着法」是一个切换按钮（`aria-expanded`）：收起 → 只留棋盘与常驻条；展开 → 着法记录与记谱输入一起出现；再点收起。
-- ≥1024px 与 768–1023px 两档的面板几何不变（右侧栏 / 底抽屉），只改默认收起；<768px 按 §4。
+- ≥1024px 与 768–1023px 两档的面板几何不变（右侧栏 / 底抽屉），只改默认收起；<768px 按 §4。≥1024 档的侧栏本身常驻（`docs/design/modules/local-play.md` §5 的「不提供收起」不变），收起的是侧栏里的着法记录与记谱输入；收起后侧栏只留「着法」切换按钮与行棋方/计时，不留空白块。
 - `/` 的规则：记谱区处于收起态时，先展开再聚焦输入框；已展开则只聚焦。幂等，不改变局面。焦点已在文本输入框里时不抢。
 - 观战、联机、棋谱、课程、练习页不在本批改动范围。
 
@@ -94,7 +97,7 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md` §3 的 F1.1–F1.10�
 
 | 文件 | 动作 |
 |---|---|
-| `docs/requirements/xiangqi.md` | 新增 F1.10、F4.6、F5.5 三行 |
+| `docs/requirements/xiangqi.md` | F1.10、F4.6、F5.5 三行已就位 |
 | `docs/design/modules/board-ui.md` | §2 棋子材质（允许描边内 1px 内阴影）；§5 窄屏覆盖式几何与可用高来源 |
 | `docs/design/modules/local-play.md` | §2 样式拆分说明；§5 的 <768px 行改为覆盖式 |
 | `src/client/styles/base.css` | 新增：变量层、reset、排版、按钮基元（约 40 行起） |
@@ -103,9 +106,9 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md` §3 的 F1.1–F1.10�
 | `src/client/styles/panel.css` | 新增：面板、时钟、着法记录、记谱输入、抽屉开合 |
 | `src/client/styles/learn.css` | 新增：课程目录与单课 |
 | `src/client/styles/drill.css` | 新增：练习页 |
-| `src/client/styles/responsive.css` | 新增：全部媒体查询（级联上必须排在最后） |
+| `src/client/styles/responsive.css` | 新增：全部媒体查询（顺序按原分节，排在 `replay` 之前） |
 | `src/client/styles/replay.css` | 新增：棋谱页与棋谱库分栏 |
-| `src/client/app.css` | 只留八条 `@import`（顺序：base → shell → play → panel → learn → drill → replay → responsive），`main.tsx` 的引入不变 |
+| `src/client/app.css` | 只留八条 `@import`，顺序与原分节顺序一致：base → shell → play → panel → learn → drill → responsive → replay（`responsive` 在原文件里就排在 `replay` 之前，拆后不变），`main.tsx` 的引入不变。构建口径：生产构建把八份合成一张 CSS（`npm run preview` 的读数按此口径取）；dev 下按文件分请求，不计入 F5.2 的请求数 |
 | `src/client/pages/PlayPage.tsx`、`src/client/pages/AiPage.tsx` | 面板默认收起；人机页按着法数决定难度与阵营的显隐 |
 | `src/client/panel/GamePanel.tsx` | 「着法」切换按钮与 `aria-expanded`；`/` 先展开再聚焦 |
 | `scripts/acceptance.mjs` | F4-6 读数（滚动高度、棋盘底边） |
@@ -136,5 +139,5 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md` §3 的 F1.1–F1.10�
 - 覆盖式抽屉在 iOS 上随地址栏收缩会有 `dvh` 抖动：用 `100dvh` 而非 `100vh`，展开时锁页面滚动（`overscroll-behavior: contain`），收起后不参与布局。
 - 默认收起会让部分既有用例的入口失效；实施轮逐个跑，只改入口，不改业务断言（F1-7 与 F1-8 各一处）。
 - 轻浮雕调重会压掉棋盘线条：投影只上卡片与面板，棋子只留描边内 1px 内阴影。
-- 样式拆成八个文件后，级联顺序变成显式契约：`responsive.css` 必须最后引入，否则三档覆盖会失效；`main.tsx` 仍只引入 `src/client/app.css` 一处。
+- 样式拆成八个文件后，级联顺序是显式契约：引入顺序固定为原分节顺序（base → shell → play → panel → learn → drill → responsive → replay），`responsive.css` 不是最后一份——它原本就排在 `replay` 之前，两文件的选择器交集为 0，改顺序会在以后覆盖时出错。要覆盖媒体查询的新规则写进 `responsive.css` 对应档位，不要靠「写在最后」去赢；`main.tsx` 仍只引入 `src/client/app.css` 一处。
 - F5.4（CLS < 0.05）受这次布局改动影响：棋盘可用高改由实测驱动，首帧到测量之间不得发生可见位移——收口时按 `scripts/acceptance.mjs` 的 CLS 读数复核一遍。

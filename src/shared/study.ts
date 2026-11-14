@@ -127,9 +127,14 @@ export function parseStudyRecord(value: unknown): StudyRecord | null {
   const notesRaw = value['notes'];
   if (!Array.isArray(notesRaw)) return null;
   const notes: StudyNote[] = [];
+  // 回放只看当前步的第一条说明：两条落在同一步，后一条永远不会露脸。宁可不收这条记录，
+  // 也不让内容静默地少一半。
+  const steps = new Set<number>();
   for (const item of notesRaw) {
     const note = asNote(item, moves.length);
     if (note === null) return null;
+    if (steps.has(note.step)) return null;
+    steps.add(note.step);
     notes.push(note);
   }
 

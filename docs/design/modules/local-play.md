@@ -20,7 +20,8 @@ Survey evidence: 已核对 `docs/design/architecture.md`（分层、技术栈、
 | `src/client/game/session.ts` | 本地对局 reducer：选子、走子、记谱、终局、新局；导出 `checkSquareOf`。纯函数。 |
 | `src/client/board/Board.tsx` | SVG 棋盘渲染与指针、键盘输入。不判规则。 |
 | `src/client/panel/GamePanel.tsx` | 行棋方、状态播报、着法列表、新局。 |
-| `src/client/App.tsx` | 页面骨架、三档布局、面板收起、棋盘尺寸测量。 |
+| `src/client/App.tsx` | 路由与页面骨架、三档布局。 |
+| `src/client/pages/PlayPage.tsx`、`src/client/pages/AiPage.tsx` | 对弈页与人机页的容器，持有面板收起态与难度/阵营。 |
 | `src/client/app.css` | 全部样式。不引组件库，不做 CSS-in-JS。 |
 | `src/client/main.tsx` | 挂载入口。 |
 | `index.html` | Vite 入口，提供 `#root` 挂载点。 |

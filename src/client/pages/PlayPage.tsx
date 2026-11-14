@@ -15,7 +15,8 @@ export interface PlayPageProps {
 }
 
 export function PlayPage({ session, dispatch }: PlayPageProps) {
-  const [panelOpen, setPanelOpen] = useState(true);
+  // 进对局页是专注态：着法区收起，只留着法开关与常驻条（F1.10）。
+  const [panelOpen, setPanelOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const stageRef = useRef<HTMLDivElement | null>(null);
   const stage = useStageSize(stageRef);

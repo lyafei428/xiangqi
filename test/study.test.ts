@@ -158,4 +158,15 @@ test('解析器拒绝坏记录', () => {
     parseStudyRecord({ ...(valid as Record<string, unknown>), notes: [{ step: 99, text: '越界' }] }),
     null,
   );
+  // 同一步两条说明：回放只显示第一条，所以整条记录判坏，不收。
+  assert.equal(
+    parseStudyRecord({
+      ...(valid as Record<string, unknown>),
+      notes: [
+        { step: 0, text: '开局' },
+        { step: 0, text: '又一句' },
+      ],
+    }),
+    null,
+  );
 });

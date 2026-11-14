@@ -1,0 +1,316 @@
+/* 棋谱页：左列表、右回放 */
+
+.page-replay {
+  flex-direction: column;
+}
+
+.replay-tabs {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px 0;
+}
+
+.replay-tab[aria-pressed='true'] {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+  color: var(--panel-bg);
+}
+
+.replay-tab[aria-pressed='true']:hover:not(:disabled) {
+  background: #7d4f1c;
+}
+
+.replay-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+}
+
+.replay-list {
+  flex: 0 0 300px;
+  width: 300px;
+  max-height: 100%;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.replay-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.replay-head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.file-btn {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.file-btn input[type='file'] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.replay-notice {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--panel-bg);
+  box-shadow: var(--raise-flat);
+  font-size: 13px;
+}
+
+.replay-empty,
+.replay-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.replay-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.replay-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+}
+
+.replay-row[data-current='yes'] {
+  border-color: var(--accent);
+}
+
+.replay-open {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.replay-time {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.replay-result {
+  font-size: 14px;
+}
+
+.replay-steps {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.replay-board {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.replay-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.replay-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.replay-counter {
+  font-size: 13px;
+  color: var(--muted);
+  min-width: 96px;
+  text-align: center;
+}
+
+.replay-range {
+  width: 100%;
+}
+
+.replay-moves {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-height: 120px;
+  overflow: auto;
+}
+
+.replay-move {
+  border: 1px solid var(--line);
+  background: transparent;
+  border-radius: var(--radius);
+  padding: 2px 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.replay-move[aria-current='true'] {
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.replay-broken {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+/* 棋谱库分栏 */
+
+.study-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.study-filter {
+  border: 1px solid var(--line);
+  background: var(--panel-bg);
+  box-shadow: var(--raise-flat);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.study-filter[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: #f0f1f4;
+  font-weight: 600;
+}
+
+.study-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.study-row {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-bg);
+  box-shadow: var(--raise);
+}
+
+.study-row[data-current='yes'] {
+  border-color: var(--accent);
+}
+
+.study-open {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 8px 10px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.study-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.study-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.study-note {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--accent);
+  background: var(--panel-bg);
+  box-shadow: var(--raise-flat);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.study-source {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 767px) {
+  /* 分栏与筛选各占一行，宁可横向滑动，也不把按钮压成两字一行。 */
+  .replay-tabs,
+  .study-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+
+  .replay-tab,
+  .study-filter {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .page-replay {
+    flex-direction: column;
+  }
+
+  .replay-main {
+    flex-direction: column;
+    overflow: auto;
+  }
+
+  .replay-list {
+    flex: 0 0 auto;
+    width: auto;
+    max-height: 40vh;
+  }
+
+  .replay-board {
+    min-height: 60vh;
+  }
+}

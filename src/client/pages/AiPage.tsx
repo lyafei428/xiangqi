@@ -42,7 +42,9 @@ export function AiPage() {
   );
   const [thinking, setThinking] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const [panelOpen, setPanelOpen] = useState(true);
+  // 进人机页也是专注态：着法区收起（F1.10）。
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [controlsOpen, setControlsOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const stageRef = useRef<HTMLDivElement | null>(null);
   const stage = useStageSize(stageRef);
@@ -172,56 +174,67 @@ export function AiPage() {
 
   const canPlay = !over && session.position.turn === side && !thinking;
   const size = boardSize(stage.width, stage.height);
+  // 未走子时难度与阵营就在页面上；走完第一着收成一行摘要，点摘要可再展开改。
+  // 「AI 思考中」与出错提示不属于这组控件，留在外面，收起后仍看得见。
+  const hasMoves = session.notations.length > 0;
+  const showControls = !hasMoves || controlsOpen;
 
   return (
     <div className="page page-play page-ai" data-panel={panelOpen ? 'open' : 'closed'}>
       <main className="board-stage">
-        <div className="ai-controls">
-          <div className="mission-actions" role="radiogroup" aria-label="难度">
-            <span className="drill-hint" style={{ alignSelf: 'center' }}>
-              难度
-            </span>
-            {LEVEL_ORDER.map((item) => (
-              <label className={`option${item === level ? ' is-chosen' : ''}`} key={item}>
-                <input
-                  type="radio"
-                  name="ai-level"
-                  value={item}
-                  checked={item === level}
-                  onChange={() => setLevel(item)}
-                />
-                {LEVEL_LABEL[item]}
-              </label>
-            ))}
+        {showControls ? (
+          <div className="ai-controls">
+            <div className="mission-actions" role="radiogroup" aria-label="难度">
+              <span className="drill-hint" style={{ alignSelf: 'center' }}>
+                难度
+              </span>
+              {LEVEL_ORDER.map((item) => (
+                <label className={`option${item === level ? ' is-chosen' : ''}`} key={item}>
+                  <input
+                    type="radio"
+                    name="ai-level"
+                    value={item}
+                    checked={item === level}
+                    onChange={() => setLevel(item)}
+                  />
+                  {LEVEL_LABEL[item]}
+                </label>
+              ))}
+            </div>
+            <div className="mission-actions" role="radiogroup" aria-label="阵营">
+              <span className="drill-hint" style={{ alignSelf: 'center' }}>
+                阵营
+              </span>
+              {(['red', 'black'] as const).map((item) => (
+                <label className={`option${item === side ? ' is-chosen' : ''}`} key={item}>
+                  <input
+                    type="radio"
+                    name="ai-side"
+                    value={item}
+                    checked={item === side}
+                    onChange={() => changeSide(item)}
+                  />
+                  {SIDE_LABEL[item]}
+                </label>
+              ))}
+            </div>
           </div>
-          <div className="mission-actions" role="radiogroup" aria-label="阵营">
-            <span className="drill-hint" style={{ alignSelf: 'center' }}>
-              阵营
-            </span>
-            {(['red', 'black'] as const).map((item) => (
-              <label className={`option${item === side ? ' is-chosen' : ''}`} key={item}>
-                <input
-                  type="radio"
-                  name="ai-side"
-                  value={item}
-                  checked={item === side}
-                  onChange={() => changeSide(item)}
-                />
-                {SIDE_LABEL[item]}
-              </label>
-            ))}
-          </div>
-          {thinking ? (
-            <p className="drill-hint" aria-live="polite">
-              AI 思考中…
-            </p>
-          ) : null}
-          {notice === null ? null : (
-            <p className="drill-hint" role="alert">
-              {notice}
-            </p>
-          )}
-        </div>
+        ) : (
+          <button type="button" className="ai-summary" onClick={() => setControlsOpen(true)}>
+            难度 {LEVEL_LABEL[level]} · {SIDE_LABEL[side]} · 改
+          </button>
+        )}
+        {/* 这两行不在可收起的控件组里：控件收起后思考与出错提示仍要看得见。 */}
+        {thinking ? (
+          <p className="drill-hint" style={{ alignSelf: 'center' }} aria-live="polite">
+            AI 思考中…
+          </p>
+        ) : null}
+        {notice === null ? null : (
+          <p className="drill-hint" style={{ alignSelf: 'center' }} role="alert">
+            {notice}
+          </p>
+        )}
         <div className="board-fit" ref={stageRef}>
           <div className="board-slot">
             <Board

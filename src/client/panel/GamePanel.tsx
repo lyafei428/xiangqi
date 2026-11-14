@@ -1,4 +1,5 @@
-// 对局面板：行棋方、状态播报、着法记录、新局。
+// 对局面板：常驻条（状态行、计时、认输、着法开关、新局）+ 可收起的着法区（记录与记谱输入）。
+// 两者分开是因为窄屏收起时状态行、计时、认输、新局必须仍看得见（F1.10 的常驻清单）；
 // 面板只保留完成本地对局必需的控件，不加装饰性元素。
 
 import { useEffect, useRef, useState } from 'react';
@@ -145,17 +146,9 @@ export function GamePanel(props: GamePanelProps) {
       <div className="panel-head">
         <h1 className="panel-title">中国象棋</h1>
         <span className="panel-mode">{modeLabel}</span>
-        <button
-          type="button"
-          className="panel-toggle"
-          aria-expanded={open}
-          aria-controls="game-panel-body"
-          onClick={onToggle}
-        >
-          {open ? '收起' : '展开'}
-        </button>
       </div>
-      <div className="panel-body" id="game-panel-body">
+
+      <div className="panel-focus">
         <p
           className={`status-line${session.result === null ? '' : ' is-result'}`}
           role="status"
@@ -185,6 +178,30 @@ export function GamePanel(props: GamePanelProps) {
           </button>
         </div>
 
+        <div className="panel-actions">
+          <button
+            type="button"
+            className="panel-toggle"
+            aria-expanded={open}
+            aria-controls="game-panel-body"
+            onClick={onToggle}
+          >
+            着法
+          </button>
+          <button type="button" className="new-game" onClick={onReset}>
+            新局
+          </button>
+        </div>
+      </div>
+
+      <div className="panel-body" id="game-panel-body" hidden={!open}>
+        <div className="panel-body-head">
+          <span className="panel-body-title">着法记录</span>
+          <button type="button" className="panel-close" onClick={onToggle}>
+            收起着法
+          </button>
+        </div>
+
         <div className="moves" ref={movesRef} aria-label="着法记录">
           {rounds.length === 0 ? (
             <p className="moves-empty">尚未走子</p>
@@ -209,10 +226,6 @@ export function GamePanel(props: GamePanelProps) {
             onPlay={onPlay}
           />
         )}
-
-        <button type="button" className="new-game" onClick={onReset}>
-          新局
-        </button>
       </div>
     </aside>
   );

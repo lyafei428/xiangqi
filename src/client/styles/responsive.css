@@ -1,0 +1,235 @@
+/* 响应式 */
+
+@media (max-width: 1023px) {
+  .page-play {
+    flex-direction: column;
+  }
+
+  .board-stage {
+    padding: 12px;
+  }
+
+  .panel {
+    flex: 0 0 auto;
+    width: 100%;
+    height: 40dvh;
+    max-height: 40dvh;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  /* 收起时只留常驻条：面板自会长到它自己的高度。 */
+  .page-play[data-panel='closed'] .panel,
+  .page-ai[data-panel='closed'] .panel {
+    height: auto;
+    max-height: none;
+  }
+
+  .lesson-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lesson-demo {
+    position: static;
+  }
+
+  .demo-board {
+    height: auto;
+  }
+
+  .page-drill {
+    display: block;
+    overflow-y: auto;
+  }
+
+  .drill-board {
+    display: block;
+    min-height: 0;
+    padding: 8px;
+  }
+
+  .drill-board .board-fit {
+    overflow: visible;
+  }
+
+  .board-slot {
+    margin: 0 auto;
+  }
+
+  .drill-panel {
+    flex: 0 0 auto;
+    width: 100%;
+    max-height: none;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .demo-board {
+    height: min(52vh, 480px);
+  }
+
+  .drill-board .board-fit {
+    min-height: 520px;
+  }
+}
+
+
+@media (min-width: 1024px) {
+  /* 收起时侧栏让出宽度给棋盘：常驻条不需要 320px。 */
+  .page-play[data-panel='closed'] .panel,
+  .page-ai[data-panel='closed'] .panel {
+    flex: 0 0 264px;
+    width: 264px;
+  }
+}
+
+@media (max-width: 767px) {
+  /* 七项导航在 375px 下装不进一行：手机档隐去品牌名，七项全部看得见，不需要横滑——
+     藏起来的入口要靠人猜，不如把标题让位给导航。 */
+  .app-nav {
+    height: 48px;
+    min-height: 48px;
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding: 0 8px;
+    justify-content: center;
+  }
+
+  .app-brand {
+    display: none;
+  }
+
+  .app-links {
+    flex-wrap: nowrap;
+    gap: 2px;
+  }
+
+  .nav-link {
+    font-size: 14px;
+    padding: 5px 7px;
+  }
+
+  .board-stage {
+    padding: 8px;
+  }
+
+  .panel {
+    height: auto;
+    max-height: none;
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+    gap: 6px;
+  }
+
+  /* 手机常驻条：标题与模式让位，只留状态、计时、认输、着法、新局。 */
+  .panel-head {
+    display: none;
+  }
+
+  .panel-focus {
+    display: contents;
+  }
+
+  .status-line {
+    font-size: 15px;
+  }
+
+  .clock-row {
+    flex: 1 1 100%;
+  }
+
+  .panel-actions {
+    flex: 1 1 100%;
+  }
+
+  /* 着法区改成覆盖式：贴底展开，不挤棋盘，自身滚动。 */
+  .panel-body {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: 50dvh;
+    padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+    background: var(--panel-bg);
+    border-top: 1px solid var(--line);
+    border-radius: 14px 14px 0 0;
+    box-shadow: var(--raise);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    z-index: 30;
+  }
+
+  .page-learn,
+  .page-lesson {
+    padding: 16px 10px 32px;
+  }
+
+  .page-missions {
+    padding: 16px 10px 32px;
+  }
+
+  .page-online-lobby {
+    padding: 20px 10px 32px;
+  }
+
+  .online-card {
+    padding: 18px;
+  }
+
+  .lesson-demo {
+    margin: 0 -10px;
+  }
+
+  .lesson-demo .demo {
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    padding: 8px 7px;
+  }
+
+  .lesson-demo .drill-link {
+    margin: 0 10px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .page-play {
+    flex-direction: row;
+  }
+
+  .board-stage {
+    padding: 8px;
+  }
+
+  .panel {
+    flex: 0 0 300px;
+    width: 300px;
+    height: auto;
+    max-height: none;
+    border-top: 0;
+    border-left: 1px solid var(--line);
+  }
+
+  .page-play[data-panel='closed'] .panel {
+    flex: 0 0 300px;
+    width: 300px;
+  }
+
+  .page-play[data-panel='closed'] .panel-mode {
+    display: none;
+  }
+
+  .page-drill {
+    flex-direction: row;
+  }
+
+  .drill-panel {
+    flex: 0 0 300px;
+    width: 300px;
+    max-height: none;
+    border-top: 0;
+    border-left: 1px solid var(--line);
+  }
+}
+
