@@ -261,3 +261,52 @@
     padding-left: 10px;
   }
 }
+
+/*
+ * 走子轨迹：机器落子快的时候，这一道光影就是「它刚才从哪走到哪」。
+ * 只动透明度与半径，不碰布局；prefers-reduced-motion 时整层不画。
+ */
+.move-trail-line {
+  stroke: var(--target);
+  stroke-width: 22;
+  stroke-linecap: round;
+  opacity: 0;
+  animation: move-trail-line 700ms ease-out forwards;
+}
+
+.move-trail-ring {
+  fill: none;
+  stroke: var(--target);
+  stroke-width: 5;
+  opacity: 0;
+  animation: move-trail-ring 700ms ease-out forwards;
+}
+
+@keyframes move-trail-line {
+  0% {
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes move-trail-ring {
+  0% {
+    opacity: 0.7;
+    r: 26;
+  }
+  100% {
+    opacity: 0;
+    r: 52;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .move-trail {
+    display: none;
+  }
+}

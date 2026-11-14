@@ -15,6 +15,7 @@ import { boardSize } from '../board/geometry.ts';
 import { useStageSize } from '../board/useStageSize.ts';
 import { createOnlineState, onlineReducer } from '../online/session.ts';
 import { OnlineSocket, loadStored, saveStored } from '../online/socket.ts';
+import { useMoveTrailEnabled } from '../board/useMoveTrail.ts';
 import { resultLabel, resultTone } from '../panel/result-text.ts';
 import { saveRecord } from '../storage/records.ts';
 
@@ -37,6 +38,8 @@ export function OnlinePage() {
   const [selected, setSelected] = useState<number | null>(null);
   // 着法区在手机上默认收起：常驻条之外的东西一律进抽屉，别压在棋盘上。
   const [panelOpen, setPanelOpen] = useState(false);
+  // 走子轨迹：默认开，设置里可关。
+  const trail = useMoveTrailEnabled();
   // 上次待过的房间：大厅里给一条「回到上次的房间」，不用重新建房。
   const [storedRoom, setStoredRoom] = useState<string | null>(() => loadStored()?.room ?? null);
   const [now, setNow] = useState(() => Date.now());
@@ -281,6 +284,7 @@ export function OnlinePage() {
               orientation={spectating ? undefined : (state.color ?? 'red')}
               selection={{ selected, targets }}
               lastMove={snapshot.lastMove}
+              trail={trail}
               checkSquare={checkSquare}
               onSelect={canPlay ? selectSquare : undefined}
               onTap={canPlay ? tapSquare : undefined}

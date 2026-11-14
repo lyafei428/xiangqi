@@ -8,6 +8,7 @@ import { useStageSize } from '../board/useStageSize.ts';
 import { checkSquareOf } from '../game/session.ts';
 import type { GameAction, GameSession } from '../game/session.ts';
 import { GamePanel } from '../panel/GamePanel.tsx';
+import { useMoveTrailEnabled } from '../board/useMoveTrail.ts';
 import { readPanelOpen, writePanelOpen } from '../storage/prefs.ts';
 
 export interface PlayPageProps {
@@ -19,6 +20,8 @@ export function PlayPage({ session, dispatch }: PlayPageProps) {
   // 进对局页是专注态：着法区收起，只留着法开关与常驻条（F1.10）。
   // 第一次进来收起（专注态）；用户展开过就记住，切页回来继续展开。
   const [panelOpen, setPanelOpen] = useState(readPanelOpen);
+  // 走子轨迹：默认开，设置里可关。
+  const trail = useMoveTrailEnabled();
   const [now, setNow] = useState(() => Date.now());
   const stageRef = useRef<HTMLDivElement | null>(null);
   const stage = useStageSize(stageRef);
@@ -46,6 +49,7 @@ export function PlayPage({ session, dispatch }: PlayPageProps) {
               position={session.position}
               selection={{ selected: session.selected, targets: session.targets }}
               lastMove={session.lastMove}
+              trail={trail}
               checkSquare={checkSquareOf(session)}
               onSelect={over ? undefined : (square) => dispatch({ type: 'select', square, now: Date.now() })}
               onTap={over ? undefined : (square) => dispatch({ type: 'tap', square, now: Date.now() })}

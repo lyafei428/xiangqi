@@ -108,13 +108,35 @@ export interface BoardHintsProps {
   readonly lastMove: Move | null;
   readonly targets: readonly number[];
   readonly flipped?: boolean;
+  /** 是否画走子轨迹（设置里可关）。 */
+  readonly trail?: boolean;
+}
+
+/**
+ * 走子轨迹：一道从起点划到落点的光影 + 落点一圈扩散环。
+ * key 用「上一着的起止格」——同一着重渲染不会重播，换了一着才重播。
+ */
+function MoveTrail({ from, to }: { readonly from: Point; readonly to: Point }) {
+  return (
+    <g className="move-trail" aria-hidden="true" pointerEvents="none">
+      <line className="move-trail-line" x1={from.x} y1={from.y} x2={to.x} y2={to.y} />
+      <circle className="move-trail-ring" cx={to.x} cy={to.y} r={26} />
+    </g>
+  );
 }
 
 /** 棋子下方的提示：上一着、可落点与可吃子环。 */
-export function BoardHints({ position, lastMove, targets, flipped = false }: BoardHintsProps) {
+export function BoardHints({ position, lastMove, targets, flipped = false, trail = false }: BoardHintsProps) {
   const at = (square: number): Point => pointOf(flipped ? mirrorSquare(square) : square);
   return (
     <g aria-hidden="true" pointerEvents="none">
+      {trail && lastMove !== null ? (
+        <MoveTrail
+          key={`${String(lastMove.from)}-${String(lastMove.to)}`}
+          from={at(lastMove.from)}
+          to={at(lastMove.to)}
+        />
+      ) : null}
       {lastMove === null
         ? null
         : [lastMove.from, lastMove.to].map((square) => {

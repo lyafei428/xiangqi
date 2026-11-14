@@ -43,6 +43,8 @@ export interface BoardProps {
   readonly orientation?: Color;
   readonly selection?: { readonly selected: number | null; readonly targets: readonly number[] };
   readonly lastMove?: Move | null;
+  /** 走子轨迹：从起点到落点的一道光影，看清「刚才谁动了、从哪来」。 */
+  readonly trail?: boolean;
   readonly checkSquare?: number | null;
   readonly marks?: readonly BoardMark[];
   readonly onSelect?: (square: number) => void;
@@ -75,7 +77,7 @@ function neighborSquare(square: number, dx: number, dy: number): number {
 }
 
 export function Board(props: BoardProps) {
-  const { mode, size, position, lastMove = null, checkSquare = null, marks = [] } = props;
+  const { mode, size, position, lastMove = null, checkSquare = null, marks = [], trail = false } = props;
   const selection = props.selection ?? { selected: null, targets: [] };
   const selected = selection.selected;
   const targets = selection.targets;
@@ -221,7 +223,7 @@ export function Board(props: BoardProps) {
       onBlur={handleBoardBlur}
     >
       <BoardBackground />
-      <BoardHints position={position} lastMove={lastMove} targets={targets} flipped={flipped} />
+      <BoardHints position={position} lastMove={lastMove} targets={targets} flipped={flipped} trail={trail} />
 
       {position.board.map((piece, square) => {
         if (piece === null) return null;

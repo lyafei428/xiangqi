@@ -16,6 +16,7 @@ import type { GameSession } from '../game/session.ts';
 import { GamePanel } from '../panel/GamePanel.tsx';
 import { useGameSound } from '../sound/useGameSound.ts';
 import { useSoundEnabled } from '../sound/useSoundEnabled.ts';
+import { useMoveTrailEnabled } from '../board/useMoveTrail.ts';
 import { readPanelOpen, writePanelOpen } from '../storage/prefs.ts';
 import { saveRecord } from '../storage/records.ts';
 
@@ -48,6 +49,8 @@ export function AiPage() {
   // 进人机页也是专注态：着法区收起（F1.10）。
   // 与对弈页同一口径：第一次收起，用户展开过就记住。
   const [panelOpen, setPanelOpen] = useState(readPanelOpen);
+  // 走子轨迹：默认开，设置里可关。
+  const trail = useMoveTrailEnabled();
   const [controlsOpen, setControlsOpen] = useState(false);
   /** 这一局已经在控件组里选过难度或阵营；选过之后鼠标移开就收起。 */
   const [picked, setPicked] = useState(false);
@@ -312,6 +315,7 @@ export function AiPage() {
               orientation={side}
               selection={{ selected: session.selected, targets: session.targets }}
               lastMove={session.lastMove}
+              trail={trail}
               checkSquare={checkSquareOf(session)}
               // 思考中与 AI 回合不传回调：棋盘整块只读，点击不产生任何着法。
               onSelect={
