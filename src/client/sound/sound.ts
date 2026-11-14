@@ -29,10 +29,11 @@ interface Voice {
 }
 
 const VOICES: Readonly<Record<SoundKind, readonly Voice[]>> = {
-  // 落子：短促的「嗒」。
-  move: [{ from: 660, to: 440, ms: 60, wave: 'triangle', gain: 0.12, delayMs: 0 }],
+  // 落子：短促的「嗒」。gain 比其余三音高一档——用户反馈落子声偏小，
+  // 而落子是每局听得最多的一下，宁可它压过别的。
+  move: [{ from: 660, to: 440, ms: 60, wave: 'triangle', gain: 0.26, delayMs: 0 }],
   // 吃子：更低更重；方波比三角硬，听感像「啪」。
-  capture: [{ from: 240, to: 180, ms: 110, wave: 'square', gain: 0.1, delayMs: 0 }],
+  capture: [{ from: 240, to: 180, ms: 110, wave: 'square', gain: 0.16, delayMs: 0 }],
   // 将军：两音上行，第二音压后 100ms。
   check: [
     { from: 660, to: 660, ms: 90, wave: 'sine', gain: 0.12, delayMs: 0 },

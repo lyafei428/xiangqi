@@ -67,13 +67,14 @@ test('白送大车必吃：不吃亏子力', () => {
 });
 
 test('难度表：深度与预算逐档单调，且每档不超自己的时间上限', () => {
-  assert.deepEqual(AI_LEVELS.easy, { maxDepth: 2, budgetMs: 200 });
-  assert.deepEqual(AI_LEVELS.normal, { maxDepth: 4, budgetMs: 1200 });
-  assert.deepEqual(AI_LEVELS.hard, { maxDepth: 8, budgetMs: 3000 });
+  assert.deepEqual(AI_LEVELS.easy, { maxDepth: 2, budgetMs: 1200 });
+  assert.deepEqual(AI_LEVELS.normal, { maxDepth: 4, budgetMs: 2200 });
+  assert.deepEqual(AI_LEVELS.hard, { maxDepth: 8, budgetMs: 4000 });
 
   const levels = [AI_LEVELS.easy, AI_LEVELS.normal, AI_LEVELS.hard];
-  // 需求的上限按档位分：普通档 2 秒，高手档 3 秒（用户裁定的放宽）。
-  const ceilingMs = [2_000, 2_000, 3_000];
+  // 每档比上一版多 1 秒（用户裁定），上限随之抬到 2 / 3 / 4 秒；
+  // 留 500ms 余量给 Worker 传输，所以预算写的是 1.2 / 2.2 / 4.0 秒。
+  const ceilingMs = [2_000, 3_000, 4_000];
   for (const [index, level] of levels.entries()) {
     const ceiling = ceilingMs[index] ?? 0;
     assert.ok(level.budgetMs <= ceiling, `第 ${index + 1} 档预算 ${level.budgetMs} 超过了该档上限 ${ceiling}ms`);

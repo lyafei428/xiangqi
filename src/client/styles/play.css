@@ -300,6 +300,7 @@
 
 /*
  * 走子轨迹：机器落子快的时候，这一道光影就是「它刚才从哪走到哪」。
+ * 时长 1.2 秒（最初 0.7 秒，用户觉得消失得太快，加了 0.5 秒）。
  * 只动透明度与半径，不碰布局；prefers-reduced-motion 时整层不画。
  */
 .move-trail-line {
@@ -307,7 +308,7 @@
   stroke-width: 22;
   stroke-linecap: round;
   opacity: 0;
-  animation: move-trail-line 700ms ease-out forwards;
+  animation: move-trail-line 1200ms ease-out forwards;
 }
 
 .move-trail-ring {
@@ -315,7 +316,7 @@
   stroke: var(--target);
   stroke-width: 5;
   opacity: 0;
-  animation: move-trail-ring 700ms ease-out forwards;
+  animation: move-trail-ring 1200ms ease-out forwards;
 }
 
 @keyframes move-trail-line {
