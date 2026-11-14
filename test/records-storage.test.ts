@@ -44,8 +44,8 @@ function record(overrides: Partial<GameRecord> = {}): GameRecord {
     startFen: INITIAL_FEN,
     moves: [{ from: 10, to: 19 }],
     result: { type: 'resign', winner: 'black' },
-    redMs: 600_000,
-    blackMs: 600_000,
+    redMs: 900_000,
+    blackMs: 900_000,
     savedAt: 1_700_000_000_000,
     ...overrides,
   };

@@ -30,7 +30,7 @@ const RESULT_TYPES: readonly ResultType[] = [
 ];
 
 /** 与 F1.4 的每方 10 分钟包干一致：超过它的剩余只可能是被改过的文件。 */
-const MAX_CLOCK_MS = 600_000;
+const MAX_CLOCK_MS = 900_000;
 const MAX_MOVES = 1000;
 
 function isObject(value: unknown): value is Record<string, unknown> {

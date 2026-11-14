@@ -3,7 +3,7 @@
 
 import type { Color } from './types.ts';
 
-export const CLOCK_MS = 600_000;
+export const CLOCK_MS = 900_000;
 
 export interface ClockState {
   readonly redMs: number;

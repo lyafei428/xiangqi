@@ -13,5 +13,5 @@ export interface AiLevelConfig {
 export const AI_LEVELS: Readonly<Record<AiLevel, AiLevelConfig>> = {
   easy: { maxDepth: 2, budgetMs: 200 },
   normal: { maxDepth: 4, budgetMs: 1200 },
-  hard: { maxDepth: 6, budgetMs: 3000 },
+  hard: { maxDepth: 8, budgetMs: 3000 },
 };

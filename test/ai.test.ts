@@ -69,7 +69,7 @@ test('白送大车必吃：不吃亏子力', () => {
 test('难度表：深度与预算逐档单调，且每档不超自己的时间上限', () => {
   assert.deepEqual(AI_LEVELS.easy, { maxDepth: 2, budgetMs: 200 });
   assert.deepEqual(AI_LEVELS.normal, { maxDepth: 4, budgetMs: 1200 });
-  assert.deepEqual(AI_LEVELS.hard, { maxDepth: 6, budgetMs: 3000 });
+  assert.deepEqual(AI_LEVELS.hard, { maxDepth: 8, budgetMs: 3000 });
 
   const levels = [AI_LEVELS.easy, AI_LEVELS.normal, AI_LEVELS.hard];
   // 需求的上限按档位分：普通档 2 秒，高手档 3 秒（用户裁定的放宽）。

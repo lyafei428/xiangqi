@@ -112,9 +112,9 @@ describe('F1-1 本地双人走完一局并判和', () => {
 });
 
 describe('F1-3 本地计时与认输', () => {
-  it('面板从 10:00 起步', () => {
+  it('面板从 15:00 起步', () => {
     const { container } = setup();
-    expect(container.querySelector('.clock-row')?.textContent).toContain('10:00');
+    expect(container.querySelector('.clock-row')?.textContent).toContain('15:00');
   });
 
   it('红方时钟归零显示「黑方胜 · 超时」并锁盘', () => {
@@ -123,7 +123,7 @@ describe('F1-3 本地计时与认输', () => {
       vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
       const { container } = setup();
       act(() => {
-        vi.advanceTimersByTime(601_000);
+        vi.advanceTimersByTime(901_000);
       });
       expect(screen.getByRole('status').textContent).toContain('黑方胜 · 超时');
       expect(container.querySelectorAll('.piece[tabindex="0"]')).toHaveLength(0);

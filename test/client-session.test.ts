@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { INITIAL_FEN, indexOf } from '../src/shared/index.ts';
+import { CLOCK_MS, INITIAL_FEN, indexOf } from '../src/shared/index.ts';
 import type { GameSession } from '../src/client/game/session.ts';
 import { checkSquareOf, createSession, sessionReducer } from '../src/client/game/session.ts';
 
@@ -126,10 +126,10 @@ test('自定义起始局面在复位后保留', () => {
   assert.equal(reset.startFen, fen);
 });
 
-test('新局带 10 分钟时钟，红方在走', () => {
+test('新局带 15 分钟时钟，红方在走', () => {
   const session = createSession(INITIAL_FEN, 1_000);
-  assert.equal(session.clock.redMs, 600_000);
-  assert.equal(session.clock.blackMs, 600_000);
+  assert.equal(session.clock.redMs, 900_000);
+  assert.equal(session.clock.blackMs, 900_000);
   assert.equal(session.clock.running, 'red');
   assert.equal(session.clock.since, 1_000);
 });
@@ -140,7 +140,7 @@ test('走子后时钟切给黑方', () => {
   const moved = sessionReducer(picked, { type: 'tap', square: at(1, 6), now: 2_000 });
   assert.equal(moved.clock.running, 'black');
   assert.equal(moved.clock.since, 2_000);
-  assert.equal(moved.clock.redMs, 598_000);
+  assert.equal(moved.clock.redMs, CLOCK_MS - 2_000);
 });
 
 test('tick 未归零不改状态；归零判超时给对方', () => {
@@ -148,7 +148,7 @@ test('tick 未归零不改状态；归零判超时给对方', () => {
   const early = sessionReducer(session, { type: 'tick', now: 1_000 });
   assert.equal(early.result, null);
 
-  const late = sessionReducer(session, { type: 'tick', now: 600_000 });
+  const late = sessionReducer(session, { type: 'tick', now: 900_000 });
   assert.deepEqual(late.result, { type: 'timeout', winner: 'black' });
   assert.equal(late.clock.running, null);
   assert.equal(late.clock.redMs, 0);
@@ -167,17 +167,17 @@ test('走子与认输的时间由动作带入，结果可复现', () => {
   const picked = sessionReducer(base, { type: 'tap', square: at(1, 7), now: 6_000 });
   const moved = sessionReducer(picked, { type: 'tap', square: at(1, 6), now: 6_000 });
   assert.equal(moved.clock.since, 6_000);
-  assert.equal(moved.clock.redMs, 595_000);
+  assert.equal(moved.clock.redMs, CLOCK_MS - 5_000);
   assert.equal(moved.clock.running, 'black');
 
   const resigned = sessionReducer(base, { type: 'resign', now: 7_000 });
   assert.deepEqual(resigned.result, { type: 'resign', winner: 'black' });
-  assert.equal(resigned.clock.redMs, 594_000);
+  assert.equal(resigned.clock.redMs, CLOCK_MS - 6_000);
 });
 
 test('旗落后不再接受着法：点自己棋子直接判超时', () => {
   const base = createSession(INITIAL_FEN, 0);
-  const late = sessionReducer(base, { type: 'tap', square: at(1, 7), now: 600_000 });
+  const late = sessionReducer(base, { type: 'tap', square: at(1, 7), now: 900_000 });
   assert.deepEqual(late.result, { type: 'timeout', winner: 'black' });
   assert.equal(late.history.length, 0);
   assert.equal(late.clock.running, null);
@@ -188,7 +188,7 @@ test('新局重置时钟与结果', () => {
   const fresh = sessionReducer(over, { type: 'reset' });
   assert.equal(fresh.result, null);
   assert.equal(fresh.clock.running, 'red');
-  assert.equal(fresh.clock.redMs, 600_000);
+  assert.equal(fresh.clock.redMs, 900_000);
 });
 
 test('play 动作：合法着法直接落地并记谱', () => {
@@ -221,13 +221,13 @@ test('play 动作：走子切时钟，时间由动作带入', () => {
   const moved = playMoveAction(base, at(1, 7), at(1, 6), 6_000);
   assert.equal(moved.clock.running, 'black');
   assert.equal(moved.clock.since, 6_000);
-  assert.equal(moved.clock.redMs, 595_000);
+  assert.equal(moved.clock.redMs, CLOCK_MS - 5_000);
   assert.equal(moved.result, null);
 });
 
 test('play 动作：旗落后不再落子，直接判超时', () => {
   const base = createSession(INITIAL_FEN, 0);
-  const late = playMoveAction(base, at(1, 7), at(1, 6), 600_000);
+  const late = playMoveAction(base, at(1, 7), at(1, 6), 900_000);
   assert.deepEqual(late.result, { type: 'timeout', winner: 'black' });
   assert.equal(late.history.length, 0);
   assert.equal(late.clock.running, null);

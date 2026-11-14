@@ -254,7 +254,7 @@ test('回收：两名棋手断开后观战仍在、房间不回收；观战清�
 
 
 test('落子成功扣时并切边', () => {
-  const room = createRoom('ABC234', 'red-token', INITIAL_FEN, 600_000, 0);
+  const room = createRoom('ABC234', 'red-token', INITIAL_FEN, 900_000, 0);
   const joined = joinRoom(room, 'black-token', 0);
   if (!joined.ok) throw new Error(joined.reason);
   const move = legal();
@@ -262,7 +262,7 @@ test('落子成功扣时并切边', () => {
   assert.equal(played.ok, true);
   if (!played.ok) return;
   assert.equal(played.room.clock.running, 'black');
-  assert.equal(played.room.clock.redMs, 590_000);
+  assert.equal(played.room.clock.redMs, 890_000);
   assert.equal(played.room.clock.since, 10_000);
 });
 
@@ -395,22 +395,22 @@ test('单人房间不判超时；第二人就座后才开锚扣时', () => {
 });
 
 test('快照里的剩余是快照时刻的值，不是切边时的旧值', () => {
-  const room = createRoom('ABC234', 'red-token', INITIAL_FEN, 600_000, 0);
+  const room = createRoom('ABC234', 'red-token', INITIAL_FEN, 900_000, 0);
   const joined = joinRoom(room, 'black-token', 0);
   if (!joined.ok) throw new Error(joined.reason);
   const played = applyRoomMove(joined.room, 'red-token', legal(), 0, 0);
   if (!played.ok) throw new Error(played.reason);
 
-  // 黑方思考 100 秒后取快照：blackMs 应是 500000，而不是切边时的 600000。
+  // 黑方思考 100 秒后取快照：blackMs 应是 800000，而不是切边时的 900000。
   const snapshot = snapshotOf(played.room, 100_000);
-  assert.equal(snapshot.clock.blackMs, 500_000);
-  assert.equal(snapshot.clock.redMs, 600_000);
+  assert.equal(snapshot.clock.blackMs, 900_000 - 100_000);
+  assert.equal(snapshot.clock.redMs, 900_000);
   assert.equal(snapshot.clock.running, 'black');
   assert.equal(snapshot.clock.since, 100_000);
 });
 
 test('两人未坐满时不接受落子', () => {
-  const room = createRoom('ABC234', 'red-token', INITIAL_FEN, 600_000, 0);
+  const room = createRoom('ABC234', 'red-token', INITIAL_FEN, 900_000, 0);
   const outcome = applyRoomMove(room, 'red-token', legal(), 0, 1_000);
   assert.equal(outcome.ok, false);
   if (!outcome.ok) assert.equal(outcome.reason, 'not-in-room');

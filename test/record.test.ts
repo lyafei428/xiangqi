@@ -29,8 +29,8 @@ function record(overrides: Partial<GameRecord> = {}): GameRecord {
     startFen: INITIAL_FEN,
     moves: MOVES,
     result: { type: 'repetition', winner: null },
-    redMs: 590_000,
-    blackMs: 585_000,
+    redMs: 890_000,
+    blackMs: 885_000,
     savedAt: 1_700_000_000_000,
     ...overrides,
   };
@@ -105,7 +105,7 @@ test('结构校验：坐标、着法数、时钟与结果取值', () => {
   assert.equal(parseRecord(asJson({ moves: new Array(1001).fill({ from: 0, to: 1 }) })), null);
   assert.equal(parseRecord(asJson({ startFen: 'not-a-fen' })), null);
   assert.equal(parseRecord(asJson({ redMs: -1 })), null);
-  assert.equal(parseRecord(asJson({ blackMs: 600_001 })), null);
+  assert.equal(parseRecord(asJson({ blackMs: 900_001 })), null);
   assert.equal(parseRecord(asJson({ savedAt: 0 })), null);
   assert.equal(parseRecord(asJson({ savedAt: 1.2 })), null);
   assert.equal(parseRecord(asJson({ result: { type: 'zzz', winner: null } })), null);
