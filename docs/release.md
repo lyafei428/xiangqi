@@ -41,12 +41,12 @@ v1 是纯静态站点：`npm run build` 产出的 `dist/` 直接扔到任意静�
 ## 2.5 单文件版（双击即用）
 
 ```bash
-node scripts/build-standalone.mjs   # 产物在 standalone/，只有 index.html + app.js + app.css
+node scripts/build-standalone.mjs   # 产物是 standalone/index.html 一个文件（样式与脚本内联）
 ```
 
-双击 `standalone/index.html` 就能玩，不需要任何服务器。它与正式构建的三处差别：
+双击 `standalone/index.html` 就能玩，不需要任何服务器——整个应用就是那一个 HTML（约 370 KB）。它与正式构建的三处差别：
 
-- 相对路径 + **IIFE 经典脚本**：`file://` 页面的 origin 是 null，`type="module"` 会被 CORS 拦下。
+- **IIFE 经典脚本 + 全部内联**：`file://` 页面的 origin 是 null，`type="module"` 会被 CORS 拦下；脚本与样式因此直接写进 HTML。
 - **人机改走主线程**（`src/client/ai/inline-worker.ts`）：浏览器不给 `file://` 页面建 Worker。代价是高手档思考期间界面会卡住几秒。
 - 不注册 service worker、不带 manifest 与图标：`file://` 下 PWA 安装与离线本就不成立。
 

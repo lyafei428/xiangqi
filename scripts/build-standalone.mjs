@@ -41,11 +41,11 @@ await build({
   logLevel: 'warn',
 });
 
-// ---- 收尾：把 index.html 改成 file:// 能吃的形状 ----
+// ---- 收尾：把 index.html 改成 file:// 能吃的单文件 ----
 const htmlPath = join(root, OUT_DIR, 'index.html');
 let html = readFileSync(htmlPath, 'utf8');
 
-// ① script 去掉 type="module" 与 crossorigin（经典脚本不受 CORS 限制）。
+// ① 去掉 type="module" 与 crossorigin：经典脚本不受 CORS 限制。
 html = html.replace(/<script type="module" crossorigin /g, '<script defer ');
 html = html.replace(/<script type="module" /g, '<script defer ');
 html = html.replace(/ crossorigin(?=[ >])/g, '');
@@ -55,12 +55,26 @@ html = html.replace(/\s*<link rel="manifest"[^>]*>/g, '');
 html = html.replace(/\s*<link rel="icon"[^>]*>/g, '');
 html = html.replace(/\s*<link rel="apple-touch-icon"[^>]*>/g, '');
 
+// ③ 内联。两条硬约束：
+//    · `</script` 必须转义——JS 里任何一处这个字面量都会提前闭合脚本标签（字符串里也一样）。
+//    · <style> 进 </head>、<script> 进 </body>：内联脚本没有 defer，放在 head 里会在 <body> 之前跑，
+//      那时 #root 还不存在，整页白屏。CSS 放在脚本之前，首帧就有样式。
+const css = readFileSync(join(root, OUT_DIR, 'app.css'), 'utf8');
+const js = readFileSync(join(root, OUT_DIR, 'app.js'), 'utf8').replaceAll('</script', '<\\/script');
+
+html = html.replace(/\s*<link rel="stylesheet" href="\.\/app\.css">/, '');
+html = html.replace(/\s*<script defer src="\.\/app\.js"><\/script>/, '');
+
+// 函数式替换：字符串替换会把插入内容里的 $& / $1 当反向引用吃掉，几十万字符的包里一定会撞上。
+html = html.replace('</head>', () => '  <style>\n' + css + '\n  </style>\n  </head>');
+html = html.replace('</body>', () => '  <script>\n' + js + '\n  </script>\n</body>');
+
 writeFileSync(htmlPath, html);
 
 // ---- 清掉用不到的外链产物 ----
 // worker chunk 是插件阶段产出的遗留物：单文件版走主线程，app.js 里没有它的引用。
 // 图标 / manifest / sw 的 html 链接已被摘掉，留着只会让人以为它们是入口。
-for (const dead of ['assets', 'icons', 'manifest.webmanifest', 'sw.js']) {
+for (const dead of ['assets', 'icons', 'manifest.webmanifest', 'sw.js', 'app.js', 'app.css']) {
   const target = join(root, OUT_DIR, dead);
   try {
     rmSync(target, { recursive: true, force: true });
