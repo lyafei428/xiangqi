@@ -90,7 +90,7 @@ export function parseStudyRecord(value: unknown): StudyRecord | null;
 | 文件 | 动作 |
 |---|---|
 | `src/shared/study.ts` | 新增：类型与 `parseStudyRecord` |
-| `src/shared/record.ts` | 抽出 `positionAtMoves(startFen, moves, step)`；`positionAt` 改为委托它 |
+| `src/shared/record.ts` | 抽出 `positionAtMoves(startFen, moves, step)`；`positionAt` 改为委托它；`notationsOf` 入参放宽为 `{ startFen, moves }`，库内回放直接复用 |
 | `src/client/study/content.ts` | 新增：`import` 内容 JSON，导出逐条 `parseStudyRecord` 后的列表 |
 | `src/client/study/StudyLibrary.tsx` | 新增：分栏内的筛选与列表 |
 | `src/client/pages/ReplayPage.tsx` | 加分栏切换、库内回放状态与说明行 |

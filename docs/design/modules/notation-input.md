@@ -33,10 +33,10 @@ Survey evidence: 已核对 `docs/design/rules-engine.md` §2/§3（类型与 FEN
 
 | 输入可能写成 | 归一到 |
 |---|---|
-| 全角数字 `１`–`９`、全角逗号 | 半角 |
+| 全角数字 `１`–`９` | 半角 |
 | 繁体棋子字 `俥車`、`傌馬`、`砲`、`帥`、`將` | 记谱用的 `车`、`马`、`炮`、`帅`、`将` |
 | `進` 等异体字 | `进` |
-| 空格（半角与全角）、`、`、`，`、句号 | 全部删除 |
+| 空格（半角与全角）、`、`、`，`、`,`、句号 | 全部删除 |
 
 数字形态：`toChineseNotation` 对红方输出汉字数字（`炮二平五`），对黑方输出阿拉伯数字（`卒1进1`）。比对前把输入里的数字统一成当前行棋方的形态，于是红方敲 `炮2平5` 与黑方敲 `炮八平五` 都命中；形态之外一个字都不许差。
 
@@ -78,12 +78,12 @@ Survey evidence: 已核对 `docs/design/rules-engine.md` §2/§3（类型与 FEN
 
 | 文件 | 动作 | 状态 |
 |---|---|---|
-| `src/shared/notation.ts` | 加 `normalizeNotation` 与 `parseChineseNotation`，纯函数、零依赖 | 待做 |
-| `src/client/panel/NotationInput.tsx` | 新增：输入框、提交、提示 | 待做 |
-| `src/client/panel/GamePanel.tsx` | 接入输入框，透传 `onPlay` 与禁用条件 | 待做 |
-| `src/client/pages/PlayPage.tsx`、`src/client/pages/AiPage.tsx` | 传 `onPlay`（`dispatch({ type: 'play', move, now: Date.now() })`）与禁用条件 | 待做 |
-| `test/notation-input.test.ts` | 新增：解析、归一化、零命中、空输入、记谱两两不同 | 待做 |
-| `test/integration/notation-input.test.tsx` | 新增：F1-8 | 待做 |
+| `src/shared/notation.ts` | 加 `normalizeNotation` 与 `parseChineseNotation`，纯函数、零依赖 | 已落地 |
+| `src/client/panel/NotationInput.tsx` | 新增：输入框、提交、提示 | 已落地 |
+| `src/client/panel/GamePanel.tsx` | 接入输入框，透传 `onPlay` 与禁用条件 | 已落地 |
+| `src/client/pages/PlayPage.tsx`、`src/client/pages/AiPage.tsx` | 传 `onPlay`（`dispatch({ type: 'play', move, now: Date.now() })`）与禁用条件 | 已落地 |
+| `test/notation-input.test.ts` | 新增：解析、归一化、零命中、空输入、记谱两两不同 | 已落地 |
+| `test/integration/notation-input.test.tsx` | 新增：F1-8 | 已落地 |
 | `docs/requirements/xiangqi.md` | F1.8 一行 | 已落地 |
 | `test/RTM.md` | F1-8 行与「用例实现」条目 | 已落地 |
 | `docs/design/modules/local-play.md` | §5 记谱输入行 | 已落地 |

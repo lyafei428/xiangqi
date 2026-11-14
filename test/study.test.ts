@@ -86,9 +86,12 @@ test('起始 FEN 可解析，双方各一将帅', () => {
   }
 });
 
-test('notes 的 step 落在 0..着法数，文字非空', () => {
+test('notes 的 step 落在 0..着法数，文字非空，且同一条内不重复', () => {
   for (const record of records()) {
     assert.ok(record.notes.length >= 1 && record.notes.length <= 3, `${record.id} 的 notes 应为 1–3 则`);
+    // 回放只显示当前 step 的第一条说明：两条落在同一步，后一条永远不会露脸。
+    const steps = record.notes.map((note) => note.step);
+    assert.equal(new Set(steps).size, steps.length, `${record.id} 有重复 step 的 note`);
     for (const note of record.notes) {
       assert.ok(
         Number.isInteger(note.step) && note.step >= 0 && note.step <= record.moves.length,

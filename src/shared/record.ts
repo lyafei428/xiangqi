@@ -141,7 +141,13 @@ export function parseRecord(text: string): GameRecord | null {
 }
 
 /** 逐着中文记谱：与回放同源，不另存一份。 */
-export function notationsOf(record: GameRecord): string[] {
+/** 一处可重放的着法序列：本地存局与内容棋谱都满足这个形状。 */
+export interface RecordedGame {
+  readonly startFen: string;
+  readonly moves: readonly Move[];
+}
+
+export function notationsOf(record: RecordedGame): string[] {
   let position = parseFen(record.startFen);
   let history = [] as ReturnType<typeof playMove>['history'];
   const notations: string[] = [];

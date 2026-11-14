@@ -3,7 +3,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Move, Position } from '../../shared/index.ts';
-import { parseFen, playMove, toChineseNotation } from '../../shared/index.ts';
 import {
   isReplayable,
   notationsOf,
@@ -30,19 +29,7 @@ function stampText(ms: number): string {
   return `${String(date.getFullYear())}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-/** 棋谱库的记谱：与本地存局同源，同样走 toChineseNotation + playMove。 */
-function studyNotations(record: StudyRecord): string[] {
-  let position = parseFen(record.startFen);
-  let history = [] as ReturnType<typeof playMove>['history'];
-  const notations: string[] = [];
-  for (const move of record.moves) {
-    notations.push(toChineseNotation(position, move));
-    const played = playMove(position, history, move);
-    position = played.position;
-    history = played.history;
-  }
-  return notations;
-}
+/** 棋谱库的记谱：直接复用 notationsOf（入参只要求 startFen + moves，不需要 GameRecord 的时间与结果）。 */
 
 interface StepControlsProps {
   readonly step: number;
@@ -129,7 +116,7 @@ function StudyReplay({ record }: StudyReplayProps) {
   const stageRef = useRef<HTMLDivElement | null>(null);
   const stage = useStageSize(stageRef);
   const size = boardSize(stage.width, stage.height, 520);
-  const notations = useMemo(() => studyNotations(record), [record]);
+  const notations = useMemo(() => notationsOf(record), [record]);
   const frame = useMemo(
     () => ({
       position: positionAtMoves(record.startFen, record.moves, step),

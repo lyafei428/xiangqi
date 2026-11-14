@@ -119,6 +119,8 @@ export function GamePanel(props: GamePanelProps) {
   }, [focusAfterExpand, open]);
 
   // 页面级 `/`：输入框在面板里，快捷键归面板管；面板收起时先请页面展开。
+  // 依赖里含内联回调，页面每秒重渲染会把本 effect 拆掉重装一次——行为无副作用
+  // （React 同步挂卸，中间漏不掉事件），但这儿看起来像泄漏，先写明。
   useEffect(() => {
     if (onPlay === undefined) return undefined;
     const handleKeyDown = (event: KeyboardEvent): void => {
