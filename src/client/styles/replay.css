@@ -53,6 +53,16 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  /* 「我的棋谱」与「导入」吸在列表顶上：棋谱多了以后往下拉，这两个不该跟着走。
+     底色与页面一致，滚过去的行不会从字缝里露出来。 */
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--page-bg);
+  padding: 6px 0;
+  /* 一条细线把「吸住的表头」和「滚过去的行」分开：没有它，第一行的上半截
+     像是从标题里长出来的。 */
+  border-bottom: 1px solid var(--line);
 }
 
 .replay-head h2 {
