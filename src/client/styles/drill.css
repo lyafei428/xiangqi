@@ -61,13 +61,14 @@
 }
 
 .option.is-correct {
-  border-color: var(--target);
-  background: #eef6ee;
+  border-color: var(--target-text);
+  /* 深底上的对/错底色：只用低透明度的同色，不新造两档绿和红。 */
+  background: rgba(79, 156, 116, 0.16);
 }
 
 .option.is-wrong {
-  border-color: var(--red);
-  background: #fbeceb;
+  border-color: var(--red-text);
+  background: rgba(242, 123, 110, 0.16);
 }
 
 .drill-feedback {
@@ -157,7 +158,7 @@
 
 .online-error {
   margin: 0;
-  color: var(--red);
+  color: var(--red-text);
   font-size: 14px;
 }
 

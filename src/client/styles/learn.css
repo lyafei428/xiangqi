@@ -47,7 +47,7 @@
 }
 
 .lesson-visited {
-  color: var(--target);
+  color: var(--target-text);
   font-size: 12px;
   white-space: nowrap;
 }

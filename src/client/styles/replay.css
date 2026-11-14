@@ -18,7 +18,7 @@
 }
 
 .replay-tab[aria-pressed='true']:hover:not(:disabled) {
-  background: #7d4f1c;
+  filter: brightness(1.12);
 }
 
 .replay-main {
@@ -215,7 +215,7 @@
 
 .study-filter[aria-pressed='true'] {
   border-color: var(--accent);
-  background: #f0f1f4;
+  background: var(--raise-bg);
   font-weight: 600;
 }
 

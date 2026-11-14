@@ -79,6 +79,8 @@
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--board-bg);
+  /* 全站唯一的外投影：深色桌面上要把棋盘读成一张纸。 */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28), 0 14px 40px rgba(0, 0, 0, 0.32);
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
@@ -102,7 +104,7 @@
 }
 
 .river-text {
-  fill: #8a6a45;
+  fill: var(--board-ink);
   font-family: var(--font-board);
   font-size: 42px;
   letter-spacing: 10px;

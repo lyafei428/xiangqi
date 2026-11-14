@@ -6,10 +6,14 @@
 //   node scripts/acceptance.mjs --self-test # 正控：慢档下 F5.2 必须判负
 
 import { spawn } from 'node:child_process';
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
+
+/** 仓库根：样式表与静态断言都从这里读，不依赖当前工作目录。 */
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 const URL_UNDER_TEST = process.env.ACCEPTANCE_URL ?? 'http://localhost:4173/';
 const SELF_TEST = process.argv.includes('--self-test');
@@ -27,7 +31,7 @@ const VIEWPORTS = [
   { name: 'phone    375×812', width: 375, height: 812, mobile: true },
 ];
 
-const THRESHOLDS = { cellPx: 39.95, requests: 6, cls: 0.05, moveMs: 16, frameMs: 32, lcpMs: 2000 };
+const THRESHOLDS = { cellPx: 39.95, requests: 6, cls: 0.05, moveMs: 16, frameMs: 32, lcpMs: 2000, contrast: 4.5 };
 
 /** 4G 快档：下行 1.6 Mbps、RTT 150ms，配 4× CPU 降速，取手机档的保守值。 */
 const FAST_4G = { offline: false, latency: 150, downloadThroughput: (1638.4 * 1024) / 8, uploadThroughput: (750 * 1024) / 8 };
@@ -183,6 +187,7 @@ async function main() {
     const touch = await measureTouch(cdp);
     const fluency = await measureFluency(cdp);
     const oneScreen = await measurePhoneOneScreen(cdp);
+    const theme = await measureTheme(cdp);
 
     let selfTest = null;
     if (SELF_TEST) {
@@ -190,7 +195,7 @@ async function main() {
       selfTest = { ...slow, failedAsExpected: slow.lcp >= THRESHOLDS.lcpMs };
     }
 
-    report({ viewports, firstPaint, continuity, lesson, touch, fluency, oneScreen, selfTest });
+    report({ viewports, firstPaint, continuity, lesson, touch, fluency, oneScreen, theme, selfTest });
   } finally {
     cdp.close();
     await browser.cleanup();
@@ -526,6 +531,70 @@ async function click(cdp, x, y) {
   await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
 }
 
+/**
+ * F5-4：深色令牌层的对比度与「无图片、无渐变」。
+ * 读数在页面里算：从 :root 取变量值，按 WCAG 2.1 的相对亮度公式算比。
+ * 断言集与禁止组合写在 docs/design/modules/theme.md §3。
+ */
+async function measureTheme(cdp) {
+  await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
+  await freshLoad(cdp, '/play');
+  await delay(400);
+  return evaluate(cdp, `(() => {
+    const root = getComputedStyle(document.documentElement);
+    const read = (name) => root.getPropertyValue(name).trim();
+    const lin = (c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+    const parse = (value) => {
+      const hex = value.replace('#', '');
+      if (hex.length !== 6) return null;
+      return [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map(lin);
+    };
+    const lum = (value) => {
+      const rgb = parse(value);
+      if (rgb === null) return null;
+      return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+    };
+    const ratio = (fg, bg) => {
+      const a = lum(read(fg));
+      const b = lum(read(bg));
+      if (a === null || b === null) return null;
+      const hi = Math.max(a, b);
+      const lo = Math.min(a, b);
+      return Math.round(((hi + 0.05) / (lo + 0.05)) * 100) / 100;
+    };
+    // 断言集：theme.md §3 里断言列为「过」的行。
+    const pairs = [
+      ['--text', '--page-bg'],
+      ['--text', '--panel-bg'],
+      ['--muted', '--page-bg'],
+      ['--muted', '--panel-bg'],
+      ['--muted-2', '--page-bg'],
+      ['--muted-2', '--panel-bg'],
+      ['--muted-2', '--raise-bg'],
+      ['--accent', '--page-bg'],
+      ['--accent', '--panel-bg'],
+      ['--low', '--panel-bg'],
+      ['--red-text', '--panel-bg'],
+      ['--black-text', '--panel-bg'],
+      ['--target-text', '--panel-bg'],
+      ['--on-accent', '--accent-strong'],
+      ['--red', '--board-bg'],
+      ['--black', '--board-bg'],
+      ['--board-ink', '--board-bg'],
+    ];
+    const readings = pairs.map(([fg, bg]) => ({ pair: fg + ' on ' + bg, ratio: ratio(fg, bg) }));
+
+    // 禁止组合：拿它们当字色就不该出现，只作证据，不参与断言。
+    const forbidden = [
+      ['--on-accent', '--accent'],
+      ['--red', '--panel-bg'],
+      ['--black', '--panel-bg'],
+    ].map(([fg, bg]) => ({ pair: fg + ' on ' + bg, ratio: ratio(fg, bg) }));
+
+    return { readings, forbidden, tokens: { page: read('--page-bg'), panel: read('--panel-bg') } };
+  })()`);
+}
+
 async function measurePhoneOneScreen(cdp) {
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 1, mobile: true });
   await freshLoad(cdp, '/play');
@@ -613,6 +682,26 @@ function report(data) {
   console.log(`\n走子流畅：单步 ${data.fluency.firstMoveMs.toFixed(1)}ms（阈值 <16ms），连走三着最大帧间隔 ${data.fluency.maxFrameGapMs.toFixed(1)}ms（阈值 ≤32ms，采样 ${data.fluency.frameCount} 帧）`);
   if (data.fluency.firstMoveMs >= THRESHOLDS.moveMs) failures.push(`单步时延 ${data.fluency.firstMoveMs.toFixed(1)}ms 不低于 16ms`);
   if (data.fluency.maxFrameGapMs > THRESHOLDS.frameMs) failures.push(`连续走子最大帧间隔 ${data.fluency.maxFrameGapMs.toFixed(1)}ms > 32ms`);
+
+  console.log(`\n视觉基准与对比度（F5-4）`);
+  console.table(data.theme.readings);
+  for (const row of data.theme.readings) {
+    // 读不出数说明 token 名改过或值不是 6 位十六进制：这本身就是缺陷，不当作通过。
+    if (row.ratio === null) failures.push(`${row.pair} 读不出对比度（token 缺失或不是十六进制）`);
+    else if (row.ratio < THRESHOLDS.contrast) failures.push(`${row.pair} 对比度 ${row.ratio} 低于 ${THRESHOLDS.contrast}`);
+  }
+  // 禁止组合只作证据：它们本来就该不达标，达标了反而说明 token 用错。
+  for (const row of data.theme.forbidden) {
+    if (row.ratio !== null && row.ratio >= THRESHOLDS.contrast) failures.push(`${row.pair} 是禁止组合却达标（${row.ratio}），检查 token 是否用错`);
+  }
+  const css = readdirSync(join(repoRoot, 'src/client/styles'))
+    .filter((name) => name.endsWith('.css'))
+    .map((name) => readFileSync(join(repoRoot, 'src/client/styles', name), 'utf8'))
+    .join('\n');
+  for (const pattern of ['linear-gradient', 'radial-gradient', 'url(']) {
+    if (css.includes(pattern)) failures.push(`样式表里出现了 ${pattern}（F5.5 要求无渐变、无装饰图片）`);
+  }
+  if (data.theme.tokens.page === '' || data.theme.tokens.panel === '') failures.push('深色令牌层没有生效（:root 读不到 --page-bg / --panel-bg）');
 
   console.log(`\n手机一屏（375×667，F4.6）`);
   console.table(

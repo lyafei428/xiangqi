@@ -10,7 +10,12 @@ Closest precedent: `docs/design/modules/board-ui.md` §2（棋盘八层与棋子
 
 Survey evidence: 已核对 `docs/requirements/xiangqi.md` §3 的 F1.1–F1.10、F4.1–F4.6、F5.1–F5.5，`docs/design/modules/board-ui.md` §2/§5/§6，`docs/design/modules/local-play.md` §2/§5，`src/client/app.css`（`main.tsx` 唯一引入点），`test/RTM.md` 的对弈与响应式两节。
 
-相关：`src/client/app.css` 的 `:root` 已有一层设计变量（`--page-bg`、`--panel-bg`、`--board-bg`、`--board-line`、`--piece-face`、`--piece-edge`、`--red`、`--black`、`--accent`、`--target`、`--text`、`--muted`、`--line`、`--font-ui`、`--font-board`）。本批沿用这套名字改值，只新增 `--raise` 与 `--radius`，不另起一套并行命名。
+设计变量按用途分四组。取值与每条用途归 `docs/design/modules/theme.md` §2，本档只记结构与落点：
+
+- 表面：`--page-bg`、`--panel-bg`、`--raise-bg`、`--sunken-bg`
+- 文字与线：`--text`、`--muted`、`--accent`、`--accent-strong`、`--on-accent`、`--low`、`--line`
+- 棋盘与棋子：`--board-bg`、`--board-line`、`--piece-face`、`--piece-edge`、`--board-ink`、`--red`、`--black`、`--target`
+- 形状与字体：`--raise`、`--raise-flat`、`--radius`、`--font-ui`、`--font-board`
 
 ## 1. 需求
 
@@ -20,30 +25,16 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md` §3 的 F1.1–F1.10�
 |---|---|
 | F1.10 | 面板默认收起 + 「着法」切换（`GamePanel`）；`/` 先展开记谱区再聚焦（`GamePanel`）；人机页难度与阵营按「未走子显示、走第一着后收为一行摘要」渲染（`AiPage`） |
 | F4.6 | 窄屏覆盖式面板（`app.css` 的窄屏段）；对局页禁纵向滚动；棋盘可用高来自 `useStageSize` 实测 |
-| F5.5 | `src/client/styles/base.css` 的变量层；棋子内阴影与轻浮雕（`app.css` 的棋盘段与卡片段） |
+| F5.5 | `src/client/styles/base.css` 的变量层；取值与对比度表归 `docs/design/modules/theme.md` |
 
 ## 2. 材料（变量层）
 
-沿用 `:root` 现有名字改值，新增两个：
+取值表只在一处维护：`docs/design/modules/theme.md` §2。本节不再抄一份，抄两份必然漂。
 
-| 变量 | 值 | 说明 |
-|---|---|---|
-| `--page-bg` | `#f4f5f7` | 页面底（原木色） |
-| `--panel-bg` | `#fbfbfc` | 卡片、面板、抽屉 |
-| `--board-bg` | `#f7f2e6` | 棋盘底，略暖只为衬托棋子 |
-| `--board-line` | `#b9a98d` | 棋盘线 |
-| `--piece-face` | `#fdfcf7` | 棋子面 |
-| `--piece-edge` | `#9a9184` | 棋子描边 |
-| `--text` | `#1f2328` | 正文（在 `--page-bg` 上约 14.5:1） |
-| `--muted` | `#5b6472` | 次要信息（在 `--page-bg` 上约 5.5:1，过 4.5:1） |
-| `--line` | `#e2e4e8` | 分隔线。**旧值是木色 `#d9c9a8`**，本批换灰并把所有引用一起改；不存在两种 `--line` 并存 |
-| `--raise` | `0 1px 0 rgba(255,255,255,.9) inset, 0 1px 2px rgba(16,24,40,.06), 0 8px 24px rgba(16,24,40,.06)` | 轻浮雕：内高光 + 近层 + 远层 |
-| `--radius` | `10px` | 卡片、按钮、输入框 |
-| `--red`、`--black`、`--accent`、`--target`、`--font-ui`、`--font-board` | 不变 | 语义色与字体，对比度已达标 |
-
-- 立体只做「内高光 + 两层投影」，够看出浮起，又不吃棋盘线条。
-- 棋子按 `docs/design/modules/board-ui.md` §2 的材质：圆形底 + 单字 + 中性描边 + 描边内 1px 内阴影；不做外投影、不做渐变、不加纹理。
-- 棋盘底色按 `--board-bg`（`#f7f2e6`，单色无纹理）：`docs/design/modules/board-ui.md` §2 渲染层次第 1 层的旧名「木纹底」已按本次材料改为「棋盘底色」，需求 F5.5 的「无木纹」由此对齐。
+- 变量层沿用 `:root` 的现有名字改值，只在此之上新增 `--accent-strong`、`--raise-bg`、`--sunken-bg`、`--low` 四个。`--muted-2`、`--radius-lg`、`--red-text`、`--black-text`、`--target-text`、`--board-ink`、`--on-accent` 归 `docs/design/modules/theme.md` 那批。
+- 立体不再靠投影：深底上投影看不出来，`--raise` 改成内描边，分层靠 1px 线 + 底色一档之差（见 theme.md §2 末段）。
+- 棋盘仍是浅色纸：`--board-bg` / `--board-line` / `--piece-face` / `--piece-edge` 取值不变，棋子红黑对比靠「棋盘不跟着变深」保住。
+- 棋子按 `docs/design/modules/board-ui.md` §2 的材质：圆形底 + 单字 + 中性描边；不做外投影、不做渐变、不加纹理。
 - 明令不做：木纹、皮革、金属渐变、发光描边、装饰性插画。理由：教学工具，马腿、河界、九宫线要一眼读准。
 
 ## 3. 对局专注
@@ -132,7 +123,7 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md` §3 的 F1.1–F1.10�
 
 - 集成：`npx vitest run test/integration/local-play.test.tsx test/integration/ai.test.tsx`；F1-10 的两条在收口行报告。
 - 浏览器读数：`node scripts/acceptance.mjs` 取 375×667 的滚动高度与棋盘底边（F4-6），以及 1440 / 768 两档的重算（F4-3 复核）。
-- F5.5 三条各给一条读数：①用脚本按变量表算 `--text`、`--muted` 在 `--page-bg`／`--panel-bg` 上的对比度（须 ≥ 4.5:1）；②`grep` 确认样式表内无 `url(` 引用的图片与渐变（`linear-gradient`/`radial-gradient`）；③明暗层级靠 `--raise` 与 `--panel-bg` 差值判，截图留档。
+- F5.5 三条各给一条读数：①对比度按 `docs/design/modules/theme.md` §3 的断言集逐对量（须 ≥ 4.5:1），取值表与断言集都归那份档；②`grep` 确认样式表内无 `url(` 引用的图片与渐变（`linear-gradient`/`radial-gradient`）；③明暗层级靠 `--raise` 与 `--panel-bg` 差值判，截图留档。
 - 提交门见 `AGENTS.md`。
 
 ## 8. 风险

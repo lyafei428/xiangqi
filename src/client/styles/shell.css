@@ -39,7 +39,7 @@
 
 .nav-link[aria-current='page'] {
   color: var(--text);
-  background: #f0f1f4;
+  background: var(--raise-bg);
   font-weight: 600;
 }
 
@@ -81,7 +81,7 @@
 }
 
 .btn:hover:not(:disabled) {
-  background: #f0f1f4;
+  background: var(--sunken-bg);
 }
 
 .btn:disabled {
@@ -89,14 +89,15 @@
   cursor: default;
 }
 
-/* 主按钮底用 --accent-strong：--accent 本色作底时白字只有 3.8:1，过不了 F5.5 的 4.5:1。 */
+/* 主按钮底用 --accent-strong：--accent 本色作底时白字只有 3.37:1，过不了 F5.5 的 4.5:1。 */
 .btn.primary {
   border-color: var(--accent-strong);
   background: var(--accent-strong);
-  color: var(--panel-bg);
+  color: var(--on-accent);
 }
 
+/* 悬停不提亮底色：底色一改就要重算白字对比度，提亮整体不会有这个问题。 */
 .btn.primary:hover:not(:disabled) {
-  background: #7d4f1c;
+  filter: brightness(1.12);
 }
 

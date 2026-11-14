@@ -141,11 +141,11 @@
 }
 
 .turn-red {
-  background: var(--red);
+  background: var(--red-text);
 }
 
 .turn-black {
-  background: var(--black);
+  background: var(--black-text);
 }
 
 .turn-over {
@@ -188,11 +188,11 @@
 }
 
 .move-red {
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .move-black {
-  color: var(--black);
+  color: var(--black-text);
 }
 
 .new-game {
@@ -239,7 +239,7 @@
 
 .notation-error {
   margin: 0;
-  color: var(--red);
+  color: var(--red-text);
   font-size: 13px;
   line-height: 1.5;
 }
