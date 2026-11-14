@@ -43,6 +43,10 @@ type AiLevel = 'easy' | 'normal' | 'hard';
 interface AiOptions {
   readonly level: AiLevel;
   readonly now?: () => number; // 默认 Date.now，单测注入伪造时钟
+  /** 对局至今的着法史；不传 = 只看搜索树内的重复。 */
+  readonly history?: readonly HistoryEntry[];
+  /** 对局起始局面 FEN，重复判定要把开局那一次算进去。 */
+  readonly startFen?: string;
 }
 
 interface AiReply {
@@ -69,17 +73,44 @@ function chooseMove(position: Position, options: AiOptions): AiReply; // 前置�
 
 评估口径：将帅不参与被吃（`generateLegalMoves` 已排除自杀）；搜索里用 `MATE = 100000` 减去层数计杀分，避免同等子力下不进杀。
 
+### 长将与重复
+
+旧版搜索不看历史，会把「一直将军」当成正常着法去追：子力或杀分看着好，但走到第三次重复时按 `repetitionResult` 判**自己长将负**。玩家能直接撞上这个结果，而规则本身没错，错在引擎不知道节奏。
+
+改法：把对局历史交给搜索，在搜索树里把「第三次出现」当终端节点，分数按判罚结果给。
+
+| 项 | 口径 |
+|---|---|
+| 何时判 | 节点展开前：用 `positionKey(position)` 查路径计数，已有 ≥ 2 次则是第三次出现 |
+| 判给谁 | 复用 `repetitionResult(position, 窗口, startFen)`；不另写一套长将规则 |
+| 窗口 | 只用路径末 24 着 + 调用方传进来的对局历史；第三次出现必定落在末窗口内，所以不必扫全程 |
+| 分数 | 胜方 = 行棋方 → `+(MATE - ply)`；胜方 = 对手 → `-(MATE - ply)`；和棋（`winner === null`）→ `0` |
+| 未传历史 | 退化成「只看树内重复」：仍按三次重复判和，不会自己转圈 |
+| 代价 | 每个节点多一次 `positionKey`（棋盘串）；窗口只在第三次出现那一下才构造，平均到节点上可忽略 |
+
+边界：60 回合无吃子的自然限着不建模——引擎不会在一局里主动走到那里，建模它只是多一条不会触发的分支。
+
+`HistoryEntry` 的 `gaveCheck` 由每着之后的 `isInCheck(下一局面, 行棋方)` 得出，与 `playMove` 里的算法一致；窗口只存 `Position`，`fen` 与 `gaveCheck` 在判定那一刻才现算。
+
 ## 3. Worker
 
 | 文件 | 职责 |
 |---|---|
 | `src/client/ai/worker.ts` | Worker 入口：收请求 → 调 `chooseMove` → 回结果。只搬数据，不含规则。 |
-| `src/client/ai/engine.ts` | 页面侧封装：`createAiEngine(factory)`，`request(fen, level)` / `cancel()` / `dispose()`；同一时刻只允许一个请求在飞。 |
+| `src/client/ai/engine.ts` | 页面侧封装：`createAiEngine(factory)`，`request(fen, level, history, startFen)` / `cancel()` / `dispose()`；同一时刻只允许一个请求在飞。 |
 
 协议（`src/client/ai/protocol.ts`，纯类型）：
 
 ```ts
-type AiRequest = { readonly id: number; readonly fen: string; readonly level: AiLevel };
+type AiRequest = {
+  readonly id: number;
+  readonly fen: string;
+  readonly level: AiLevel;
+  /** 对局至今的着法史：引擎靠它认长将与重复（见 §2 长将与重复）。 */
+  readonly history: readonly HistoryEntry[];
+  /** 对局起始局面 FEN。 */
+  readonly startFen: string;
+};
 type AiResponse = { readonly id: number; readonly reply: AiReply };
 ```
 
@@ -119,6 +150,7 @@ type AiResponse = { readonly id: number; readonly reply: AiReply };
 | F1.3 人机对战，可选难度 | 三档 `AI_LEVELS`；页面单选；`test/ai.test.ts` 断言三档深度与时限单调 |
 | F1.3 普通机型单步 ≤ 2 秒 | 普通档 `budgetMs = 1200` + 页面挂载即创建 Worker（每局不再重开线程），留 800ms 余量给启动与传输；引擎内由 `test/ai.test.ts` 用伪造时钟断言不超预算；端到端读数在收口时实测，写进收口行。 |
 | 机器走的是合法着法 | `chooseMove` 只从 `generateLegalMoves` 取着法 |
+| 机器不会自己下成长将负 | 搜索把「第三次出现」当终端节点，按 `repetitionResult` 的胜负计分；`test/ai.test.ts` 用带历史的长将局面断言 AI 不选那条重复线 |
 | 不阻塞界面 | Worker 计算；浏览器实跑：思考中切难度/离开仍然可响应（jsdom 的假 Worker 同步回子，这条只能到真机验）。 |
 
 验收命令（只跑改动面）：`node --test test/ai.test.ts test/ai-engine.test.ts test/client-session.test.ts`。前端集成在收口时跑：`npx vitest run test/integration/ai.test.tsx test/integration/navigation.test.tsx test/game-panel.test.tsx`。
@@ -128,7 +160,8 @@ type AiResponse = { readonly id: number; readonly reply: AiReply };
 | 文件 | 职责 |
 |---|---|
 | `src/shared/ai/evaluate.ts` | 局面评估。纯函数。 |
-| `src/shared/ai/search.ts` | alpha-beta 搜索与时限。纯函数。 |
+| `src/shared/ai/search.ts` | alpha-beta 搜索与时限；含重复 / 长将的终端判定。纯函数。 |
+| `src/shared/rules.ts` | `repetitionResult` 的 history 入参放宽为 `{ fen, gaveCheck }` 的结构型，AI 的轻量窗口与 `HistoryEntry[]` 都能传；判罚逻辑不变。 |
 | `src/shared/ai/levels.ts` | 难度表。 |
 | `src/shared/ai/index.ts` | `chooseMove` 出口。 |
 | `src/client/ai/protocol.ts` | Worker 请求 / 应答类型。 |
@@ -181,6 +214,7 @@ F1-7 四个业务结果各自的落点：
 实现分工：
 
 - `test/ai.test.ts`：引擎层——初始局面给合法着法、一步杀必找到（注宽预算与伪造时钟，不和时限那条混写）、白送大子的局面不吃亏、三档 `maxDepth` / `budgetMs` 单调、伪造时钟下不超预算、调用方破契约（无合法着法）时抛错。
+- `test/ai.test.ts` 扩两条重复 / 长将用例（本批新增）：①传入一段「同一局面已出现两次」的历史，AI 有一条子力上很赚、但会把该局面送到第三次且自己每着都将军的着法——断言它不选那条；②一段双方都不将军的重复历史——重复线计 0 分，AI 在有正分非重复着法时不选它。两条都用伪造时钟与固定预算，不读墙钟。
 - `test/ai-engine.test.ts`：注入假 Worker 的封装层——请求发出、应答回填、过期 id 丢弃、`cancel` 后不再回填、Worker 报错转 rejected。
 - `test/integration/ai.test.tsx`：jsdom + 假 Worker 驱动整页——选难度、执红执黑、玩家走一着后 AI 回一着并更新棋盘、思考中点击无效、换难度后请求的 level 变了、终局后不再请求 AI。
 - `test/client-session.test.ts`：`play` 动作的合法性闸门与记谱、终局、切时钟。

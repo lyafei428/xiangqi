@@ -38,6 +38,8 @@ const VIEW_RECT = {
 afterEach(cleanup);
 
 beforeEach(() => {
+  // 着法区的展开态现在会落盘；不清会把上一条用例的展开态带进来。
+  localStorage.clear();
   window.location.hash = '#/play';
 });
 
@@ -247,6 +249,37 @@ describe('F1-10 对弈页专注：着法区默认收起', () => {
     expect(movesBody(toggle()).hidden).toBe(true);
     expect(screen.queryByRole('textbox', { name: '记谱输入' })).toBeNull();
     expect(screen.queryByRole('button', { name: '收起着法' })).toBeNull();
+  });
+
+  it('展开一次之后记住：重新挂载仍是展开态', () => {
+    const first = setup();
+    const toggle = (): HTMLElement => screen.getByRole('button', { name: '着法' });
+    expect(movesBody(toggle()).hidden).toBe(true);
+
+    fireEvent.click(toggle());
+    expect(movesBody(toggle()).hidden).toBe(false);
+
+    // 模拟切页/刷新：卸掉再挂一次，展开态从存储里读回来。
+    first.container.remove();
+    cleanup();
+    const second = render(<App />);
+    const board = second.container.querySelector('.board');
+    if (board === null) throw new Error('棋盘未渲染');
+    vi.spyOn(board, 'getBoundingClientRect').mockReturnValue(VIEW_RECT);
+    const again = screen.getByRole('button', { name: '着法' });
+    expect(again.getAttribute('aria-expanded')).toBe('true');
+    expect(movesBody(again).hidden).toBe(false);
+  });
+
+  it('主动收起也记住：下次进来不自动弹回展开', () => {
+    const first = setup();
+    fireEvent.click(screen.getByRole('button', { name: '着法' }));
+    fireEvent.click(screen.getByRole('button', { name: '收起着法' }));
+
+    first.container.remove();
+    cleanup();
+    render(<App />);
+    expect(screen.getByRole('button', { name: '着法' }).getAttribute('aria-expanded')).toBe('false');
   });
 });
 

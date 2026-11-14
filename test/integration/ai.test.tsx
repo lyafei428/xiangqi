@@ -103,6 +103,8 @@ const VIEW_RECT = {
 afterEach(cleanup);
 
 beforeEach(() => {
+  // 着法区的展开态现在会落盘；不清会把上一条用例的展开态带进来。
+  localStorage.clear();
   resetAiSession();
   workers.length = 0;
   window.location.hash = '#/ai';

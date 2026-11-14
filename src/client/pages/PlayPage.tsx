@@ -8,6 +8,7 @@ import { useStageSize } from '../board/useStageSize.ts';
 import { checkSquareOf } from '../game/session.ts';
 import type { GameAction, GameSession } from '../game/session.ts';
 import { GamePanel } from '../panel/GamePanel.tsx';
+import { readPanelOpen, writePanelOpen } from '../storage/prefs.ts';
 
 export interface PlayPageProps {
   readonly session: GameSession;
@@ -16,7 +17,8 @@ export interface PlayPageProps {
 
 export function PlayPage({ session, dispatch }: PlayPageProps) {
   // 进对局页是专注态：着法区收起，只留着法开关与常驻条（F1.10）。
-  const [panelOpen, setPanelOpen] = useState(false);
+  // 第一次进来收起（专注态）；用户展开过就记住，切页回来继续展开。
+  const [panelOpen, setPanelOpen] = useState(readPanelOpen);
   const [now, setNow] = useState(() => Date.now());
   const stageRef = useRef<HTMLDivElement | null>(null);
   const stage = useStageSize(stageRef);
@@ -57,8 +59,16 @@ export function PlayPage({ session, dispatch }: PlayPageProps) {
         now={now}
         notationDisabled={over}
         onPlay={(move) => dispatch({ type: 'play', move, now: Date.now() })}
-        onRequestExpand={() => setPanelOpen(true)}
-        onToggle={() => setPanelOpen((open) => !open)}
+        onRequestExpand={() => {
+          setPanelOpen(true);
+          writePanelOpen(true);
+        }}
+        onToggle={() =>
+          setPanelOpen((open) => {
+            writePanelOpen(!open);
+            return !open;
+          })
+        }
         onReset={() => dispatch({ type: 'reset' })}
         onResign={() => dispatch({ type: 'resign', now: Date.now() })}
       />

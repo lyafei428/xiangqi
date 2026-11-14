@@ -14,6 +14,7 @@ import { useStageSize } from '../board/useStageSize.ts';
 import { checkSquareOf, createSession, sessionReducer } from '../game/session.ts';
 import type { GameSession } from '../game/session.ts';
 import { GamePanel } from '../panel/GamePanel.tsx';
+import { readPanelOpen, writePanelOpen } from '../storage/prefs.ts';
 import { saveRecord } from '../storage/records.ts';
 
 const LEVEL_LABEL: Readonly<Record<AiLevel, string>> = { easy: '入门', normal: '普通', hard: '高手' };
@@ -43,7 +44,8 @@ export function AiPage() {
   const [thinking, setThinking] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   // 进人机页也是专注态：着法区收起（F1.10）。
-  const [panelOpen, setPanelOpen] = useState(false);
+  // 与对弈页同一口径：第一次收起，用户展开过就记住。
+  const [panelOpen, setPanelOpen] = useState(readPanelOpen);
   const [controlsOpen, setControlsOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -272,8 +274,16 @@ export function AiPage() {
         resignDisabled={session.result !== null || session.position.turn !== side}
         notationDisabled={!canPlay}
         onPlay={(move) => dispatch({ type: 'play', move, now: Date.now() })}
-        onRequestExpand={() => setPanelOpen(true)}
-        onToggle={() => setPanelOpen((open) => !open)}
+        onRequestExpand={() => {
+          setPanelOpen(true);
+          writePanelOpen(true);
+        }}
+        onToggle={() =>
+          setPanelOpen((open) => {
+            writePanelOpen(!open);
+            return !open;
+          })
+        }
         onReset={newGame}
         onResign={resign}
       />
