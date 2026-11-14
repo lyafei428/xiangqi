@@ -89,7 +89,7 @@
 | F5-7 | 每步胜率 | 每一着后给出双方胜负概率；四个棋局页面都显示；有开关且记住 | 打开页面 → 对弈 → 走子 | F5.7 |
 | F5-8 | 规则页进阶阅读 | 规则页判罚口径之下有「进阶阅读」一节，两篇长文默认收起；点开可见正文（每篇八节），正文不引用具体着法编号 | 打开页面 → 规则 → 点开第一篇 | F5.8 |
 
-用例实现：`scripts/acceptance.mjs`；自证用 `node scripts/acceptance.mjs --self-test`。
+用例实现：`scripts/acceptance.mjs`（F5-1…F5-7）；自证用 `node scripts/acceptance.mjs --self-test`。F5-8 的实现在 `test/integration/rules.test.tsx`（两篇默认收起、正文各八节）与 `test/rules-content.test.ts`（常量与「正文不含着法编号」）。
 
 F5-6 另有一条集成用例 `test/integration/sound.test.tsx`（对弈页真走一着 + 认输，数振荡器起振次数；关掉后不响且跨重挂仍是关）。
 F5-7 另有一条集成用例 `test/integration/eval.test.tsx`（对弈页走两着看逐格百分比与条上的数字一致，关掉开关后两者都不渲染且重开仍是关；联机页收到快照、回放页游标到终局各一条最小观察）。

@@ -87,7 +87,7 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md`（F4.5、§4 判罚口
 
 ## 6. 集成测试设计
 
-起点：`test/RTM.md` 的「页面壳」故事（F4-2 行已定，本批不动）加一行本批新增的 F5-8：入口「打开页面 → 规则 → 点开第一篇」，业务结果「两篇长文默认收起，点开可见正文，正文不引用具体着法编号」。
+起点：`test/RTM.md` 的「页面壳」故事（F4-2 行已定，本批不动）；另在「性能（需求 F5）」故事加一行 F5-8：入口「打开页面 → 规则 → 点开第一篇」，业务结果「两篇长文默认收起，点开可见正文，正文不引用具体着法编号」。
 
 F4-1 不破坏：该行断言的是切页后棋盘与记谱保持原样，不涉导航项数；`test/integration/navigation.test.tsx` 里也没有按导航链接数与文字断言。
 
@@ -99,7 +99,7 @@ F4-1 不破坏：该行断言的是切页后棋盘与记谱保持原样，不涉
 实现分工：
 
 - `test/rules-content.test.ts`：常量数组八条判罚、标题不重复、长捉那节的文案；进阶阅读两篇、各八节、小标题不重复、正文不含「第 N 着」这类会随棋谱库漂的编号。
-- `test/integration/rules.test.tsx`：点导航进规则页，断言表格八行与那句声明；再点「对弈」回得去。进阶阅读的展开属于内容断言，放在 `test/rules-content.test.ts`，不再派集成行。
+- `test/integration/rules.test.tsx`：点导航进规则页，断言表格八行与那句声明；再点「对弈」回得去。F5-8 一并在这里验结构：两篇 `details.rules-article` 都没有 `open` 属性（默认收起），每篇内含八个小标题，正文在 `details` 里。开合本身是浏览器原生行为，用例不模拟点击（jsdom 不实现 details 的开合）。
 - `test/routes.test.ts`：`#/rules` 往返。
 - `test/pwa.test.ts`：读 `public/manifest.webmanifest` 与 `public/sw.js` 的文本断言——manifest 有 name/short_name/start_url/scope/display/icons 三个尺寸；`sw.js` 含 `install` / `activate` / `fetch` 三个监听与版本常量；`index.html` 引了 manifest 与 apple-touch-icon。
 
@@ -129,8 +129,7 @@ F4-1 不破坏：该行断言的是切页后棋盘与记谱保持原样，不涉
 - existing — `src/client/shell/routes.ts` 的 `parseHash` / `routeHash` 与 `Route` 联合，加一项即可；`test/routes.test.ts` 已有往返断言。
 - existing — `index.html` 已有 `theme-color` 与 `viewport`，只补链接。
 - existing — `#/rules` 与「规则」已在 `docs/design/modules/app-shell.md` 的路由表与导航清单；代码侧 `src/client/shell/routes.ts` 的 `Route` 联合有 `rules`，`href` 由同一处拼成 `#/rules`。
-- existing：`public/manifest.webmanifest`、`public/sw.js` 与四张图标都已在仓库里。
-- existing：`public/manifest.webmanifest`、`public/sw.js` 与 `src/client/main.tsx` 的注册点都已在仓库内。
+- existing：`public/manifest.webmanifest`、`public/sw.js`、四张图标与 `src/client/main.tsx` 的注册点都已在仓库里。
 - none found：图标生成脚本在本仓没有先例；用 node 内置 `zlib` 自己写 PNG 编码，不引依赖。
 
 ## 8. 风险

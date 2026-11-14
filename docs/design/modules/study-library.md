@@ -105,7 +105,7 @@ export function parseStudyRecord(value: unknown): StudyRecord | null;
 
 内容加载：单文件约十几 KB，`import` 进主包、不额外发请求；与课程不同（22 课体积大才按课切 chunk）。`test/study.test.ts` 用 `readFileSync` 读同一份 JSON，与运行时读同一个文件。
 
-分档：涉及代码文件均未跨 500 行档（`content/games/index.json` 是数据文件，不按代码档判——它的形态由 §3 的数组结构约束）；`ReplayPage.tsx` 现在按「列表」「回放」两区块切分，本批把库列表放进独立的 `src/client/study/StudyLibrary.tsx`，页内只多一层分栏与回放态切换，不新增 300 行以上单函数。
+分档：涉及代码文件均未跨 500 行档（`content/games/index.json` 不按代码档判：它是随版本发布的文档性数组，一记录一段、没有控制流，读法由 §3 的结构定死——800 行硬档管的是代码文件的可读性，对这类数据不适用）；`ReplayPage.tsx` 现在按「列表」「回放」两区块切分，本批把库列表放进独立的 `src/client/study/StudyLibrary.tsx`，页内只多一层分栏与回放态切换，不新增 300 行以上单函数。
 
 现有件检查：
 
