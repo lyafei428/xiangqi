@@ -16,6 +16,8 @@ import { createSession, restoreSession, sessionReducer } from './game/session.ts
 import type { GameSession } from './game/session.ts';
 import { clockFrom, positionAt, remainingOf } from '../shared/index.ts';
 import { clearCurrent, loadCurrent, saveCurrent, saveRecord } from './storage/records.ts';
+import { applyTheme, readTheme, writeTheme } from './storage/prefs.ts';
+import type { ThemeChoice } from './storage/prefs.ts';
 import type { Route } from './shell/routes.ts';
 import { routeHash } from './shell/routes.ts';
 import { useRoute } from './shell/useRoute.ts';
@@ -52,8 +54,22 @@ function initialSession(): GameSession {
 export function App() {
   const [session, dispatch] = useReducer(sessionReducer, undefined, initialSession);
   const [visited, setVisited] = useState<ReadonlySet<string>>(() => new Set());
+  // 配色：auto 跟系统；首屏由 main.tsx 落一次，这里只管用户切档与系统变化。
+  const [theme, setTheme] = useState<ThemeChoice>(readTheme);
   const route = useRoute();
   const savedRef = useRef<string>('');
+
+  useEffect(() => {
+    if (theme !== 'auto') return;
+    // 跟系统：系统改配色时紧跟；用户切到明确档位就断开。
+    // jsdom 没有 matchMedia：用例里保持 main.tsx 已落好的那一档，不因此炸掉整页。
+    if (typeof window.matchMedia !== 'function') return;
+    const media = window.matchMedia('(prefers-color-scheme: light)');
+    const sync = (): void => void applyTheme('auto', media);
+    sync();
+    media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
+  }, [theme]);
 
   const markVisited = useCallback((id: string): void => {
     setVisited((previous) => {
@@ -121,6 +137,23 @@ export function App() {
             </a>
           ))}
         </span>
+        <label className="theme-picker">
+          <select
+            className="theme-select"
+            aria-label="配色"
+            value={theme}
+            onChange={(event) => {
+              const next = event.currentTarget.value as ThemeChoice;
+              setTheme(next);
+              writeTheme(next);
+              applyTheme(next);
+            }}
+          >
+            <option value="auto">跟随系统</option>
+            <option value="light">浅色</option>
+            <option value="dark">深色</option>
+          </select>
+        </label>
       </nav>
       <div className="app-main">
         {route.name === 'play' ? <PlayPage session={session} dispatch={dispatch} /> : null}

@@ -2,9 +2,13 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App.tsx';
 import './app.css';
+import { applyTheme, readTheme } from './storage/prefs.ts';
 
 const container = document.getElementById('root');
 if (container === null) throw new Error('缺少 #root 挂载点');
+
+// 首屏之前就把配色定下来：晚一步会让深色机器先闪一帧浅色。
+applyTheme(readTheme());
 
 createRoot(container).render(
   <StrictMode>

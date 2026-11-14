@@ -29,6 +29,24 @@
   gap: 4px;
 }
 
+/* 配色开关：三个固定档位，用下拉而不是循环按钮——循环按钮看不出当前是哪一档。 */
+.theme-picker {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.theme-select {
+  border: 1px solid var(--line);
+  background: var(--raise-bg);
+  color: var(--text);
+  border-radius: var(--radius-pill);
+  padding: 5px 10px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
 .nav-link {
   color: var(--muted);
   text-decoration: none;

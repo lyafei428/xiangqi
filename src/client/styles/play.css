@@ -39,6 +39,22 @@
   box-shadow: var(--raise-flat);
 }
 
+/*
+ * 状态行固定一行高：思考中每走一步都会出现一次，按内容撑开的话棋盘会缩一下再弹回。
+ * 用 min-height 而不是 height：出错提示可能折成两行，那时让它长，但不再缩。
+ */
+.ai-status {
+  flex: 0 0 auto;
+  min-height: 20px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
 /* 走完第一着后的难度与阵营摘要：一行、可点开改。 */
 .ai-summary {
   flex: 0 0 auto;

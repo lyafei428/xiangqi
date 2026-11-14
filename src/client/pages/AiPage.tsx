@@ -207,18 +207,23 @@ export function AiPage() {
   //
   // 不用「指针离开」事件：它只在指针确实悬停过该元素时才发，二次展开（点摘要进来）
   // 或键盘选择之后，指针从没进过控件组，离开事件根本不会来——这就是「二次选择概率不隐藏」。
-  // 改成听全局指针移动：只要指针落在组外就收，与它此前在哪无关。
+  // 改成听全局的指针移动与按下：只要指针落在组外就收，与它此前在哪无关。
+  // 触摸设备没有 pointermove，靠同一条路上的 pointerdown（点棋盘、点摘要）收。
   useEffect(() => {
     if (!picked || hasMoves) return;
-    const onMove = (event: PointerEvent): void => {
+    const collapseIfOutside = (event: PointerEvent): void => {
       const box = controlsRef.current;
       if (box === null) return;
       if (event.target instanceof Node && box.contains(event.target)) return;
       setControlsOpen(false);
       setCollapsedByLeave(true);
     };
-    window.addEventListener('pointermove', onMove, { passive: true });
-    return () => window.removeEventListener('pointermove', onMove);
+    window.addEventListener('pointermove', collapseIfOutside, { passive: true });
+    window.addEventListener('pointerdown', collapseIfOutside, { passive: true });
+    return () => {
+      window.removeEventListener('pointermove', collapseIfOutside);
+      window.removeEventListener('pointerdown', collapseIfOutside);
+    };
   }, [picked, hasMoves]);
 
   // 记一笔「这一局已经在控件组里选过」，收起才有依据。
@@ -283,17 +288,16 @@ export function AiPage() {
             难度 {LEVEL_LABEL[level]} · {SIDE_LABEL[side]} · 改
           </button>
         )}
-        {/* 这两行不在可收起的控件组里：控件收起后思考与出错提示仍要看得见。 */}
-        {thinking ? (
-          <p className="drill-hint" style={{ alignSelf: 'center' }} aria-live="polite">
-            AI 思考中…
-          </p>
-        ) : null}
-        {notice === null ? null : (
-          <p className="drill-hint" style={{ alignSelf: 'center' }} role="alert">
-            {notice}
-          </p>
-        )}
+        {/* 状态行固定占一行高：思考中每步都会出现，若按内容撑开，棋盘会跟着缩一下再弹回。
+            它不在可收起的控件组里——控件收起后思考与出错提示仍要看得见。 */}
+        <p className="ai-status" aria-live="polite">
+          {thinking ? <span className="ai-thinking">AI 思考中…</span> : null}
+          {notice === null ? null : (
+            <span role="alert" className="ai-notice">
+              {notice}
+            </span>
+          )}
+        </p>
         <div className="board-fit" ref={stageRef}>
           <div className="board-slot">
             <Board
