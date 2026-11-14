@@ -138,6 +138,33 @@ describe('F1-3 本地计时与认输', () => {
     expect(screen.getByRole('status').textContent).toContain('黑方胜 · 认输');
     expect(container.querySelectorAll('.piece[tabindex="0"]')).toHaveLength(0);
   });
+
+  it('终局把结果放大到棋盘中央，2 秒后收回', () => {
+    vi.useFakeTimers();
+    try {
+      const { container } = setup();
+      const pop = (): Element | null => container.querySelector('.result-pop');
+
+      expect(pop()).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: '认输' }));
+      expect(pop()?.textContent).toBe('黑方胜 · 认输');
+
+      // 2 秒内一直在：这段是停留，不是一闪而过。
+      act(() => {
+        vi.advanceTimersByTime(1900);
+      });
+      expect(pop()).not.toBeNull();
+
+      // 缩回的那一段（jsdom 量不到矩形，缩放在真机上才看得见），缩完就卸掉。
+      act(() => {
+        vi.advanceTimersByTime(700);
+      });
+      expect(pop()).toBeNull();
+      expect(screen.getByRole('status').textContent).toContain('黑方胜 · 认输');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe('F1-5 关页重开后接着下', () => {

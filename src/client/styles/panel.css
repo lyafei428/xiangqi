@@ -311,3 +311,37 @@
   font-size: 13px;
   margin-left: 8px;
 }
+
+/*
+ * 结局提示：定位在棋盘中央（JS 只给 class，位置靠 .board 的矩形算）。
+ * 用 fixed：棋盘可能在滚动容器里，fixed 才不受裁剪。
+ */
+.result-pop {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 40;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  padding: 14px 26px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--panel-bg);
+  box-shadow: var(--raise);
+  font-size: clamp(30px, 6.4vmin, 64px);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* 只有「缩回状态行」这一段有过渡；出现是瞬间的，放大才有分量。 */
+.result-pop.is-flying {
+  transition: transform 420ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity 420ms ease-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .result-pop.is-flying {
+    transition: opacity 200ms linear;
+  }
+}

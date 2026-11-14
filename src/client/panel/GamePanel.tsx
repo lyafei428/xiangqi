@@ -8,6 +8,7 @@ import { formatClock, remainingOf } from '../../shared/index.ts';
 import type { GameSession } from '../game/session.ts';
 import { NotationInput } from './NotationInput.tsx';
 import { resultLabel } from './result-text.ts';
+import { ResultPop } from './ResultPop.tsx';
 
 export interface GamePanelProps {
   readonly session: GameSession;
@@ -144,6 +145,8 @@ export function GamePanel(props: GamePanelProps) {
 
   return (
     <aside className="panel" aria-label="对局面板">
+      {/* 终局那一下：放大到棋盘中央停 2 秒，再缩回下面这条状态行。 */}
+      <ResultPop result={session.result} />
       <div className="panel-head">
         <h1 className="panel-title">中国象棋</h1>
         <span className="panel-mode">{modeLabel}</span>
