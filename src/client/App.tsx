@@ -22,6 +22,7 @@ import type { Route } from './shell/routes.ts';
 import { routeHash } from './shell/routes.ts';
 import { useRoute } from './shell/useRoute.ts';
 import { useGameSound } from './sound/useGameSound.ts';
+import { createSoundPlayer } from './sound/sound.ts';
 
 const NAV: readonly { readonly label: string; readonly route: Route; readonly match: Route['name'][] }[] = [
   { label: '对弈', route: { name: 'play' }, match: ['play'] },
@@ -142,35 +143,56 @@ export function App() {
             </a>
           ))}
         </span>
-        <button
-          type="button"
-          className="sound-toggle"
-          aria-pressed={sound}
-          onClick={() => {
-            const next = !sound;
-            setSound(next);
-            writeSound(next);
-          }}
-        >
-          声音{sound ? '开' : '关'}
-        </button>
-        <label className="theme-picker">
-          <select
-            className="theme-select"
-            aria-label="配色"
-            value={theme}
-            onChange={(event) => {
-              const next = event.currentTarget.value as ThemeChoice;
-              setTheme(next);
-              writeTheme(next);
-              applyTheme(next);
-            }}
-          >
-            <option value="auto">跟随系统</option>
-            <option value="light">浅色</option>
-            <option value="dark">深色</option>
-          </select>
-        </label>
+        <details className="settings">
+          <summary className="settings-toggle">设置</summary>
+          <div className="settings-body">
+            <label className="settings-row">
+              <span>配色</span>
+              <select
+                className="theme-select"
+                aria-label="配色"
+                value={theme}
+                onChange={(event) => {
+                  const next = event.currentTarget.value as ThemeChoice;
+                  setTheme(next);
+                  writeTheme(next);
+                  applyTheme(next);
+                }}
+              >
+                <option value="auto">跟随系统</option>
+                <option value="light">浅色</option>
+                <option value="dark">深色</option>
+              </select>
+            </label>
+            <button
+              type="button"
+              className="sound-toggle"
+              aria-pressed={sound}
+              onClick={() => {
+                const next = !sound;
+                setSound(next);
+                writeSound(next);
+              }}
+            >
+              音效{sound ? '开' : '关'}
+            </button>
+            {/* 试听：这一下本身就是用户手势，能就地解开浏览器的自动播放限制；
+                也让人一步就能判断「是我没开声音，还是浏览器不放行」。 */}
+            <button
+              type="button"
+              className="sound-toggle"
+              onClick={() => {
+                if (!sound) {
+                  setSound(true);
+                  writeSound(true);
+                }
+                createSoundPlayer().play('move');
+              }}
+            >
+              试听
+            </button>
+          </div>
+        </details>
       </nav>
       <div className="app-main">
         {route.name === 'play' ? <PlayPage session={session} dispatch={dispatch} /> : null}

@@ -19,7 +19,6 @@ export function classify(entry: HistoryEntry, result: GameResult | null): SoundK
   return 'move';
 }
 
-/** 一个音色的最小描述：起点频率、终点频率、时长、波形、音量、相对上一层延后多少毫秒。 */
 interface Voice {
   readonly from: number;
   readonly to: number;
@@ -47,46 +46,82 @@ const VOICES: Readonly<Record<SoundKind, readonly Voice[]>> = {
   ],
 };
 
-export interface SoundPlayer {
-  play(kind: SoundKind): void;
-  dispose(): void;
+/**
+ * 全局单例：整页一个 AudioContext，不随组件卸载关闭。
+ *
+ * 踩过的坑：原先在组件 effect 里创建、卸载时 `close()`。StrictMode 下挂在 mount→unmount→mount
+ * 之间就把它关掉了，接下来那次 `play()` 只能在**手势之外**新建一个，浏览器直接判 `suspended`——
+ * 表面看「代码跑了、振荡器也建了」，实际一点声音都没有。
+ */
+let context: AudioContext | null = null;
+let priming = false;
+
+function audioCtor(): typeof AudioContext | null {
+  const scope = globalThis as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext };
+  return scope.AudioContext ?? scope.webkitAudioContext ?? null;
+}
+
+function ensureContext(): AudioContext | null {
+  if (context !== null) return context;
+  const Ctor = audioCtor();
+  if (Ctor === null) return null;
+  try {
+    context = new Ctor();
+    return context;
+  } catch {
+    return null;
+  }
 }
 
 /**
- * 懒建 AudioContext：不在页面加载时创建，避免浏览器把「自动播放」拦在门外。
- * 任何异常都吞掉——声音是可听反馈，不是业务结果，丢了不影响胜负与记录。
+ * 在手势里把音频上下文点着：resume() 之外再播一个静音样本。
+ * 只 resume 不给节点，Safari 与部分 Chromium 会保持 suspended——「建了不响」就是这么来的。
  */
+function prime(): void {
+  const audio = ensureContext();
+  if (audio === null) return;
+  if (audio.state === 'suspended') void audio.resume().catch(() => undefined);
+  if (priming) return;
+  priming = true;
+  try {
+    const buffer = audio.createBuffer(1, 1, 22050);
+    const source = audio.createBufferSource();
+    source.buffer = buffer;
+    source.connect(audio.destination);
+    source.start(0);
+  } catch {
+    // 点不着就算了，下一次手势还会再试。
+  } finally {
+    priming = false;
+  }
+}
+
+/** 每一次真实手势都试一次，直到上下文真的跑起来——一次性监听会让一次失败变成永久哑。 */
+const GESTURES = ['pointerdown', 'keydown', 'touchend'] as const;
+let listenersBound = false;
+
+function bindUnlock(): void {
+  if (listenersBound) return;
+  listenersBound = true;
+  for (const name of GESTURES) {
+    globalThis.addEventListener?.(name, prime, { passive: true });
+  }
+}
+
+export interface SoundPlayer {
+  play(kind: SoundKind): void;
+}
+
 export function createSoundPlayer(): SoundPlayer {
-  let context: AudioContext | null = null;
-  let unlocked = false;
-
-  const ensure = (): AudioContext | null => {
-    if (context !== null) return context;
-    const Ctor = (globalThis as { AudioContext?: typeof AudioContext }).AudioContext;
-    if (Ctor === undefined) return null;
-    try {
-      context = new Ctor();
-      return context;
-    } catch {
-      return null;
-    }
-  };
-
-  const unlock = (): void => {
-    const audio = ensure();
-    if (audio === null || unlocked) return;
-    // Safari 与 Chrome 的自动播放策略：创建后是 suspended，要一次真实手势才肯出声。
-    void audio.resume().catch(() => undefined);
-    unlocked = true;
-  };
-  globalThis.addEventListener?.('pointerdown', unlock, { once: true, passive: true });
-  globalThis.addEventListener?.('keydown', unlock, { once: true });
-
+  bindUnlock();
   return {
     play(kind: SoundKind): void {
-      const audio = ensure();
+      const audio = ensureContext();
       if (audio === null) return;
-      if (audio.state === 'suspended') void audio.resume().catch(() => undefined);
+      if (audio.state === 'suspended') {
+        // 已经有过手势就点火；还没有就等下一次手势（prime 会再点一次）。
+        void audio.resume().catch(() => undefined);
+      }
       try {
         const start = audio.currentTime;
         for (const voice of VOICES[kind]) {
@@ -109,11 +144,11 @@ export function createSoundPlayer(): SoundPlayer {
         // 放不出来就算了：声音不该把一局棋搞挂。
       }
     },
-    dispose(): void {
-      globalThis.removeEventListener?.('pointerdown', unlock);
-      globalThis.removeEventListener?.('keydown', unlock);
-      if (context !== null) void context.close().catch(() => undefined);
-      context = null;
-    },
   };
+}
+
+/** 当前音频上下文是否真的在跑；给界面一个可观察的读数（不是业务结果，只是诊断）。 */
+export function soundContextState(): string {
+  if (context === null) return 'none';
+  return context.state;
 }

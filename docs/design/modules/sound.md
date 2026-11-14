@@ -40,7 +40,11 @@ Closest precedent: `docs/design/modules/local-play.md` §4（`session` 的着法
 
 ## 5. 开关
 
-顶栏一枚「声音开 / 声音关」按钮，`aria-pressed` 表示状态，选择写 `localStorage`（`xiangqi.sound.v1`），缺省开。它是配置项，所以必须有自己的界面写面。
+顶栏右端一枚「设置」浮层（`<details>`），里面是配色下拉、「音效开 / 关」与「试听」。声音开关用 `aria-pressed` 表示状态，选择写 `localStorage`（`xiangqi.sound.v1`），缺省开——配置项必须有自己的界面写面。
+
+**试听那一下顺手解掉了自动播放限制**：它是一次真实手势，点下去时 `prime()` 会把音频上下文点着并播一个静音样本；不然用户第一次听到的是「走子没声」，还以为功能坏了。
+
+**为什么收进浮层**：七项导航 + 两个偏好挤在一行里，360px 的机器上开关会被顶出屏幕（用户报的「声音开关有被挤出」）。浮层只占一枚按钮的位置，任何宽度都放得下。
 
 存储不可用（隐私模式）时按「开」处理，写失败不报错——与面板展开状态同一条失败路径，由 `test/prefs.test.ts` 覆盖。
 
@@ -56,4 +60,4 @@ Closest precedent: `docs/design/modules/local-play.md` §4（`session` 的着法
 |---|---|
 | 判定正确 | `test/sound.test.ts`：用真实局面走出的 `HistoryEntry` 覆盖四条路径（普通落子、吃子、将军、终局压过一切） |
 | 偏好读写 | `test/prefs.test.ts`：读回、坏值退缺省、存储抛错时不炸 |
-| 真响了 | 浏览器探针记录 `OscillatorNode.start` 的次数与波形：走一着 → 1 个三角波；关掉声音再走 → 不增；重新打开后认输 → 3 个正弦波 |
+| 真响了 | 浏览器探针记 `OscillatorNode.start` 与 `AudioContext.state`：**真实指针按下**（CDP Input，带用户激活）后上下文进 `running`、缓冲区计数 +1；随后走一着再 +1；关掉声音再走不增；重新打开后认输出现 3 个正弦波。用 `element.click()` 这类合成事件测不出来——它们不产生用户激活，上下文会一直停在 `suspended`，看起来「建了不响」 |

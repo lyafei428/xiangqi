@@ -29,7 +29,57 @@
   gap: 4px;
 }
 
-/* 声音开关：两态、带文字，不靠图标猜。 */
+/* 设置浮层：七项导航之外的两个偏好（配色、音效）都收在这里，避免顶栏被挤爆。 */
+.settings {
+  margin-left: auto;
+  position: relative;
+}
+
+.settings-toggle {
+  list-style: none;
+  border: 1px solid var(--line);
+  background: var(--raise-bg);
+  color: var(--muted);
+  border-radius: var(--radius-pill);
+  padding: 5px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.settings-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.settings[open] > .settings-toggle {
+  color: var(--text);
+}
+
+.settings-body {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 50;
+  min-width: 176px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-bg);
+  box-shadow: var(--raise);
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
 .sound-toggle {
   border: 1px solid var(--line);
   background: var(--raise-bg);
@@ -45,6 +95,7 @@
 }
 
 @media (max-width: 420px) {
+  .settings-toggle,
   .sound-toggle {
     font-size: 12px;
     padding: 4px 8px;

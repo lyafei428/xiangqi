@@ -12,12 +12,10 @@ export function useGameSound(session: GameSession, enabled: boolean): void {
   const lastMovesRef = useRef(0);
   const lastResultRef = useRef<GameSession['result']>(null);
 
+  // 播放器是个薄壳（真正的 AudioContext 是模块级单例），所以卸载时不需要收尾：
+  // 关掉上下文会让 StrictMode 的第二次挂载拿不到可用的音频，这正是「都不响」的根因。
   useEffect(() => {
     playerRef.current = createSoundPlayer();
-    return () => {
-      playerRef.current?.dispose();
-      playerRef.current = null;
-    };
   }, []);
 
   useEffect(() => {
