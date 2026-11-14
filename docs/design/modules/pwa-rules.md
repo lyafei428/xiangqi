@@ -2,7 +2,7 @@
 
 M7 的两件交付：把应用变成可安装的 PWA（FR-4.5），给出一页明示 v1 判罚口径的规则页（需求 §4 要求「在规则页明示采用哪一版」）。
 
-Closest precedent: `docs/design/modules/app-shell.md` — 路由、导航与页面清单由它拥有；实现坐标是 `src/client/shell/routes.ts` 的 `Route` 联合与 `src/client/App.tsx` 的导航数组。本模块只在它的路由表里加一行 `#/rules`、在导航里加一项，不另起一套壳。偏离：安装与离线是壳之外的一层（manifest / 图标 / service worker），app-shell 没有对应位置，因此单独成档。
+Closest precedent: `docs/design/modules/app-shell.md`（实现批次见 `docs/batches/M1-board-local-play.md`） — 路由、导航与页面清单由它拥有；实现坐标是 `src/client/shell/routes.ts` 的 `Route` 联合与 `src/client/App.tsx` 的导航数组。本模块只在它的路由表里加一行 `#/rules`、在导航里加一项，不另起一套壳。偏离：安装与离线是壳之外的一层（manifest / 图标 / service worker），app-shell 没有对应位置，因此单独成档。
 
 Survey evidence: 已核对 `docs/requirements/xiangqi.md`（F4.5、§4 判罚口径、§6 以 `npm run dev` 为验收）、`docs/design/architecture.md`（§7 性能预算、§8 里程碑 M7）、`docs/design/modules/app-shell.md`（路由与导航）、`index.html`（已有 `theme-color`，无 manifest 链接）、`vite.config.ts`（无 PWA 插件）、`package.json`（`build` / `preview` 已有）。
 
@@ -49,7 +49,7 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md`（F4.5、§4 判罚口
 
 版本常量 `CACHE = 'xiangqi-v1'`，发版时改这一行；其余字符串不动。
 
-注册点：`src/client/main.tsx`，只在生产构建且非单文件版时注册（`import.meta.env.PROD && import.meta.env.VITE_STANDALONE !== '1'`）。开发态不注册的复现：在 `npm run dev` 里也注册 `/sw.js`，改一处样式，页面拿到的仍是缓存里的旧 CSS——HMR 的更新到不了页面。
+注册点：`src/client/main.tsx`，只在生产构建、非单文件版且浏览器支持时注册（`import.meta.env.PROD && import.meta.env.VITE_STANDALONE !== '1' && 'serviceWorker' in navigator`）。开发态不注册的复现：在 `npm run dev` 里也注册 `/sw.js`，改一处样式，页面拿到的仍是缓存里的旧 CSS——HMR 的更新到不了页面。
 
 场景与复现：
 
@@ -87,18 +87,19 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md`（F4.5、§4 判罚口
 
 ## 6. 集成测试设计
 
-起点：`test/RTM.md` 的「页面壳」故事。RTM 的 F4-2 行号已定（「| F4-2 | 规则页 |」），本批不改 RTM；入口「打开页面 → 规则」，业务结果「八条判罚逐条可见；写明长捉与一将一闲不在 v1 范围内」。
+起点：`test/RTM.md` 的「页面壳」故事（F4-2 行已定，本批不动）加一行本批新增的 F5-8：入口「打开页面 → 规则 → 点开第一篇」，业务结果「两篇长文默认收起，点开可见正文，正文不引用具体着法编号」。
 
 F4-1 不破坏：该行断言的是切页后棋盘与记谱保持原样，不涉导航项数；`test/integration/navigation.test.tsx` 里也没有按导航链接数与文字断言。
 
 | 行 | 验的交互 | 用户可见结果 | 入口 | 需求 |
 |---|---|---|---|---|
 | F4-2 | 导航点「规则」 | 规则页列出八条判罚；「不在 v1 范围内」一节写明长捉与一将一闲 | 打开页面 → 规则 | F4.5、需求 §4 |
+| F5-8 | 点开「进阶阅读」的第一篇 | 两篇长文默认收起；点开后每篇八节正文可见；正文不出现具体着法编号 | 打开页面 → 规则 → 点开第一篇 | F5.8 |
 
 实现分工：
 
-- `test/rules-content.test.ts`：常量数组八条判罚、标题不重复、长捉那节的文案。
-- `test/integration/rules.test.tsx`：点导航进规则页，断言表格八行与那句声明；再点「对弈」回得去。
+- `test/rules-content.test.ts`：常量数组八条判罚、标题不重复、长捉那节的文案；进阶阅读两篇、各八节、小标题不重复、正文不含「第 N 着」这类会随棋谱库漂的编号。
+- `test/integration/rules.test.tsx`：点导航进规则页，断言表格八行与那句声明；再点「对弈」回得去。进阶阅读的展开属于内容断言，放在 `test/rules-content.test.ts`，不再派集成行。
 - `test/routes.test.ts`：`#/rules` 往返。
 - `test/pwa.test.ts`：读 `public/manifest.webmanifest` 与 `public/sw.js` 的文本断言——manifest 有 name/short_name/start_url/scope/display/icons 三个尺寸；`sw.js` 含 `install` / `activate` / `fetch` 三个监听与版本常量；`index.html` 引了 manifest 与 apple-touch-icon。
 
@@ -114,7 +115,7 @@ F4-1 不破坏：该行断言的是切页后棋盘与记谱保持原样，不涉
 | `scripts/pwa-icons.mjs` | 图标生成脚本（node 内置 zlib，无依赖）。 |
 | `src/client/main.tsx` | 生产构建下注册 service worker。 |
 | `src/client/pages/RulesPage.tsx` | 规则页。 |
-| `src/client/rules/content.ts` | 判罚与走法要点常量。 |
+| `src/client/rules/content.ts` | 判罚、走法要点与两篇进阶阅读的常量。 |
 | `src/client/rules/rules.css` | 规则页样式，由页面自己 import；不进 `src/client/app.css`。 |
 | `src/client/shell/routes.ts` | 加 `rules` 路由。 |
 | `src/client/App.tsx` | 导航第 7 项与页面分派。 |
@@ -128,7 +129,7 @@ F4-1 不破坏：该行断言的是切页后棋盘与记谱保持原样，不涉
 - existing — `src/client/shell/routes.ts` 的 `parseHash` / `routeHash` 与 `Route` 联合，加一项即可；`test/routes.test.ts` 已有往返断言。
 - existing — `index.html` 已有 `theme-color` 与 `viewport`，只补链接。
 - existing — `#/rules` 与「规则」已在 `docs/design/modules/app-shell.md` 的路由表与导航清单；代码侧 `src/client/shell/routes.ts` 的 `Route` 联合有 `rules`，`href` 由同一处拼成 `#/rules`。
-- `public/` 现有 manifest、`sw.js` 与四张图标；manifest 与图标的尺寸/用途写在 `docs/design/modules/pwa-rules.md` 的图标一节。
+- existing：`public/manifest.webmanifest`、`public/sw.js` 与四张图标都已在仓库里。
 - existing：`public/manifest.webmanifest`、`public/sw.js` 与 `src/client/main.tsx` 的注册点都已在仓库内。
 - none found：图标生成脚本在本仓没有先例；用 node 内置 `zlib` 自己写 PNG 编码，不引依赖。
 

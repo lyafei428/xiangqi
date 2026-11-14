@@ -2,7 +2,7 @@
 
 棋谱页多一个分栏：分类浏览现成的棋谱，开局 / 中局 / 终局 / 残局四类，点开就能逐步回放。
 
-Closest precedent: `docs/design/modules/replay.md` §1（记录格式与 `positionAt` 契约）与 §4（回放页的列表 / 回放布局）——回放已存在；实现坐标是 `src/client/pages/ReplayPage.tsx` 与 `src/shared/record.ts`。
+Closest precedent: `docs/design/modules/replay.md` §1（记录格式与 `positionAt` 契约）与 §4（回放页的列表 / 回放布局），实现批次见 `docs/batches/M9-study-library.md`——回放已存在；实现坐标是 `src/client/pages/ReplayPage.tsx` 与 `src/shared/record.ts`。
 
 对齐它：回放方式、记谱显示、`positionAt` 的夹取与抛错契约、页面的两区块切分。
 
@@ -47,9 +47,9 @@ export function parseStudyRecord(value: unknown): StudyRecord | null;
 
 着法与 `src/shared/record.ts` 的记录同形（内联 `{ from, to }`），不引入第二种坐标形状。
 
-校验口径与 `parseRecord` 同源：局面用 `parseFen`，每一着用 `playMove` 逐着验，走不通整条作废；`phase` 只认四个值；`id` 非空且唯一；`notes.step` 落在 `0..moves.length`。
+校验口径与 `parseRecord` 同源：局面用 `parseFen`，每一着用 `playMove` 逐着验，走不通整条作废；`phase` 只认四个值；`id` 非空（唯一性在加载时校验）；`notes.step` 落在 `0..moves.length` 且同一条内不重复；着法数不超过 `MAX_MOVES`。
 
-**为什么内容只用一道校验**：本地存局是用户文件，必须拆成「结构」与「走法」两道并在回放页给出「这条棋谱无法回放」；随包内容在发布前由 `test/study.test.ts` 全量验过，运行时不合法即说明发布流程破了。运行时仍然逐条过滤，一条坏的不拖垮整个列表；某类过滤后为空时，列表显示「这一类还没有棋谱」，不静默空白。
+**为什么内容只用一道校验**：本地存局是用户文件，必须拆成「结构」与「走法」两道并在回放页给出「这条棋谱无法回放」；随包内容在发布前由 `test/study.test.ts` 全量验过，运行时不会再逐条丢弃：加载时一条解析不过或 id 重复就直接抛错，页面当场可见——坏内容说明发布流程破了，让它静默少一条才是真的查不出来。列表因此没有空态分支：四类各 6 条由用例钉死，筛选不可能筛出空集。
 
 ## 3. 内容与分类口径
 
@@ -58,7 +58,7 @@ export function parseStudyRecord(value: unknown): StudyRecord | null;
 | 类别 | 可判规则 |
 |---|---|
 | 开局 | `startFen` 是初始局面；着法不超过 16 着 |
-| 中局 | `startFen` 不是初始局面；不着法将死收尾；着法不少于 6 着 |
+| 中局 | `startFen` 不是初始局面；不以将死收尾；着法不少于 6 着 |
 | 终局 | 自编；`statusOf` 走到末着为将死；起始局面双方子力各不少于 4 枚 |
 | 残局 | 来源写明出处（古谱名，或明标为「仿……杀法」的自编排局）；起始局面双方子力各不超过 6 枚；以将死或和棋收尾 |
 
@@ -105,20 +105,19 @@ export function parseStudyRecord(value: unknown): StudyRecord | null;
 
 内容加载：单文件约十几 KB，`import` 进主包、不额外发请求；与课程不同（22 课体积大才按课切 chunk）。`test/study.test.ts` 用 `readFileSync` 读同一份 JSON，与运行时读同一个文件。
 
-分档：涉及文件均未跨 500 行档；`ReplayPage.tsx` 现在按「列表」「回放」两区块切分，本批把库列表放进独立的 `src/client/study/StudyLibrary.tsx`，页内只多一层分栏与回放态切换，不新增 300 行以上单函数。
+分档：涉及代码文件均未跨 500 行档（`content/games/index.json` 是数据文件，不按代码档判——它的形态由 §3 的数组结构约束）；`ReplayPage.tsx` 现在按「列表」「回放」两区块切分，本批把库列表放进独立的 `src/client/study/StudyLibrary.tsx`，页内只多一层分栏与回放态切换，不新增 300 行以上单函数。
 
 现有件检查：
 
 - existing —— `src/shared/record.ts` 的 `parseRecord` / `positionAt` / `isReplayable` / `notationsOf` / `recordText`；`src/client/pages/ReplayPage.tsx` 的列表与回放布局；面板与棋盘的样式集中在 `src/client/styles/` 下的分表（由 `src/client/app.css` 统一 `@import`）。
 - none found —— 新名字 `StudyRecord`、`StudyPhase`、`parseStudyRecord`、`positionAtMoves`、`StudyLibrary`、`src/client/study/content.ts` 项目内均无同名先例（检索 `study|Study` 零命中）；「随包棋谱内容」亦无先例。
-- 文案：`我的棋谱` 是 `src/client/pages/ReplayPage.tsx` 里现状列表的标题（本批沿用）；`棋谱库`、`全部 / 开局 / 中局 / 终局 / 残局`、`这一类还没有棋谱` 为新增文案。
+- 文案：`我的棋谱` 是 `src/client/pages/ReplayPage.tsx` 里现状列表的标题（本批沿用）；`棋谱库`、`全部 / 开局 / 中局 / 终局 / 残局` 为新增文案。
 
 ## 7. 验收
 
-- 内容自证：`node --test test/study.test.ts`，覆盖逐条解析、逐着合法、四类各 6 条、分类规则可判、`id` 唯一、`notes.step` 在范围。
+- 内容自证：`node --test test/study.test.ts test/record.test.ts`——前者覆盖逐条解析、逐着合法、四类各 6 条、分类规则可判、`id` 唯一、`notes.step` 在范围；后者覆盖 `src/shared/record.ts` 这一批动过的 `positionAtMoves` 与 `notationsOf`。
 - 提交门另算：`npm run check`（typecheck + 全量单测 + 前端用例）是提交前的闸门，不是本批的验收口径。
 - 集成用例 F1-9 的那一半在收口行报告（`test/integration/study.test.tsx`），不写进本模块验收。
-- 提交门见 `AGENTS.md`。
 
 ## 8. 风险
 

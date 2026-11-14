@@ -87,6 +87,49 @@
 
 VERDICT: changes-required
 
+### 轮次 2（评审子代理）
+
+评审对象：`docs/design/modules/pwa-rules.md`、`docs/design/modules/study-library.md`、`docs/requirements/xiangqi.md`（design 评审 · 修复轮复审 · object state 已实现 · trigger：核第 1 轮 12 条是否处置到位）。文档地图：本轮无文档地图，归属按 `AGENTS.md`「文档」表判断。
+
+第 1 轮 12 条处置核对：
+
+| # | 轮 1 结论 | 本轮读数 | 判定 |
+|---|---|---|---|
+| 1 | 🔴 数量两说 | 需求档 F1.9 现为「四类各有 6 条且能按类筛选」，`test/RTM.md` F1-9「四类共 24 条」，`docs/design/modules/study-library.md` §3「共 24 条」——三处一致 | 已处置 |
+| 2 | 🔴 分支无来源场景 | 代码侧已删（`src/client/study/content.ts`：「运行时不再逐条丢弃：内容坏了就是发布流程破了，」并「if (record === null) throw new Error」；`StudyLibrary.tsx` 无空态；「这一类还没有棋谱」在 `src/`、`test/` 零命中）；但设计档 §2「运行时仍然逐条过滤，一条坏的不拖垮整个列表；某类过滤后为空时，列表显示「这一类还没有棋谱」，不静默空白。」与 §6「`这一类还没有棋谱` 为新增文案」都还在 | 未处置（档面未动，且与代码相反） |
+| 3 | 🟡 进阶阅读无需求落点 | 需求档已加 F5.8「规则页在判罚口径之下提供两篇长文」；`docs/design/modules/pwa-rules.md` §5 有 F5.8 行；但 §6 仍「本批不改 RTM」，无集成行、无豁免理由、无用例断言 | 部分处置 |
+| 4 | 🟡 三段与四节不一致 | `docs/design/modules/pwa-rules.md` §4 已改为「页面由三段正文与一节进阶阅读组成：」 | 已处置 |
+| 5 | 🟡 §7 现状描述过期 | §7 已是现状语气（`Route` 已含 `rules`、`public/` 现有 manifest 与四张图标） | 已处置（一项缺标签，见本轮 🔵） |
+| 6 | 🟡 分档行带实测行数 | `docs/design/modules/pwa-rules.md` §7 只剩「文件分档结论：表内文件均未跨 500 行档」 | 已处置（`docs/design/modules/study-library.md` 的量测问题另见本轮 🟡） |
+| 7 | 🟡 样式归属两说 | `docs/design/modules/study-library.md` §6 已改为「`src/client/styles/replay.css`」；实读该文件有「/* 棋谱库分栏 */」与 `.study-filters` | 已处置 |
+| 8 | 🟡 表头吸顶与「保持现状」相矛盾 | `docs/design/modules/study-library.md` §4 已写「唯一的例外是表头吸顶（见下一条），它属于本批。」；`replay.css` 有「position: sticky;」 | 已处置 |
+| 9 | 🟡 注册条件与代码不一致 | `docs/design/modules/pwa-rules.md` §3 已写「import.meta.env.PROD && import.meta.env.VITE_STANDALONE !== '1'」；`src/client/main.tsx` 同款（还多一道 `'serviceWorker' in navigator`） | 已处置（余一道见本轮 🔵） |
+| 10 | 🟡 先例行缺实现坐标 | `docs/design/modules/pwa-rules.md` 已补「实现坐标是 `src/client/shell/routes.ts` 的 `Route` 联合与 `src/client/App.tsx` 的导航数组」；两份档仍无先例批次 | 部分处置 |
+| 11 | 🔵「当前四条」漂数 | 已改为「现行六条都是按该谱杀法构造的排局」 | 已处置 |
+| 12 | 🔵 验收与提交门并排 | `docs/design/modules/study-library.md` §7 已拆出「提交门另算：`npm run check`（…）是提交前的闸门，不是本批的验收口径。」 | 已处置（同节又重复一句，见本轮 🔵） |
+
+本轮发现：
+
+| # | Category | Severity | Issue | Suggestion |
+|---|----------|----------|-------|------------|
+| 1 | Branch provenance（criterion 6b）/ 文档状态 | 🔴 | `docs/design/modules/study-library.md` §2 仍写「运行时仍然逐条过滤，一条坏的不拖垮整个列表；某类过滤后为空时，列表显示「这一类还没有棋谱」，不静默空白。」，§6 仍把「`这一类还没有棋谱` 为新增文案」列为新增。实读实现两条分支都已不存在：`src/client/study/content.ts` 写「运行时不再逐条丢弃：内容坏了就是发布流程破了，」并「if (record === null) throw new Error(`棋谱库第 ${index + 1} 条解析失败：内容校验没过`);」，同文件另一处「if (seen.has(record.id)) throw new Error」；`src/client/study/StudyLibrary.tsx` 只有「{shown.map((record) => (」；全仓按 `**/*.{ts,tsx,json}` 检索「这一类还没有棋谱」零命中。第 1 轮只处置了代码侧，档面未动——设计档还在描述两条没有来源场景的分支，且与代码相反（`AGENTS.md`：设计文档只写「现在是什么」）。 | 档面二选一：删掉 §2 的「逐条过滤 / 空类文案」两句与 §6 的「`这一类还没有棋谱`」文案项，改成现状（坏记录当场抛错、没有空态分支）；或保留这两条分支并补真实观测或可复现失败路径（改坏一条记录后重跑的命令与结果）。二者都不做，这两句就是与代码相反的死描述。 |
+| 2 | Integration-test design（criterion 12）/ 验收 | 🔴 | 本批第一件交付（两篇长文，需求 F5.8）在集成设计里没有行：`docs/design/modules/pwa-rules.md` §6 写「本批不改 RTM」，表内唯一一行 F4-2 的用户可见结果仍是「规则页列出八条判罚；「不在 v1 范围内」一节写明长捉与一将一闲」，不含长文；`test/RTM.md` 的 F4-2 行同口径（「导航点「规则」后八条判罚逐条可见，并写明长捉与一将一闲不在 v1 范围内」），全读该档也没有进阶阅读或 F5-8 的行。用例侧同样没有断言：`test/rules-content.test.ts` 的 import 为「import { MOVE_POINTS, OUT_OF_SCOPE, PENALTY_TABLE }」，无 ARTICLES；`test/integration/rules.test.tsx` 只断言八行判罚与那句声明。`docs/design/modules/pwa-rules.md` §5 只剩手工验收「打开页面 → 规则 → 点开任一篇」。criterion 12 唯一成立的豁免理由（本批不改变任何既有用例断言的业务结果、也不新增产品真需要的场景）没有写；而两篇长文恰是本批真需要的场景。 | 派一行：行号先在 `test/RTM.md` 定死（例如 F5-8），入口「打开页面 → 规则 → 点开第一篇」，业务结果「两篇默认收起，点开可见正文，正文不含着法编号」，并在 `test/rules-content.test.ts` 补 ARTICLES 结构断言（两篇、各八节、无数字着法引用）；若坚持不派，就把那条唯一成立的豁免理由写进 §6。 |
+| 3 | Document ownership / 声明的档改未落地 | 🟡 | `docs/design/modules/study-library.md` §6 把「`docs/design/modules/replay.md` | §1 补 `positionAtMoves`；§4 补分栏与库内回放」列为动作。实读 `docs/design/modules/replay.md` §1 已有「内部委托 positionAtMoves(startFen, moves, step)」，但 §4 仍是「路由 `#/replay`（列表）与 `#/replay/<id>`（回放），导航第五项「棋谱」。」加列表、回放两段；该档全文检索「分栏」零命中——分栏与库内回放只写在 `docs/design/modules/study-library.md` §4，页面主人 `docs/design/modules/replay.md` 不知道这件事。 | 把 `docs/design/modules/replay.md` §4 补成现状（顶部两个分栏、棋谱库分栏与页内回放、我的棋谱表头吸顶），或删掉 §6 那半句动作，别把「本批要改」留在表里而没落到被改的档上。 |
+| 4 | Affected-file tier（criterion 8） | 🟡 | `docs/design/modules/study-library.md` §6 的「分档：涉及文件均未跨 500 行档」与实测量不符：同一张表内的 `content/games/index.json` 实测 1139 行（首行 `[`），越过 800 行硬档；该档 §3 自己也写「数组，四类各 6 条，共 24 条」。其余抽查通过：`src/client/pages/ReplayPage.tsx` 412 行、`src/shared/study.ts` 143、`test/study.test.ts` 173、`test/integration/study.test.tsx` 76、`src/client/study/StudyLibrary.tsx` 67、`src/client/study/content.ts` 34；`docs/design/modules/pwa-rules.md` 表内 `src/client/App.tsx` 282、`src/client/rules/content.ts` 209、`src/client/shell/routes.ts` 91、`src/client/pages/RulesPage.tsx` 81，结论句成立。 | 给数据文件一个明确交代：要么写拆法（按四类拆成四个内容文件，或每类一个目录），要么写明分档判据只约束代码文件、内容数据不适用并给出理由。 |
+| 5 | Clarity（分类规则写残） | 🟡 | `docs/design/modules/study-library.md` §3 中局一行写作「`startFen` 不是初始局面；不着法将死收尾；着法不少于 6 着」，「不着法将死收尾」不成句；实现与用例的口径是「不以将死收尾」（`test/study.test.ts` 案名「中局：非初始局面、至少 6 着、不以将死收尾」）。 | 改成「不以将死收尾」。 |
+| 6 | Acceptance（变更面未全覆盖） | 🟡 | `docs/design/modules/study-library.md` §7 只给「内容自证：`node --test test/study.test.ts`」，但本批变更面还包括 `src/shared/record.ts`（§6 表：「抽出 `positionAtMoves(startFen, moves, step)`；`positionAt` 改为委托它；`notationsOf` 入参放宽为 `{ startFen, moves }`，库内回放直接复用」）。该文件的属主用例存在（`docs/design/modules/replay.md` 文件表：「| `test/record.test.ts` | 记录往返、校验边界、任意步重放。 |」）却没进验收命令：`positionAt` 改委托、`notationsOf` 放宽入参若有回归，本批验收跑不出来。 | 验收命令改成 `node --test test/study.test.ts test/record.test.ts`。 |
+| 7 | Closest precedent（criterion 9） | 🟡 | 第 1 轮第 10 条只处置了一半：`docs/design/modules/pwa-rules.md` 已有实现坐标，两份档的对齐与偏离理由也都在；但两份都没有先例批次坐标（`docs/design/modules/pwa-rules.md` 只写「Closest precedent: `docs/design/modules/app-shell.md`」，`docs/design/modules/study-library.md` 只写「Closest precedent: `docs/design/modules/replay.md` §1（记录格式与 `positionAt` 契约）与 §4（回放页的列表 / 回放布局）」），仓里有 `docs/batches/M7-pwa-rules.md`、`docs/batches/M9-study-library.md` 可指。 | 两份档的先例行各补先例批次坐标（例如 `docs/batches/M7-pwa-rules.md`、`docs/batches/M9-study-library.md`）。 |
+| 8 | Existing-piece（criterion 11） | 🔵 | `docs/design/modules/pwa-rules.md` §7 现有件检查里有一项没有三问形式，且指向本档自己：「`public/` 现有 manifest、`sw.js` 与四张图标；manifest 与图标的尺寸/用途写在 `docs/design/modules/pwa-rules.md` 的图标一节。」其余各项都有「existing —」或「none found：」前缀。 | 给它补 `existing：` 前缀，并删掉那句自指引（内容就在本档 §2）。 |
+| 9 | Doc-state（注册条件仍缺一闸） | 🔵 | `docs/design/modules/pwa-rules.md` §3 写「只在生产构建且非单文件版时注册（`import.meta.env.PROD && import.meta.env.VITE_STANDALONE !== '1'`）」，实读 `src/client/main.tsx` 的条件还多一道「&& 'serviceWorker' in navigator」。 | 把这半句补进括号里的表达式。 |
+| 10 | Clarity（校验口径清单不全） | 🔵 | `docs/design/modules/study-library.md` §2 的「校验口径与 `parseRecord` 同源：…；`id` 非空且唯一；`notes.step` 落在 `0..moves.length`。」与 `src/shared/study.ts` 的实际口径有三处差：解析器不查 id 唯一（唯一性在 `src/client/study/content.ts` 的 `seen` 与用例里），同一步两条说明整条作废（「if (steps.has(note.step)) return null;」），另有一道「if (!Array.isArray(movesRaw) || movesRaw.length > MAX_MOVES) return null;」上限。 | 清单改成解析器的真实口径（id 非空、唯一性在加载层、step 范围、同 step 不重复、着数上限）。 |
+| 11 | Doc hygiene | 🔵 | `docs/design/modules/study-library.md` §7 同一件事写了两遍：「提交门另算：`npm run check`（…）是提交前的闸门，不是本批的验收口径。」之后又有「提交门见 `AGENTS.md`。」 | 删掉后一条。 |
+| 12 | Clarity（文件表职责过期） | 🔵 | `docs/design/modules/pwa-rules.md` §7 文件表仍写「| `src/client/rules/content.ts` | 判罚与走法要点常量。 |」，本批新增的两篇长文也在该文件里（实读「export const ARTICLES: readonly RuleArticle[] = [」，标题「对局中如何提升自己」「看棋局的视角：把局面读成三笔账」），该档 §4 也写「内容以 `src/client/rules/content.ts` 的常量数组承载」。 | 职责改成「判罚、走法要点与两篇长文常量」。 |
+| 13 | Document map | 🔵 | 本轮没有文档地图（No document map found），归属只能按 `AGENTS.md`「文档」表的四层位置判断。就本批两份档看，各自落在 `docs/design/modules/` 对应模块内，没有为既有小节新开文件，也没有把需求档的话复制进设计档——结论成立，但缺地图这一层校验。 | 无需改动文档；在项目根补一份文档地图后再核一轮归属。 |
+
+计数：🔴 2 · 🟡 5 · 🔵 6。
+
+VERDICT: changes-required
+
 ## §4 用户批准（主 agent）
 ## §5 实施记录（实施者：主 agent ∥ coder）
 ## §6 验证与收口（父代理）

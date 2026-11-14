@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { MOVE_POINTS, OUT_OF_SCOPE, PENALTY_TABLE } from '../src/client/rules/content.ts';
+import { ARTICLES, MOVE_POINTS, OUT_OF_SCOPE, PENALTY_TABLE } from '../src/client/rules/content.ts';
 
 // 判罚的真相在 docs/requirements/xiangqi.md §4；这里把页面内容与需求档逐行对齐。
 // 只改一处不改另一处会红——页面与需求档无法静默漂移。
@@ -79,4 +79,30 @@ test('走法要点五条，各自成句', () => {
   for (const keyword of ['马走日', '象走田', '炮隔子吃', '兵过河可横走', '将帅不出九宫']) {
     assert.ok(text.includes(keyword), `走法要点缺「${keyword}」`);
   }
+});
+
+test('进阶阅读两篇，各有八节，标题不重复', () => {
+  assert.equal(ARTICLES.length, 2);
+  assert.deepEqual(
+    ARTICLES.map((article) => article.title),
+    ['对局中如何提升自己', '看棋局的视角：把局面读成三笔账'],
+  );
+  for (const article of ARTICLES) {
+    assert.equal(article.sections.length, 8, `${article.id} 不是八节`);
+    const headings = article.sections.map((section) => section.heading);
+    assert.equal(new Set(headings).size, headings.length, `${article.id} 的小标题有重复`);
+    for (const section of article.sections) {
+      assert.ok(section.heading.trim() !== '', `${article.id} 有空小标题`);
+      assert.ok(section.paragraphs.length >= 1, `${article.id} 的「${section.heading}」没有正文`);
+      for (const paragraph of section.paragraphs) {
+        assert.ok(paragraph.trim() !== '', `${article.id} 有空段落`);
+      }
+    }
+  }
+});
+
+test('进阶阅读正文不引用具体着法编号', () => {
+  // 棋谱库会增删，正文里写死「第 N 着」必然过期；这里把这条约束钉住。
+  const text = JSON.stringify(ARTICLES);
+  assert.ok(!/[第步]\s*\d+\s*着/.test(text), '正文出现了「第 N 着」这类会过期的编号');
 });
