@@ -133,11 +133,9 @@
 
   .panel {
     height: auto;
-    /* 面板自己滚，不把操作行（着法 / 新局 / 离开）挤出视口：
-       大字号或矮屏时，宁可让面板内部滚动。 */
-    max-height: 50dvh;
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    max-height: none;
+    /* 不能在这里加 overflow 滚动：.panel-body 是绝对定位、贴在面板上沿之上
+       （bottom: 100%），一开滚动容器它就整块被裁掉——点「着法」有反应但什么都看不见。 */
     padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
     gap: 6px;
   }

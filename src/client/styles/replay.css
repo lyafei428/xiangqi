@@ -14,7 +14,9 @@
 .replay-tab[aria-pressed='true'] {
   border-color: var(--accent-strong);
   background: var(--accent-strong);
-  color: var(--panel-bg);
+  /* 填充底上的字用 --on-accent（白）：深色面板底 --panel-bg 压在蓝底上几乎看不见，
+     用户报的「点上去文字被挡住」就是这个。 */
+  color: var(--on-accent);
 }
 
 .replay-tab[aria-pressed='true']:hover:not(:disabled) {

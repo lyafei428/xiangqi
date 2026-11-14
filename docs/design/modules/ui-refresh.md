@@ -67,6 +67,8 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md` §3 的 F1.1–F1.10�
 
 不手算高度：常驻条的高度随档位与内容变化，写死数字就会漂；舞台的实测盒子才是唯一来源。
 
+**常驻条不可设 `overflow` 滚动**：着法抽屉是 `.panel-body` 绝对定位、贴在常驻条上沿之上（`bottom: 100%`），常驻条一旦成为滚动容器，抽屉整块被裁掉——点「着法」有反应（`aria-expanded` 变 true）却什么都没出现，操作行也可能被滚出可视区（表现为「新局不见了」）。要让常驻条装不下时能滚，必须先把抽屉改成 `position: fixed` 另起锚点，不能只加一句 `overflow-y: auto`。
+
 ## 5. 集成测试设计
 
 起点：`test/RTM.md` 的响应式故事 F4-3…F4-5（由 `scripts/acceptance.mjs` 实跑）与对弈故事（F1-1…F1-9，jsdom 用例）。页面壳故事 F4-1/F4-2 不在本批改动范围。
