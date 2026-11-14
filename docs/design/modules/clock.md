@@ -1,6 +1,6 @@
 # 计时与胜负判定
 
-每方 10 分钟包干，走子后切给对方，归零判负。认输与求和也在本模块定判罚；联机的传输细节在 `docs/design/modules/online.md`。
+每方 15 分钟包干，走子后切给对方，归零判负。认输与求和也在本模块定判罚；联机的传输细节在 `docs/design/modules/online.md`。
 
 Closest precedent: `docs/design/modules/local-play.md` — 对局会话、终局锁盘与面板显示已由该模块定下；本模块只在对局状态上加时钟与「认输 / 求和」两个动作，不改棋盘与布局。`docs/design/modules/online.md` 的权威快照是联机的唯一状态来源，本模块把时钟放进去。
 
@@ -28,7 +28,8 @@ interface ClockState {
   since: number;          // 计时锚点（毫秒时间戳），只在切边/开新局时更新
 }
 
-createClock(now, perSide?): ClockState
+createClock(now, perSide?): ClockState   // 建表：默认 running 为 null，等开表
+startClock(clock, now, turn): ClockState  // 开表：锚点挪到 now，交给 turn 走秒
 remainingOf(clock, color, now): number   // running 方按 since 扣减，另一方原样
 switchClock(clock, now): ClockState      // 扣掉 running 方到 now 的用时，换边，锚点置 now
 stopClock(clock, now): ClockState        // 终局：扣时后 running = null
@@ -36,9 +37,9 @@ timeoutColor(clock, now): Color | null   // running 方剩余为 0 时返回该�
 formatClock(ms): string                  // 面板显示：mm:ss
 ```
 
-- 每方 10 分钟（600000 毫秒）包干；不加秒、不读秒。
+- 每方 15 分钟（900000 毫秒）包干；不加秒、不读秒。
 - 时间只有一个来源：`since` 是唯一的绝对时间戳，剩余一律由 `remainingOf` 按 `now − since` 计算；不存第二套累计值，避免两套时间漂移。
-- 开表时机：进页面只建表、不走秒（`running: null`）。按下「开始」，或落下第一着，才由 `startClock` 把锚点挪到那一刻、交给当前行棋方。走子成功后 `switchClock` 切给对方。刷新页面不会白丢时间——旧行为是加载即走秒，刷一次掉几秒。
+- 开表时机：进页面只建表、不走秒（`running: null`）。按下「开始」，或落下第一着，才由 `startClock` 把锚点挪到那一刻、交给当前行棋方。走子成功后 `switchClock` 切给对方。刷新页面不丢时间：进页面时表不走，锚点只在开表那一刻落定。
 - 「开始」与「认输」是同一个按钮的两种身份：开表前显示「开始」，开表后显示「认输」；外观与尺寸取认输那一套（`.resign`），换字时只做一次 200ms 淡入位移，按钮位置与宽度全程不跳。
 - 归零即终局：`timeoutColor` 返回归零方，结果 `timeout`，winner 为对方。
 - 本地：页面每秒调用 `tick(now)`，只做超时判定；显示由 `remainingOf` 计算，不每秒改写锚点。
@@ -65,8 +66,8 @@ formatClock(ms): string                  // 面板显示：mm:ss
 - `GameSession` 增加 `clock: ClockState`；动作 `tick(now)`、`resign`。
 - 每次走子成功后 `switchClock`；`tick` 由页面每秒调用一次，`timeoutColor` 非空即把 `result` 置为 `timeout` 并 `stopClock`。
 - 走子与选子入口先判一次超时：已经归零就不再接受着法（不靠每秒轮询抽到）。
-- 新局重置为 10 分钟、红方在走。
-- 面板显示双方时钟（`mm:ss`）；不足 60 秒的数字变红。开局即开始计时，不设「开始」按钮。
+- 新局重置为 15 分钟、红方在走。
+- 面板显示双方时钟（`mm:ss`）；不足 60 秒的数字变红。开局按下「开始」才走秒（见 §1 的开表时机）。
 
 ## 4. 联机对局
 
@@ -120,7 +121,7 @@ formatClock(ms): string                  // 面板显示：mm:ss
 - 快照：existing — `docs/design/modules/online.md` §2，只加字段。
 - 「认输」「提议和棋」「对方提议和棋」文案：none found — 新增。
 
-命名：`ClockState`、`createClock`、`switchClock`、`remainingOf`、`stopClock`、`timeoutColor`、`drawOffer`、`drawBlocked`、`draw-blocked`、`draw-pending`、`no-draw-offer` 为新增名字，项目内无同名先例（checked, none found）。`ClockView` 不再单列，直接复用 `ClockState`（线上投影同形状）。
+命名：`ClockState`、`createClock`、`switchClock`、`remainingOf`、`stopClock`、`timeoutColor`、`drawOffer`、`drawBlocked`、`draw-blocked`、`draw-pending`、`no-draw-offer` 为新增名字，项目内无同名先例（checked, none found）。`ClockView` 直接复用 `ClockState`（线上投影同形状）。
 
 文件分档：本批新增与扩展文件均不足 300 行，无 300+ 行单函数；`src/client/game/session.ts`、`src/server/room.ts` 与三份测试改动后仍不足 500 行，不需要拆分方案。
 
@@ -128,7 +129,7 @@ formatClock(ms): string                  // 面板显示：mm:ss
 
 | 需求 | 落点 | 怎么验 |
 |---|---|---|
-| F1.4 每方 10 分钟、归零判负、显示「超时」 | `src/shared/clock.ts` + 会话/房间归零判定 + `GamePanel` 文案 | `test/clock.test.ts`、`test/client-session.test.ts`、`test/game-panel.test.tsx` |
+| F1.4 每方 15 分钟、归零判负、显示「超时」 | `src/shared/clock.ts` + 会话/房间归零判定 + `GamePanel` 文案 | `test/clock.test.ts`、`test/client-session.test.ts`、`test/game-panel.test.tsx` |
 | F1.4 缩放不重置、不停表 | 时钟只存锚点，布局变化不重建会话 | 浏览器实跑：连续缩放后时钟不断且数值接上（jsdom 无布局，不进集成用例） |
 | F1.5 认输 | 本地与联机的 `resign`，只接受当前行棋方 | `test/client-session.test.ts`、`test/room.test.ts`、`test/integration/local-play.test.tsx` |
 | F1.5 求和与拒绝后不重复 | 联机 `offer-draw` / `draw-response` / `drawBlocked` | `test/room.test.ts`、`test/online.test.ts`、`test/integration/online.test.tsx` |

@@ -58,6 +58,9 @@
 实测（浏览器探针，触摸）：人机页走一着 → 振荡器 +2（玩家一着 + AI 回一着）、上下文 `running`。
 
 ## §3 设计评审（评审子代理）
+**状态行**：评审通过
+
+
 
 ### 轮次 1（评审子代理）
 
@@ -81,6 +84,33 @@
 计数：🔴 2 · 🟡 6 · 🔵 4。
 
 VERDICT: changes-required
+
+### 轮次 2（评审子代理）
+
+第 2 轮复审（核第 1 轮 12 条 · 以本轮读取的当前文件状态为准）
+
+范围：`docs/design/modules/sound.md`、`test/sound.test.ts`、`test/integration/sound.test.tsx`；并按需核对 `docs/requirements/xiangqi.md` 的 F5.2 与 F5.6 原文。
+
+| # | Orig# | File | Severity | Status | Notes |
+|---|-------|------|----------|--------|-------|
+| 1 | 1 | docs/design/modules/sound.md | 🔴 | Fixed | §2 表新增「增益」列（0.26 / 0.16 / 0.12·0.12 / 0.10·0.08·0.06），并加「**音量**」段："四种声音的增益就是它们的响度，取上表的值，不设用户可调的音量控件。" 两条理由（F5.6 只要求静音开关、增益即音色）与「落子增益最高」的理由都在；§6 收成 "不做音量滑杆（理由见 §2 的「音量」一段）"，给出了指向，不再与本轮范围互斥。 |
+| 2 | 2 | docs/design/modules/sound.md | 🔴 | Fixed | §10「集成测试设计」已存在，起点写明 "起点是 `test/RTM.md`：本变更落在 **F5-6 走子音效** 一行"，并逐类给结论："破坏 | 无：F5-6 此前没有实现，没有既有用例断言过声音"、"冗余 | 无"、缺失行给出交互与业务结果、入口「打开页面 → 对弈 → 走子 / 认输」、需求编号 F5.6；另有 §112 的断言口径说明。配套交付了 `test/integration/sound.test.tsx`。 |
+| 3 | 3 | docs/design/modules/sound.md | 🟡 | Fixed | §4 补了互斥规则："两条观测点互斥，终局优先：将死那一着同时满足「结果从无到有」与「着法数增加」，此时只响一次终局音"，且 `test/sound.test.ts` 有对应用例 "将死那一着只算终局，不叠将军"。 |
+| 4 | 4 | docs/design/modules/sound.md | 🟡 | Fixed | §4 改为 "着法数增加 → 按 `classify` 响**最后那一着**。"，并补 "着法数一次增加多着（联机快照一次带回几着）时只按最后那一着响一次"，同时保留 "着法数不变、变少（新局、回退）都不响"。 |
+| 5 | 5 | docs/design/modules/sound.md | 🟡 | Fixed | §2 表新增「波形」列，将军为 "正弦波"、终局为 "正弦波"，与 §9 探针的 "重新打开后认输出现 3 个正弦波（终局三音，见 §2 的波形列）" 对得上。 |
+| 6 | 6 | docs/design/modules/sound.md | 🟡 | Fixed | 第 9 行补了调查证据："Survey evidence: 已核对 `docs/design/modules/local-play.md`（事件源）、`docs/design/modules/theme.md`（顶栏控件与设置浮层的既有归属）、`docs/requirements/xiangqi.md` F5.2 与 F5.6"，并写明哪三处被沿用、其余均不相关。 |
+| 7 | 7 | docs/design/modules/sound.md | 🟡 | Fixed | §7「新增与改动的名字」表给出三问答复，`classify`/`useGameSound`/`useSoundEnabled`/`setSoundEnabled`/`prime`/`VOICES`/存储键/界面文字各有 `none found` 与住所；「共享 store」也澄清为 "自写的模块级 store（不是状态管理框架）"。 |
+| 8 | 8 | docs/design/modules/sound.md | 🟡 | Fixed | §8 受影响文件表给出逐文件行数与分层结论，末行写 "均不跨层：没有文件越过 500 行的代码结构线"。 |
+| 9 | 9 | docs/design/modules/sound.md | 🟡 | Fixed | §5 补了归属："浮层的**结构**不归本模块：它由 `docs/design/modules/theme.md` 的顶栏控件一节拥有（配色下拉就在那里），本模块只往浮层里追加两个控件，不改浮层的开合与位置。" 跨模块表面因此收窄为追加控件。 |
+| 10 | 10 | docs/design/modules/sound.md | 🔵 | Fixed | §9 增「改动面命令」行："`node --test test/sound.test.ts test/prefs.test.ts`（提交前仍走 `npm run check` 整体闸门）"。 |
+| 11 | 11 | docs/design/modules/sound.md | 🔵 | Fixed | §3 补了字段出处："这两个字段定义在 `src/shared/types.ts` 的 `HistoryEntry`（连同 `move` 与走完后的 `fen`）"；`test/sound.test.ts` 直接断言 `entry.captured` / `entry.gaveCheck`，与此一致。 |
+| 12 | 12 | docs/design/modules/sound.md | 🔵 | Fixed | §6 收成单一策略："任何发声失败都静默降级：没有 `AudioContext`、被自动播放策略拦（合成事件不产生用户激活，上下文停在 `suspended`）、设备静音，都当没听见处理。" 由「逐条分支要现场」变为「一条策略 + 举例」，本条诉求（不留无现场的判别枚举）已满足；「无 `AudioContext`」「设备静音」两例仍无现场，属残留。 |
+| 13 | (new) | test/integration/sound.test.tsx | 🟡 | New | 交付的集成用例与 §10 缺失行承诺的断言面不一致，且与该行的断言口径自相矛盾。`docs/design/modules/sound.md` §10 写 "断言「四种声音各响一次」与「关掉后不响、重开页面仍是关」"，而用例只覆盖落子与终局：test/integration/sound.test.tsx: "走一着响一声，认输响三声（终局三音）；关掉后不再响"，断言只有 "expect(FakeAudioContext.starts).toBe(4)"，没有吃子、将军两条路径；其计数机制是 "记录每一次振荡器起振：一个音一个振荡器，数它就是数「响了几声」。"，而 §112 明写 "不取合成参数内部的节点细节"。两条处置路径：把 §10 缺失行的断言面改成实际交付的两条路径（并说明吃子 / 将军由 `test/sound.test.ts` 的判定层覆盖），或把吃子、将军补进集成用例并改成不数节点的可观测量。 |
+| 14 | (new) | docs/design/modules/sound.md | 🔵 | New | §8 受影响文件表少了本轮新增的 `test/integration/sound.test.tsx`（114 行，仍不跨层），且 `test/sound.test.ts` 的行数写作 48 而该文件实为 58 行；§9 的「改动面命令」也只列 "`node --test test/sound.test.ts test/prefs.test.ts`"，未给集成用例的运行方式。分层结论本身不受影响（两者都远低于 500 行），属文档卫生（数字漂移 + 缺行）。 |
+
+计数：🔴 0 · 🟡 1（新，报告项）· 🔵 1（新）· 第 1 轮 12 条全部闭口（Fixed 12）。
+
+VERDICT: pass
 
 ## §4 用户批准（主 agent）
 ## §5 实施记录（实施者：主 agent ∥ coder）

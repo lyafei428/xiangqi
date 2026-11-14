@@ -44,8 +44,8 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md` §3 的 F1.1–F1.10�
 | 对弈 | 棋盘、行棋方与双方计时、新局、认输 | 着法记录、记谱输入 |
 | 人机 | 同上 + 难度与阵营（仅未走子时） | 着法记录、记谱输入 |
 
-- 终局结果按胜方着色：红胜红字、黑胜黑字、和棋留蓝。红黑用 `*_text` 那组（`--red-text`／`--black-text`），和棋用 `--accent`——它是文字与描边那一档；`--accent-strong` 是填充按钮底，当文字只有 3.31:1。状态行与放大提示同色。
-- 终局提示：结果文字放大到棋盘中央停 3 秒，再缩回面板状态行原处（`ResultPop`）。提示自带一枚 `--panel-bg` 底（见 `ResultPop` 的 `.result-pop`）：它压在浅色棋盘上，直接裸字会让 `--red-text` 只剩 2.40:1、`--black-text` 只剩 0.74:1（同一公式复算）——有底才谈得上对比度。落点用 FLIP 量算：起点是 `.board` 矩形中心，终点是 `.status-line` 矩形中心，缩放到状态行行高的一档；量不到目标就原地淡出，不做假动画。`prefers-reduced-motion: reduce` 时只停不飞。提示自身 `aria-hidden`——状态行的 `role="status"` 已经播报过同一句话，重复播报会吵。
+- 终局结果按胜方着色：红胜红字、黑胜黑字、和棋留蓝。具体取值与禁止组合见 `docs/design/modules/theme.md` §2 的「结果着色」与 §3 的断言集，本档不重复——它是文字与描边那一档；`--accent-strong` 是填充按钮底，当文字只有 3.31:1。状态行与放大提示同色。
+- 终局提示：结果文字放大到棋盘中央停 3 秒，再缩回面板状态行原处（`ResultPop`）。提示自带一枚 `--panel-bg` 底（见 `ResultPop` 的 `.result-pop`）：它压在浅色棋盘上，直接裸字会让 `--red-text` 只剩 2.40:1、`--black-text` 只剩 1.35:1（同一公式复算）——有底才谈得上对比度。落点用 FLIP 量算：起点是 `.board` 矩形中心，终点是 `.status-line` 矩形中心，缩放到状态行行高的一档；量不到目标就原地淡出，不做假动画。`prefers-reduced-motion: reduce` 时只停不飞。提示自身 `aria-hidden`——状态行的 `role="status"` 已经播报过同一句话，重复播报会吵。
 - 人机页的难度与阵营：未走子时铺开；选过难度或阵营之后，鼠标移出控件组就收成一行摘要（显示当前难度与阵营），点摘要可再展开；新局重新铺开。玩家走完第一着后同样收成摘要。它不属「默认收起」——进入页面时它就在。
 - 收起条件写在两处状态里：`picked`（这一局选过没有，没选过就不收）与 `collapsedByLeave`（被移开收起过）。新局把两者一起复位——只靠 `hasMoves` 的 effect 不够：还没走过子的新局里 `hasMoves` 没变，effect 不会重跑。
 - 「指针离开」由全局 `pointermove` 判定，不用 `pointerleave`：后者只在指针悬停过该元素后才发，二次展开或键盘选择之后根本不会来，表现为「选完有时不收」。
@@ -58,7 +58,7 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md` §3 的 F1.1–F1.10�
 
 ## 4. 手机一屏
 
-改前的现状：<768px 上面板占 40dvh 并与棋盘争高度，375×667 上棋盘被顶出可视区；读数见批次记录的 F4-6 一行（`node scripts/acceptance.mjs` 的「手机一屏」表）。改后该表在 375×667 与 360×740 两档都给出「棋盘完整可见、无纵向滚动」。
+这里要守的不变量：375×667 与 360×740 两档都「棋盘完整可见、无纵向滚动」；读数由 `node scripts/acceptance.mjs` 的「手机一屏」表给出。
 
 改法两条：
 
@@ -114,7 +114,7 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md` §3 的 F1.1–F1.10�
 | `src/client/panel/GamePanel.tsx` | 「着法」切换按钮与 `aria-expanded`；`/` 先展开再聚焦；结果行挂 `resultTone` 类名 |
 | `src/client/panel/ResultPop.tsx` | 终局放大提示（FLIP 缩回状态行，3 秒停留，`prefers-reduced-motion` 时只停不飞） |
 | `scripts/acceptance.mjs` | F4-6 读数（滚动高度、棋盘底边） |
-| `test/RTM.md` | F4-6、F1-10 两行 + 受影响行改写 + 用例实现 |
+| `test/RTM.md` | F4-6、F1-10、F1-11 三行 + 受影响行改写 + 用例实现 |
 | `test/integration/local-play.test.tsx`、`test/integration/ai.test.tsx` | F1-10 各一条 |
 
 分档：`src/client/app.css` 实测 1451 行，过了 800 行硬上限，本批拆成上表八个样式文件（按现有分区估算，单文件均 < 500 行）；拆后 `src/client/app.css` 只剩八行引入。

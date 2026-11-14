@@ -124,3 +124,6 @@ recordText(record): string           // JSON 文本，缩进 2
 | F1-5 | 对弈 → 走子 → 终局 → 棋谱页 → 回放 → 导入导出 → 重开续局 | 列表出现该局；回放可停在任意一步；导出的文件重新导入后能完整回放；关页重开棋盘与时钟接上 | 打开页面 → 对弈 / 棋谱 | F1.6 |
 
 实现：`test/integration/replay.test.tsx`（列表、回放、导入导出、坏记录与不存在 id）；续局在 `test/integration/local-play.test.tsx` 增一段（jsdom 直接操作 `localStorage` 后重挂 `App`）。
+
+
+「我的棋谱」列表的表头（标题 + `导入`）吸在列表顶部：`.replay-head` 是 `position: sticky` + 页面底色 + 一条分隔线。棋谱攒多以后往下拉，表头不跟着走——这是「列表能滚动，但入口不动」的固定做法。
