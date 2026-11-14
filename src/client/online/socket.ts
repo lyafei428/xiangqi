@@ -53,10 +53,13 @@ export interface OnlineSocketOptions {
 interface JoinInfo {
   readonly room?: string;
   readonly token?: string;
+  readonly matchable?: boolean;
 }
 
 export class OnlineSocket {
   private readonly onEvent: (event: OnlineEvent) => void;
+  /** 握手完成后要补发 quick-match 而不是 join。 */
+  private pendingQuickMatch = false;
   private readonly WebSocketImpl: typeof WebSocket;
   private readonly url: string;
   private ws: WebSocket | null = null;
@@ -98,6 +101,19 @@ export class OnlineSocket {
     this.send({ type: 'rematch' });
   }
 
+  /** 随机匹配：服务端会挑一间在等的房，没有就自建一间可被匹配的。 */
+  quickMatch(): void {
+    this.intentional = false;
+    this.joinInfo = {};
+    if (this.ws !== null && this.ws.readyState === 1) {
+      this.send({ type: 'quick-match' });
+      return;
+    }
+    // 标记要在 open 之前置上：open 是同步建连接，open 回调虽异步但早于下一行执行的机会不确定。
+    this.pendingQuickMatch = true;
+    this.open();
+  }
+
   leave(): void {
     this.intentional = true;
     this.clearTimer();
@@ -135,6 +151,11 @@ export class OnlineSocket {
     this.ws = ws;
     ws.addEventListener('open', () => {
       this.attempts = 0;
+      if (this.pendingQuickMatch) {
+        this.pendingQuickMatch = false;
+        ws.send(JSON.stringify({ type: 'quick-match' }));
+        return;
+      }
       const join = this.joinInfo ?? this.stored ?? {};
       ws.send(JSON.stringify({ type: 'join', ...join }));
     });

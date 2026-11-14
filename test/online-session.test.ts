@@ -25,6 +25,7 @@ const SNAPSHOT: Snapshot = {
   clock: { redMs: 600000, blackMs: 600000, running: null, since: 0 },
   drawOffer: null,
   drawBlocked: null,
+  matchable: false,
 };
 
 test('还没进房间就断开：回大厅并说明连不上房间服务', () => {

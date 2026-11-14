@@ -110,6 +110,7 @@ function snapshot(overrides: Partial<Snapshot> = {}): Snapshot {
     clock: createClock(Date.now()),
     drawOffer: null,
     drawBlocked: null,
+    matchable: false,
     ...overrides,
   };
 }
@@ -455,3 +456,44 @@ describe('F1-6 联机观战：第三人只看不走', () => {
   });
 });
 
+
+describe('F1-2 随机匹配：默认不放行，勾了才带上 matchable', () => {
+  it('不勾「允许随机匹配」时，建房发出去的 join 不带 matchable=true', async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: '创建房间' }));
+    await waitFor(() => expect(FakeWebSocket.instances.length).toBe(1));
+    const socket = FakeWebSocket.instances[0];
+    if (socket === undefined) throw new Error('没有 socket');
+    await waitFor(() => expect(socket.sent.length).toBeGreaterThan(0));
+    const join = socket.sent
+      .map((raw) => JSON.parse(raw) as { type: string; matchable?: boolean })
+      .find((message) => message.type === 'join');
+    expect(join?.matchable).toBe(false);
+  });
+
+  it('勾上后再建房，join 带 matchable=true', async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('checkbox', { name: /允许随机匹配/ }));
+    fireEvent.click(screen.getByRole('button', { name: '创建房间' }));
+    await waitFor(() => expect(FakeWebSocket.instances.length).toBe(1));
+    const socket = FakeWebSocket.instances[0];
+    if (socket === undefined) throw new Error('没有 socket');
+    await waitFor(() => expect(socket.sent.length).toBeGreaterThan(0));
+    const join = socket.sent
+      .map((raw) => JSON.parse(raw) as { type: string; matchable?: boolean })
+      .find((message) => message.type === 'join');
+    expect(join?.matchable).toBe(true);
+  });
+
+  it('点「随机匹配」发的是 quick-match，不是 join', async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: '随机匹配' }));
+    await waitFor(() => expect(FakeWebSocket.instances.length).toBe(1));
+    const socket = FakeWebSocket.instances[0];
+    if (socket === undefined) throw new Error('没有 socket');
+    await waitFor(() =>
+      expect(socket.sent.some((raw) => JSON.parse(raw).type === 'quick-match')).toBe(true),
+    );
+    expect(socket.sent.some((raw) => JSON.parse(raw).type === 'join')).toBe(false);
+  });
+});

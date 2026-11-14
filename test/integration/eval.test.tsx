@@ -123,6 +123,7 @@ function snapshot(overrides: Partial<Snapshot> = {}): Snapshot {
     clock: createClock(Date.now()),
     drawOffer: null,
     drawBlocked: null,
+    matchable: false,
     ...overrides,
   };
 }

@@ -343,3 +343,70 @@ test('联机认输：行棋方认输判对方胜，非行棋方被拒', async ()
   }
 });
 
+
+test('随机匹配：第一个等、第二个直接配上，颜色不撞', async () => {
+  const server = await createOnlineServer({ port: 0, heartbeatMs: 60_000 });
+  const clients: Client[] = [];
+  try {
+    // 先来的人池里没人，自己建一间可被匹配的房等。
+    const first = new Client(server.port);
+    clients.push(first);
+    await first.open();
+    first.send({ type: 'quick-match' });
+    const joinedFirst = await first.next((message) => message.type === 'joined');
+    if (joinedFirst.type !== 'joined') throw new Error('第一个没进房');
+    assert.equal(joinedFirst.color, 'red');
+    assert.equal(joinedFirst.snapshot.matchable, true, '等的人那间房应标成可匹配');
+    assert.equal(joinedFirst.snapshot.players, 1);
+
+    // 第二个直接匹配，配进同一间房当黑方。
+    const second = new Client(server.port);
+    clients.push(second);
+    await second.open();
+    second.send({ type: 'quick-match' });
+    const joinedSecond = await second.next((message) => message.type === 'joined');
+    if (joinedSecond.type !== 'joined') throw new Error('第二个没配上');
+    assert.equal(joinedSecond.room, joinedFirst.room, '两人应进同一间房');
+    assert.equal(joinedSecond.color, 'black');
+    assert.notEqual(joinedSecond.color, joinedFirst.color);
+
+    // 先到者也收到「人齐了」的快照。
+    const filled = await first.next(
+      (message) => message.type === 'state' && message.snapshot.players === 2,
+    );
+    if (filled.type !== 'state') throw new Error('先到者没收到人齐快照');
+    assert.equal(filled.snapshot.black, true);
+  } finally {
+    for (const client of clients) client.close();
+    await server.close();
+  }
+});
+
+test('随机匹配不碰没勾「允许匹配」的房', async () => {
+  const server = await createOnlineServer({ port: 0, heartbeatMs: 60_000 });
+  const clients: Client[] = [];
+  try {
+    // 普通建房（默认不允许匹配）。
+    const host = new Client(server.port);
+    clients.push(host);
+    await host.open();
+    host.send({ type: 'join' });
+    const joinedHost = await host.next((message) => message.type === 'joined');
+    if (joinedHost.type !== 'joined') throw new Error('建房失败');
+    assert.equal(joinedHost.snapshot.matchable, false);
+
+    // 随机匹配的人应该另开一间，而不是插进这间房。
+    const seeker = new Client(server.port);
+    clients.push(seeker);
+    await seeker.open();
+    seeker.send({ type: 'quick-match' });
+    const joinedSeeker = await seeker.next((message) => message.type === 'joined');
+    if (joinedSeeker.type !== 'joined') throw new Error('匹配者没进房');
+    assert.notEqual(joinedSeeker.room, joinedHost.room, '没勾允许的房不该被匹配进来');
+    assert.equal(joinedSeeker.color, 'red');
+    assert.equal(joinedSeeker.snapshot.matchable, true);
+  } finally {
+    for (const client of clients) client.close();
+    await server.close();
+  }
+});

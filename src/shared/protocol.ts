@@ -24,10 +24,15 @@ export interface Snapshot {
   readonly clock: ClockState;
   readonly drawOffer: Color | null;
   readonly drawBlocked: Color | null;
+  /** 房主建房时勾了「允许随机匹配」：房内显示，客户端据此说明这间房可能被陌生人进。 */
+  readonly matchable: boolean;
 }
 
 export type ClientMessage =
-  | { readonly type: 'join'; readonly room?: string; readonly token?: string }
+  // matchable 只在建房时生效：勾了才会被别人随机匹配进来（默认关）。
+  | { readonly type: 'join'; readonly room?: string; readonly token?: string; readonly matchable?: boolean }
+  // 随机匹配：有可匹配的等待房间就进去当黑方，没有就自己建一间可被匹配的房等。
+  | { readonly type: 'quick-match' }
   | { readonly type: 'move'; readonly from: number; readonly to: number; readonly seq: number }
   | { readonly type: 'resign' }
   | { readonly type: 'offer-draw' }
@@ -82,7 +87,8 @@ export function isClientMessage(value: unknown): value is ClientMessage {
     case 'join':
       return (
         (value.room === undefined || typeof value.room === 'string') &&
-        (value.token === undefined || typeof value.token === 'string')
+        (value.token === undefined || typeof value.token === 'string') &&
+        (value.matchable === undefined || typeof value.matchable === 'boolean')
       );
     case 'move':
       return (
@@ -99,6 +105,7 @@ export function isClientMessage(value: unknown): value is ClientMessage {
     case 'offer-draw':
     case 'leave':
     case 'ping':
+    case 'quick-match':
       return true;
     default:
       return false;

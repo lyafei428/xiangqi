@@ -43,6 +43,8 @@ function projectedMs(
 export function OnlinePage() {
   const [state, dispatch] = useReducer(onlineReducer, undefined, createOnlineState);
   const [code, setCode] = useState('');
+  // 建房时是否允许陌生人随机匹配进来：默认关，用户勾了才放行。
+  const [matchable, setMatchable] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
   // 着法区在手机上默认收起：常驻条之外的东西一律进抽屉，别压在棋盘上。
   const [panelOpen, setPanelOpen] = useState(false);
@@ -184,7 +186,12 @@ export function OnlinePage() {
 
   const createRoom = (): void => {
     dispatch({ type: 'connecting' });
-    socketRef.current?.connect({});
+    socketRef.current?.connect({ matchable });
+  };
+
+  const quickMatch = (): void => {
+    dispatch({ type: 'connecting' });
+    socketRef.current?.quickMatch();
   };
 
   const joinRoom = (): void => {
@@ -222,12 +229,30 @@ export function OnlinePage() {
             <button type="button" className="btn primary" onClick={createRoom} disabled={busy}>
               {busy ? '连接中…' : '创建房间'}
             </button>
+            {/* 默认关：不勾就只认房间码，朋友局不会被陌生人插进来。 */}
+            <label className="online-matchable">
+              <input
+                type="checkbox"
+                checked={matchable}
+                disabled={busy}
+                onChange={(event) => setMatchable(event.target.checked)}
+              />
+              允许随机匹配（不勾则只能凭房间码进）
+            </label>
             {storedRoom === null ? null : (
               <p className="online-room-line">
                 上次的房间 <strong>{storedRoom}</strong>
                 <span className="online-room-hint">点「加入」可直接回去</span>
               </p>
             )}
+          </section>
+
+          <section className="online-card">
+            <h2 className="online-card-title">随机匹配</h2>
+            <p className="page-subtitle">不想等房间码就点这里：有在等的人立刻配上，没有就自己开一间等。</p>
+            <button type="button" className="btn" onClick={quickMatch} disabled={busy}>
+              {busy ? '连接中…' : '随机匹配'}
+            </button>
           </section>
 
           <section className="online-card">

@@ -95,7 +95,7 @@ export async function createOnlineServer(options: OnlineServerOptions = {}): Pro
   const join = (conn: Conn, message: Extract<ClientMessage, { type: 'join' }>): void => {
     if (conn.room !== undefined) leave(conn);
     if (message.room === undefined) {
-      const created = rooms.create();
+      const created = rooms.create(undefined, undefined, Date.now(), message.matchable === true);
       conn.room = created.room.code;
       conn.token = created.token;
       conn.role = 'player';
@@ -152,6 +152,17 @@ export async function createOnlineServer(options: OnlineServerOptions = {}): Pro
       case 'join':
         join(conn, message);
         return;
+      case 'quick-match': {
+        // 先看有没有人在等：有就坐进那间房当黑方，没有就自己建一间可被匹配的房。
+        // 两条路都走 join，建房 / 就座 / 广播只有一份实现。
+        const waiting = rooms.findOpenMatchable();
+        if (waiting === undefined) {
+          join(conn, { type: 'join', matchable: true });
+        } else {
+          join(conn, { type: 'join', room: waiting.code, matchable: false });
+        }
+        return;
+      }
       case 'leave':
         leave(conn);
         conn.ws.close();

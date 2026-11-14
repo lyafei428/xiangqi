@@ -34,13 +34,33 @@ function newCode(): string {
 export class Rooms {
   private readonly rooms = new Map<string, RoomState>();
 
-  create(startFen = INITIAL_FEN, clockMs = CLOCK_MS, now = Date.now()): { room: RoomState; token: string } {
+  create(
+    startFen = INITIAL_FEN,
+    clockMs = CLOCK_MS,
+    now = Date.now(),
+    matchable = false,
+  ): { room: RoomState; token: string } {
     let code = newCode();
     while (this.rooms.has(code)) code = newCode();
     const token = newToken();
-    const room = createRoom(code, token, startFen, clockMs, now);
+    const room = createRoom(code, token, startFen, clockMs, now, matchable);
     this.rooms.set(code, room);
     return { room, token };
+  }
+
+  /**
+   * 找一间能被随机匹配挑中的房：房主勾了允许、还只有一个座位、且人是在线在等的。
+   * 房主掉线的空座房不参与——匹配进去只会对着一个不在的人下棋。
+   */
+  findOpenMatchable(): RoomState | undefined {
+    for (const room of this.rooms.values()) {
+      if (!room.matchable) continue;
+      if (room.red === null || room.black !== null) continue;
+      if (!room.red.connected) continue;
+      if (room.status !== 'playing') continue;
+      return room;
+    }
+    return undefined;
   }
 
   get(code: string): RoomState | undefined {

@@ -17,6 +17,7 @@ Survey evidence: 已核对以下文档与代码：
 ## 1. 房间与身份
 
 - 一房两席：先到者红，第二个进房者黑；两席都已坐满时，后来者进观战（不占座、不参与走子与计时）。
+- 随机匹配（`quick-match`）：服务端先找**空座且勾了允许匹配**的房坐进去当黑方；找不到就自己建一间标了可匹配的房等。默认不允许——建房时不勾「允许随机匹配」，那间房只能凭房间码进。
 - 房间码 6 位，字符集 `23456789ABCDEFGHJKLMNPQRSTUVWXYZ`（去掉 0/O/1/I），碰撞重试。
 - 进房发 token（16 字节随机十六进制）。客户端把房间与 token 存 `localStorage`（`xiangqi.online`），断线后带 token 重连，服务端按 token 找回颜色与局面。
 - 观战者的 token 不映射座位：重连带回去仍然是观战。观战按在线连接计、不按 token（同一 token 的新连接与尚未断开的旧连接各占一位）；八人满员时重连可能先收到 `spectators-full`，等旧连接断开后重试即可。
@@ -31,12 +32,13 @@ Survey evidence: 已核对以下文档与代码：
 
 ```ts
 type ClientMessage =
-  | { type: 'join'; room?: string; token?: string }
+  | { type: 'join'; room?: string; token?: string; matchable?: boolean }
   | { type: 'move'; from: number; to: number; seq: number }
   | { type: 'resign' }
   | { type: 'offer-draw' }
   | { type: 'draw-response'; accept: boolean }
   | { type: 'rematch' }
+  | { type: 'quick-match' }
   | { type: 'leave' }
   | { type: 'ping' };
 
@@ -99,6 +101,7 @@ interface Snapshot {
 - 广播：每次状态变化向房内全部连接发 `state`（两席 + 至多 8 位观战者）；`presence` 只发在线位变更（仍只报棋手），`rejected` 只回发起方。第二人进房或重连时也先给先到者补一份 `state`（`players` 变了，先到者才能从等待进到对局）。
 - 在线状态只有一个权威：快照里的 `red` / `black`。`presence` 只是变更通知，客户端把两个字段合入当前快照，面板只读快照。
 - 心跳：30 秒 ping，连续两次无 pong 视为掉线，保留房间与 token 供重连。
+- 随机匹配：`Rooms.findOpenMatchable()` 挑「`matchable` 为真、只有红方一席、红方在线、对局未结束」的房；挑到就让发起者走普通 `join` 坐黑方，挑不到就 `join` 建房并带 `matchable: true`。两条路都复用同一份建房/就座/广播实现，匹配本身不另开状态机。
 - 观战：两席都满且 token 不匹配任何一方时，第三人转观战（无需额外协议）；观战上限 8 人在线，满了回 `spectators-full`。
 - 观战不占座、不进计时：房间的 `spectators` 只计数，不写入 `red` / `black` 的在线位；观战者发 `move` / `resign` / `offer-draw` / `draw-response` / `rematch` 时 token 不映射座位，一律 `not-in-room`（客户端对观战者的该码文案是「你正在观战，不能走棋」）。
 - 观战者断开只减计数并广播 `state`；`presence` 仍只报棋手在线位。
@@ -109,7 +112,7 @@ interface Snapshot {
 ## 4. 客户端
 
 - `src/client/online/session.ts`：纯 reducer。阶段：`idle` / `connecting` / `lobby` / `waiting` / `playing` / `spectating` / `reconnecting` / `error`；`waiting` 与 `playing` 由快照的 `players` 判定（1 人等待、2 人对局），`role` 为 `spectator` 时直接进 `spectating`；吃服务端消息，存快照与错误。
-- `src/client/online/socket.ts`：WebSocket 封装与自动重连（1s → 2s → 4s → 8s 封顶）；`localStorage` 存 `{ room, token }`（读的时候也认旧版写在 `sessionStorage` 的那份）；重连时自动带 token 发 `join`。构造器接受 `WebSocketImpl` 注入（默认 `globalThis.WebSocket`），测试用假构造器驱动重连阶梯。
+- `src/client/online/socket.ts`：WebSocket 封装与自动重连（1s → 2s → 4s → 8s 封顶）；`localStorage` 存 `{ room, token }`（读的时候也认旧版写在 `sessionStorage` 的那份）；重连时自动带 token 发 `join`；`quickMatch()` 走同一条连接，握手完成后发 `quick-match` 而不是 `join`。构造器接受 `WebSocketImpl` 注入（默认 `globalThis.WebSocket`），测试用假构造器驱动重连阶梯。
 - `src/client/pages/OnlinePage.tsx`：大厅（建房 / 输房间码）与房间（棋盘 + 面板）同页切换；页面清单在 `docs/design/modules/app-shell.md` §4，本模块不重复。
 - 导航项与顺序由壳档定义（见 `docs/design/modules/app-shell.md` §1/§3），本页不重复描述。
 - 棋盘用 `play` 模式按己方颜色限权；选子与可落点在本地用 `generateLegalMoves` 算，落子只发 `{from, to, seq}`，等服务端快照。

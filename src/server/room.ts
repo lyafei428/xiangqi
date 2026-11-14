@@ -55,6 +55,8 @@ export interface RoomState {
   readonly clockMs: number;
   readonly drawOffer: Color | null;
   readonly drawBlocked: Color | null;
+  /** 建房时勾了「允许随机匹配」：只有这类空座房会被 quick-match 挑中。 */
+  readonly matchable: boolean;
 }
 
 export type JoinOutcome =
@@ -72,6 +74,7 @@ export function createRoom(
   startFen = INITIAL_FEN,
   clockMs = CLOCK_MS,
   now = Date.now(),
+  matchable = false,
 ): RoomState {
   const position = parseFen(startFen);
   return {
@@ -93,6 +96,7 @@ export function createRoom(
     clockMs,
     drawOffer: null,
     drawBlocked: null,
+    matchable,
   };
 }
 
@@ -346,5 +350,6 @@ export function snapshotOf(room: RoomState, now = Date.now()): Snapshot {
     clock,
     drawOffer: room.drawOffer,
     drawBlocked: room.drawBlocked,
+    matchable: room.matchable,
   };
 }

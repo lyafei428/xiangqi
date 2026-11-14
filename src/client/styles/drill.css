@@ -277,3 +277,13 @@
   font-size: 14px;
 }
 
+
+/* 建房时的「允许随机匹配」勾选：默认不勾，紧跟在「创建房间」下面。 */
+.online-matchable {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--muted);
+}
