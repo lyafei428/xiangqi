@@ -18,6 +18,10 @@ const scope = self as unknown as AiWorkerScope;
 
 scope.onmessage = (event) => {
   const request = event.data;
-  const reply = chooseMove(parseFen(request.fen), { level: request.level });
+  const reply = chooseMove(parseFen(request.fen), {
+    level: request.level,
+    history: request.history,
+    startFen: request.startFen,
+  });
   scope.postMessage({ id: request.id, reply });
 };

@@ -43,10 +43,10 @@ type AiLevel = 'easy' | 'normal' | 'hard';
 interface AiOptions {
   readonly level: AiLevel;
   readonly now?: () => number; // 默认 Date.now，单测注入伪造时钟
-  /** 对局至今的着法史；不传 = 只看搜索树内的重复。 */
-  readonly history?: readonly HistoryEntry[];
-  /** 对局起始局面 FEN，重复判定要把开局那一次算进去。 */
-  readonly startFen?: string;
+  /** 对局至今的着法史；必填——缺了它搜索看不见已发生的重复。 */
+  readonly history: readonly HistoryEntry[];
+  /** 对局起始局面 FEN；必填，规则档规定不给默认值。 */
+  readonly startFen: string;
 }
 
 interface AiReply {
@@ -75,22 +75,23 @@ function chooseMove(position: Position, options: AiOptions): AiReply; // 前置�
 
 ### 长将与重复
 
-旧版搜索不看历史，会把「一直将军」当成正常着法去追：子力或杀分看着好，但走到第三次重复时按 `repetitionResult` 判**自己长将负**。玩家能直接撞上这个结果，而规则本身没错，错在引擎不知道节奏。
-
-改法：把对局历史交给搜索，在搜索树里把「第三次出现」当终端节点，分数按判罚结果给。
+搜索吃两样东西：当前局面，以及**对局至今的着法史**（`history` + `startFen`）。树里走到同一局面第三次出现时，这个节点是终端，分数按规则判罚结果给——引擎不会为一个看起来不错的子力或杀分把自己送进长将判负。
 
 | 项 | 口径 |
 |---|---|
-| 何时判 | 节点展开前：用 `positionKey(position)` 查路径计数，已有 ≥ 2 次则是第三次出现 |
+| 何时判 | 节点展开前，数当前局面的键在「起点 + 路径 + 对局历史」里出现过几次；已有 2 次则是第三次 |
+| 计数含起点 | `startFen` 那一局面算一次（与规则档的计数范围同一口径）；漏掉它，「双方各自挪回原位」这类循环会晚一圈才判 |
 | 判给谁 | 复用 `repetitionResult(position, 窗口, startFen)`；不另写一套长将规则 |
-| 窗口 | 只用路径末 24 着 + 调用方传进来的对局历史；第三次出现必定落在末窗口内，所以不必扫全程 |
+| 窗口 | 传给它的窗口末元素**就是当前节点局面**（规则档的计数范围不含单独一次），前面接对局历史（整段，不截断）与搜索路径（长度 ≤ `maxDepth`，不需要额外的 24 着上限） |
+| 判不出 | `repetitionResult` 返回 `null`（计数没到 3，或判罚区间不成环）时按「非终端」继续展开，不当作和棋 |
 | 分数 | 胜方 = 行棋方 → `+(MATE - ply)`；胜方 = 对手 → `-(MATE - ply)`；和棋（`winner === null`）→ `0` |
-| 未传历史 | 退化成「只看树内重复」：仍按三次重复判和，不会自己转圈 |
-| 代价 | 每个节点多一次 `positionKey`（棋盘串）；窗口只在第三次出现那一下才构造，平均到节点上可忽略 |
+| 代价 | 每个节点多一次 `positionKey`（棋盘串）；窗口只在第三次出现那一下才物化，平均到节点上可忽略。高手档的实跑读数在收口行给出 |
 
 边界：60 回合无吃子的自然限着不建模——引擎不会在一局里主动走到那里，建模它只是多一条不会触发的分支。
 
-`HistoryEntry` 的 `gaveCheck` 由每着之后的 `isInCheck(下一局面, 行棋方)` 得出，与 `playMove` 里的算法一致；窗口只存 `Position`，`fen` 与 `gaveCheck` 在判定那一刻才现算。
+`gaveCheck` 的算法与 `playMove` 一致：这着走完之后，**对手**（`下一局面.turn`）是否被将军。窗口只存 `Position`，`fen` 与 `gaveCheck` 在判罚那一刻才现算；`recordMove` 不适用于这里——它为每一着造完整记录，而窗口要的是懒物化。
+
+复现：`node --test test/ai.test.ts` 的用例 `AI 不走自成长将的重复线`。它先造一个「同一局面已出现两次、每着都将军」的局面与历史，用 `judgeGame` 钉死这条线确实是长将负，再断言 `chooseMove` 不选那一着。去掉历史参数，同一局面下引擎就会选中它。
 
 ## 3. Worker
 
@@ -168,7 +169,7 @@ type AiResponse = { readonly id: number; readonly reply: AiReply };
 | `src/client/ai/worker.ts` | Worker 入口。 |
 | `src/client/ai/engine.ts` | 页面侧封装与工厂注入。只在 `AiPage` 挂载时创建，主包不引 `src/client/ai/worker.ts`（F5.2 的「JS 主包 < 150KB gzip」见 `docs/design/architecture.md` §7）。 |
 | `src/client/panel/GamePanel.tsx` | 两个可选 prop：`modeLabel`（默认「本地双人」，人机页传实际档位）与 `resignDisabled`（人机页在 AI 回合置灰认输）；时钟与认输行为不动。 |
-| `src/client/pages/AiPage.tsx` | 人机页：控件、棋盘、思考锁、终局存谱。 |
+| `src/client/pages/AiPage.tsx` | 人机页：控件、棋盘、思考锁、终局存谱；发请求时读会话的 `history` 与 `startFen`（`GameSession` 已有这两个字段，不新增状态）。 |
 | `src/client/shell/routes.ts` | 增加 `ai` 路由。 |
 | `src/client/App.tsx` | 导航第 2 位「人机」与页面分派。 |
 | `src/client/game/session.ts` | `play(move, now)` 动作落地（动作表归 `docs/design/modules/local-play.md` §3）。 |
@@ -187,13 +188,15 @@ type AiResponse = { readonly id: number; readonly reply: AiReply };
 - 棋盘：existing — `src/client/board/Board.tsx` 的 `play` 模式已按 `side` 限权（`isMovable` 判 `movable === 'both' || piece.color === movable`），人机只需传玩家颜色，不新写只读逻辑。
 - 会话状态机：existing — `src/client/game/session.ts` 的 `playTurn` 已含记谱、判罚与切时钟；`play(move, now)` 已在 `docs/design/modules/local-play.md` §3 的动作表内，本批只落地代码。
 - 规则与评估素材：existing — `generateLegalMoves` / `applyMove` / `statusOf` / `positionKey`（`src/shared/`）；`perft` 可作走法生成的性能基线，搜索直接吃它。
+- `repetitionResult` — existing，直接复用；入参放宽为 `{ fen, gaveCheck }` 结构型（见 `docs/design/rules-engine.md` §6）。
+- `recordMove` — existing，但这里不用：它为每一着造完整 `HistoryEntry`（含 `move` / `captured`），而搜索窗口按 `Position` 懒物化、判罚那一刻才补 `fen` 与 `gaveCheck`；用它等于每个节点多造一份记录。
 - none found：`chooseMove`、`AI_LEVELS`、`AiOptions`、`AiReply`、`AiLevel`、`createAiEngine`、`AiRequest` / `AiResponse`、`canPlay`、`currentSession`、`AiPage`、`ai` 路由。
 - none found：用户可见文案「AI 思考中…」「执红」「执黑」「入门 / 普通 / 高手」「人机 · 普通」「AI 出错，请点新局重开」，仓库内无同名先例。
 - none found：Web Worker 在本仓没有先例（`new Worker` 零命中），封装形状照 `src/client/online/socket.ts` 的构造器注入先例。
 
 ## 8. 集成测试设计
 
-起点：`test/RTM.md` 的「对弈」故事。F1-7（人机对战）已在 RTM 里，本批不新增行；F1-1 / F1-3 不破坏、不冗余。
+起点：`test/RTM.md` 的「对弈」故事。本批给 F1-7 加一条业务结果——「玩家连续将军走成第三次重复时，机器不会自己走成长将判负」——并把驱动方式写进该行；F1-1 / F1-3 不破坏、不冗余。
 
 跨故事的 delta：
 

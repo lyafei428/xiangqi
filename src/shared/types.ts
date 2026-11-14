@@ -30,6 +30,16 @@ export interface HistoryEntry {
   readonly captured: boolean;
 }
 
+/**
+ * 重复与长将判罚只读这两项：这一着之后的局面 FEN、这一着是否将军。
+ * 走子方由 FEN 的行棋方字段反推，所以 `move` / `captured` 不必传——
+ * 搜索侧因此能只存 `Position`，在判罚那一刻才物化窗口。
+ */
+export interface RepeatEntry {
+  readonly fen: string;
+  readonly gaveCheck: boolean;
+}
+
 export type ResultType =
   | 'checkmate' // 将死：被将方负
   | 'stalemate' // 困毙：无着法方负（中国象棋判负，不是和棋）

@@ -61,7 +61,7 @@ test('请求发出：postMessage 带上 id / fen / level', () => {
   const worker = new FakeWorker();
   const engine = createAiEngine(() => worker);
 
-  void engine.request(INITIAL_FEN, 'hard');
+  void engine.request(INITIAL_FEN, 'hard', [], INITIAL_FEN);
 
   assert.equal(worker.posted.length, 1);
   const sent = sentAt(worker, 0);
@@ -74,7 +74,7 @@ test('应答回填：同 id 的应答落地成 request 的返回值', async () =
   const worker = new FakeWorker();
   const engine = createAiEngine(() => worker);
 
-  const promise = engine.request(INITIAL_FEN, 'normal');
+  const promise = engine.request(INITIAL_FEN, 'normal', [], INITIAL_FEN);
   const sent = sentAt(worker, 0);
   worker.answer(sent.id, REPLY);
 
@@ -85,7 +85,7 @@ test('过期 id 丢弃：号对不上的应答不落地，本笔仍按自己的�
   const worker = new FakeWorker();
   const engine = createAiEngine(() => worker);
 
-  const promise = engine.request(INITIAL_FEN, 'easy');
+  const promise = engine.request(INITIAL_FEN, 'easy', [], INITIAL_FEN);
   const sent = sentAt(worker, 0);
   let outcome: AiReply | null = null;
   void promise.then((reply) => {
@@ -105,7 +105,7 @@ test('cancel 后不再回填：迟到应答既不 resolve 也不 reject，之后
   const worker = new FakeWorker();
   const engine = createAiEngine(() => worker);
 
-  const dropped = engine.request(INITIAL_FEN, 'normal');
+  const dropped = engine.request(INITIAL_FEN, 'normal', [], INITIAL_FEN);
   const first = sentAt(worker, 0);
   let outcome: 'resolved' | 'rejected' | null = null;
   void dropped.then(
@@ -122,7 +122,7 @@ test('cancel 后不再回填：迟到应答既不 resolve 也不 reject，之后
   await flush();
   assert.equal(outcome, null, 'cancel 之后到达的应答必须被丢掉');
 
-  const next = engine.request(INITIAL_FEN, 'easy');
+  const next = engine.request(INITIAL_FEN, 'easy', [], INITIAL_FEN);
   const second = sentAt(worker, 1);
   assert.notEqual(second.id, first.id, '每笔请求要拿新号，才分得清谁过期');
   assert.equal(second.level, 'easy');
@@ -134,7 +134,7 @@ test('Worker 报错转 rejected：不进协议，崩掉的线程当场结束', a
   const worker = new FakeWorker();
   const engine = createAiEngine(() => worker);
 
-  const promise = engine.request(INITIAL_FEN, 'normal');
+  const promise = engine.request(INITIAL_FEN, 'normal', [], INITIAL_FEN);
   worker.crash('模块加载失败');
 
   await assert.rejects(promise, /模块加载失败/);
@@ -145,8 +145,8 @@ test('同一时刻只允许一笔在飞：第二笔当场抛错，不排队', ()
   const worker = new FakeWorker();
   const engine = createAiEngine(() => worker);
 
-  void engine.request(INITIAL_FEN, 'normal');
-  assert.throws(() => engine.request(INITIAL_FEN, 'easy'), /already in flight/);
+  void engine.request(INITIAL_FEN, 'normal', [], INITIAL_FEN);
+  assert.throws(() => engine.request(INITIAL_FEN, 'easy', [], INITIAL_FEN), /already in flight/);
   assert.equal(worker.posted.length, 1, '被拦下的请求不许发出去');
 });
 
@@ -158,13 +158,13 @@ test('崩溃后重开线程：下一着新建 Worker 并正常回子', async () 
     return worker;
   });
 
-  const first = engine.request(INITIAL_FEN, 'normal');
+  const first = engine.request(INITIAL_FEN, 'normal', [], INITIAL_FEN);
   const [crashed] = workers;
   assert.ok(crashed);
   crashed.crash('boom');
   await assert.rejects(first, /boom/);
 
-  const second = engine.request(INITIAL_FEN, 'easy');
+  const second = engine.request(INITIAL_FEN, 'easy', [], INITIAL_FEN);
   assert.equal(workers.length, 2, '死掉的线程不会再回子，必须换一条');
   const fresh = workers[1];
   assert.ok(fresh);
@@ -177,7 +177,7 @@ test('dispose：结束后线程，在飞的一笔作废，之后请求一律 rej
   const worker = new FakeWorker();
   const engine = createAiEngine(() => worker);
 
-  const inFlight = engine.request(INITIAL_FEN, 'normal');
+  const inFlight = engine.request(INITIAL_FEN, 'normal', [], INITIAL_FEN);
   let outcome: 'resolved' | 'rejected' | null = null;
   void inFlight.then(
     () => {
@@ -196,7 +196,7 @@ test('dispose：结束后线程，在飞的一笔作废，之后请求一律 rej
   await flush();
   assert.equal(outcome, null, '卸载时作废的在飞请求不该回填');
 
-  await assert.rejects(engine.request(INITIAL_FEN, 'easy'), /disposed/);
+  await assert.rejects(engine.request(INITIAL_FEN, 'easy', [], INITIAL_FEN), /disposed/);
 });
 
 test('Worker 入口：收请求 → chooseMove → 回一条同 id 的合法着法', async () => {
@@ -215,7 +215,7 @@ test('Worker 入口：收请求 → chooseMove → 回一条同 id 的合法着�
   try {
     await import('../src/client/ai/worker.ts');
     assert.ok(scope.onmessage, 'worker.ts 载入时必须挂上消息入口');
-    scope.onmessage({ data: { id: 42, fen: INITIAL_FEN, level: 'easy' } });
+    scope.onmessage({ data: { id: 42, fen: INITIAL_FEN, level: 'easy', history: [], startFen: INITIAL_FEN } });
   } finally {
     if (hadSelf) Reflect.set(globalThis, 'self', previousSelf);
     else Reflect.deleteProperty(globalThis, 'self');
@@ -239,14 +239,14 @@ test('cancel 会停掉旧计算：下一次请求落到新线程上', async () =
     return worker;
   });
 
-  void engine.request(INITIAL_FEN, 'hard');
+  void engine.request(INITIAL_FEN, 'hard', [], INITIAL_FEN);
   const first = made[0];
   assert.ok(first, '第一笔请求要落在第一条线程上');
 
   engine.cancel();
   assert.equal(first.terminated, true, '换局要把旧线程结束掉，不能让它继续占着单线程');
 
-  const next = engine.request(INITIAL_FEN, 'easy');
+  const next = engine.request(INITIAL_FEN, 'easy', [], INITIAL_FEN);
   const second = made[1];
   assert.ok(second, 'cancel 之后要重开一条线程，而不是排在旧计算后面');
   assert.equal(second.posted.length, 1);

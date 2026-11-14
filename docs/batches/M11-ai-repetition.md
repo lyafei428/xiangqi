@@ -45,6 +45,9 @@
 判罚口径不动；不改棋盘、面板、联机；自然限着不建模。
 
 ## §3 设计评审（评审子代理）
+**状态行**：评审通过
+
+
 
 ### 轮次 1（评审子代理）
 
@@ -71,6 +74,65 @@ VERDICT: changes-required
 
 计数：🔴 3 · 🟡 8 · 🔵 3
 
+### 轮次 2（评审子代理）
+
+第二轮复核（M11 修订稿）：逐条核对上一轮 14 项，全部按本轮 `read` 的当前状态判定；另记 3 条新发现。
+
+| # | 原# | 文件 | 严重度 | 状态 | 说明 |
+|---|---|---|---|---|---|
+| 1 | 1 | docs/design/rules-engine.md | 🔴 | Fixed | §6.1 现写 `repetitionResult(position: Position, history: readonly RepeatEntry[], startFen: string)`，并补了放宽理由段：「`repetitionResult` 的入参放宽成 `RepeatEntry`：判罚只用到「这一着之后的局面 FEN」与「这一着是否将军」两项」。`src/shared/types.ts` 落了 `RepeatEntry`；`docs/design/modules/ai.md` §7 与现有件两处同口径，契约文档与设计不再两说。 |
+| 2 | 2 | src/shared/ai/search.ts | 🔴 | Fixed | 计数接缝已定死：`bump(seen, fenKey(startFen));` 把起点计入；窗口以当前节点收尾（`window.push({ fen: toFen(node.position), gaveCheck: isInCheck(node.position, node.position.turn) });`）；`if (verdict === null) return null;` 把「计数到 3 却不成环」按非终端处理。`docs/design/modules/ai.md` 的 计数含起点 / 窗口 / 判不出 三行与代码逐条对上。 |
+| 3 | 3 | test/ai.test.ts | 🔴 | Fixed | 场景已可复现且自带钉桩：`PERPETUAL_START` + 7 着循环 + `PERPETUAL_CLOSING`，先用 `judgeGame` 断言「这条线必须真的是长将负，否则用例测的是别的东西」，再断言 `assert.notDeepEqual(reply.move, PERPETUAL_CLOSING, '不许把自己送进第三次重复（判长将负）');`。`docs/design/modules/ai.md` 的复现行与 test/RTM.md F1-7 的业务结果都指到这条用例。 |
+| 4 | 4 | docs/design/modules/ai.md | 🟡 | Fixed | 窗口行改为「前面接对局历史（整段，不截断）与搜索路径（长度 ≤ `maxDepth`，不需要额外的 24 着上限）」，24 着上限与「必定落在末窗口内」都已删除，两种读法消失。 |
+| 5 | 5 | docs/design/modules/ai.md | 🟡 | Fixed | `history` / `startFen` 均改必填并给理由（「必填——缺了它搜索看不见已发生的重复。」「必填，规则档规定不给默认值。」）；`src/shared/ai/index.ts` 与 `src/client/ai/protocol.ts` 同步；「未传历史」退化行已删，只留一条形状。 |
+| 6 | 6 | test/ai.test.ts | 🟡 | Fixed | 长将用例的起点即循环起点，注释写明「注意 startFen 就是循环起点：这条用例同时钉住「起点必须计入重复计数」。」；去掉起点计数该用例判不出长将，覆盖到位。 |
+| 7 | 7 | docs/design/modules/ai.md | 🟡 | Fixed | 「旧版搜索不看历史…改法：…」整段改成现在的规格（「搜索吃两样东西：当前局面，以及**对局至今的着法史**（`history` + `startFen`）。」）。 |
+| 8 | 8 | docs/design/modules/ai.md | 🟡 | Fixed | 现有件检查新增 `recordMove` 一行并给了不用的理由：「它为每一着造完整 `HistoryEntry`（含 `move` / `captured`），而搜索窗口按 `Position` 懒物化、判罚那一刻才补 `fen` 与 `gaveCheck`」。与 `repetitionScore` 的实现一致。 |
+| 9 | 9 | docs/design/modules/ai.md | 🟡 | Fixed | 改为「这着走完之后，**对手**（`下一局面.turn`）是否被将军」；代码侧 `gaveCheck: isInCheck(node.position, node.position.turn)` 与 `src/shared/rules.ts` 的 `buildEntry` 同义，歧义消除。 |
+| 10 | 10 | test/RTM.md | 🟡 | Fixed | F1-7 业务结果加了一条「机器不会自己把局面走成第三次重复而判长将负」，入口栏注明由 `test/ai.test.ts` 驱动；`docs/design/modules/ai.md` §8 的 delta 行同步（「本批给 F1-7 加一条业务结果」）。 |
+| 11 | 11 | docs/design/modules/ai.md | 🟡 | Fixed | 已写「发请求时读会话的 `history` 与 `startFen`（`GameSession` 已有这两个字段，不新增状态）」；核对 `src/client/game/session.ts`，`GameSession` 确有 `readonly startFen: string;` 与 `readonly history: readonly HistoryEntry[];`，声明成立。 |
+| 12 | 12 | docs/design/modules/ai.md | 🔵 | Accepted | 代价行的读数改成「高手档的实跑读数在收口行给出」——真时钟读数只能收口实测，设计层给不出；理由成立，不阻塞。 |
+| 13 | 13 | docs/design/modules/ai.md | 🔵 | Accepted | 自然限着不建模的理由行未变且仍成立：局面级判罚由 `judgeGame` 兜住，最坏只是落后方 AI 不去求 120 着和棋。 |
+| 14 | 14 | docs/design/modules/ai.md | 🔵 | Fixed | 分档结论行仍在（「无文件跨 500 行档，无 300+ 行单函数」）。本次抽查本批源码行数：`src/shared/ai/search.ts` 276、`src/shared/rules.ts` 158、`test/ai.test.ts` 184、`src/shared/ai/index.ts` 43、`src/client/ai/protocol.ts` 22、`src/shared/types.ts` 59 —— 均远低于 500 行档，结论成立。 |
+| 15 | (new) | docs/design/modules/ai.md | 🟡 | New | 「复现（当前行为，未修）：…这条用例在修之前是红的——它同时是验收用例。」`src/shared/ai/search.ts` 已有 `repetitionScore`，文档仍称「未修」，且「在修之前是红的」是修订史叙述，与 AGENTS.md「设计文档只写『现在是什么』」相反。🟡 报告，不阻塞（非 must-fix）。 |
+| 16 | (new) | src/shared/ai/search.ts | 🔵 | New | `PathNode` 的 `readonly key: string;` 存了没人读，`leave()` 又用 `const key = positionKey(position);` 重算，与注释「路径上的一格：局面 + 它的键（出节点时要用，别重算一遍）。」相反；顺带 `docs/design/modules/ai.md` 的「每个节点多一次 `positionKey`」实际为 enter / repetitionScore / leave 三次。不影响正确性，记录即可。 |
+| 17 | (new) | docs/design/rules-engine.md | 🔵 | New | §9 的 `src/shared/types.ts` 一行仍写「§2 的全部类型」，但 `RepeatEntry` 定义在 §6.1、实际落在 `src/shared/types.ts`，该行没跟上。文档卫生级。 |
+
+计数：🔴 0 · 🟡 1（New，非 must-fix）· 🔵 4；上一轮 14 项全部收口（Fixed 12 / Accepted 2），新发现无 🔴。
+
+VERDICT: pass
+
 ## §4 用户批准（主 agent）
 ## §5 实施记录（实施者：主 agent ∥ coder）
+**状态行**：实施完成
+
+
+
+**实现**
+
+| 文件 | 改动 |
+|---|---|
+| `src/shared/types.ts` | 新增 `RepeatEntry`（`fen` + `gaveCheck`）：判罚只读这两项 |
+| `src/shared/rules.ts` | `repetitionResult` 入参从 `HistoryEntry[]` 放宽为 `RepeatEntry[]`；判罚逻辑一字未动 |
+| `src/shared/ai/search.ts` | `SearchLimits` 加 `history` / `startFen`；上下文记局面键计数与路径；节点进出时计数 +1 / −1；第三次出现调 `repetitionResult` 计分（胜方 = 行棋方取正、对手取负、和棋 0、不成环按非终端） |
+| `src/shared/ai/index.ts` | `AiOptions` 加必填 `history` / `startFen` |
+| `src/client/ai/protocol.ts` | `AiRequest` 加两个字段 |
+| `src/client/ai/engine.ts` | `request(fen, level, history, startFen)` 透传 |
+| `src/client/ai/worker.ts` | 协议字段转给 `chooseMove` |
+| `src/client/pages/AiPage.tsx` | 发请求时带 `session.history` 与 `session.startFen`（会话本来就有） |
+| `test/ai.test.ts` | 两条新用例；既有用例补必填参数 |
+| `test/ai-engine.test.ts` | 请求形状补两个字段 |
+
+**复现**：四步长将循环（红车在 4 / 3 两列往返将军，黑将在 (4,0) 与 (3,0) 间躲）走满七着后，同一局面已出现两次。不带历史时引擎选中循环着，把局面送到第三次、由规则判它长将负；带上历史后改走别的着法。两次运行都跑过。
+
+**修的过程中抓到的一个真错误**：第一版把 `verdict.winner === position.turn` 写成负分——那是赢，应为正。复现脚本当场暴露（带着历史照样选循环着），改符号后两条用例转绿。
+
+**评审后的收尾**：三条非阻塞意见一并处理——设计档的「未修」改写成现在时的复现口径；`PathNode.key` 存下后由 `leave` 复用，省掉每节点一次重算；规则档 §9 的文件表补上 `RepeatEntry`。
+
+**验证**
+
+- `node --test test/ai.test.ts`：10 条全过（含新增两条）。
+- `npm run check`：253 单测（+2）/ 68 前端用例，0 失败；类型检查通过。
+- 两条新用例各带反证：先断言 `judgeGame` 对那条线真的判「长将负」或「重复判和」，再断言 AI 不选它。
+
 ## §6 验证与收口（父代理）

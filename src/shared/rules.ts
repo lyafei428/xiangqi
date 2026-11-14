@@ -8,6 +8,7 @@ import type {
   HistoryEntry,
   Move,
   Position,
+  RepeatEntry,
 } from './types.ts';
 import { BOARD_SIZE, opposite, pieceAt } from './board.ts';
 import { fenKey, positionKey, toFen, turnOfFen } from './fen.ts';
@@ -92,7 +93,7 @@ export function playMove(
 
 export function repetitionResult(
   position: Position,
-  history: readonly HistoryEntry[],
+  history: readonly RepeatEntry[],
   startFen: string,
 ): GameResult | null {
   const key = positionKey(position);

@@ -145,7 +145,9 @@ export function AiPage() {
     };
 
     try {
-      engine.request(fen, levelRef.current).then((reply) => apply(reply.move), fail);
+      // 历史与起始局面一起交给引擎：它靠这两样认出「这个局面已经出现过两次」，
+      // 不然会为自己每着将军的着法把循环走下去，第三圈由规则判自己长将负。
+      engine.request(fen, levelRef.current, session.history, session.startFen).then((reply) => apply(reply.move), fail);
     } catch {
       // 引擎同一时刻只准一笔在飞：真撞上就放回可操作态，不让异常掀掉整页。
       fail();

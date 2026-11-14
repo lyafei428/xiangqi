@@ -137,9 +137,14 @@ statusOf(pos): GameStatus
 起始局面必须计入：它真实存在过，漏掉它会让「双方各自挪回原位」这类循环晚一整圈才判和，而那正是三次重复规则最常被用到的场合。因此 `repetitionResult` 与 `judgeGame` 的 `startFen` 是**必填参数**——不给默认值，调用方必须决定"这局从哪里开始"。
 
 ```ts
-repetitionResult(position: Position, history: readonly HistoryEntry[], startFen: string): GameResult | null
+/** 只读 countFen 与 gaveCheck 两项：历史条目与搜索里的轻量窗口都能传。 */
+type RepeatEntry = { readonly fen: string; readonly gaveCheck: boolean };
+
+repetitionResult(position: Position, history: readonly RepeatEntry[], startFen: string): GameResult | null
 judgeGame(position: Position, history: readonly HistoryEntry[], startFen: string): GameResult | null
 ```
+
+`repetitionResult` 的入参放宽成 `RepeatEntry`：判罚只用到「这一着之后的局面 FEN」与「这一着是否将军」两项，走子方由 FEN 的行棋方字段反推，不需要 `move` / `captured`。搜索侧因此不必为每个节点造完整的 `HistoryEntry`，只在判罚那一刻物化窗口。`judgeGame` 仍收完整的 `HistoryEntry[]`，调用方是会话层，手上本来就有。
 
 **长将判定**：取该局面第二次出现与第三次出现之间的着法段（一个完整循环圈）。统计每一方在该段内自己走的着法里"将军"的着数：
 
@@ -213,7 +218,7 @@ perft 统计**合法着法**（走后己方不被将），与 `generateLegalMove
 
 | 文件 | 内容 |
 |---|---|
-| `src/shared/types.ts` | §2 的全部类型 |
+| `src/shared/types.ts` | §2 的全部类型，加上 §6.1 的 `RepeatEntry` |
 | `src/shared/board.ts` | 坐标换算（`indexOf` / `xOf` / `yOf`）、`pieceAt`、九宫/河界判断、`emptyBoard`、`positionsEqual` |
 | `src/shared/fen.ts` | `INITIAL_FEN` / `parseFen` / `toFen` / `initialPosition` |
 | `src/shared/moves.ts` | 走法生成、`isSquareAttacked` |

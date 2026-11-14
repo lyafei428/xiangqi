@@ -1,8 +1,8 @@
 // 人机对战的页面侧封装：一条 Worker、同一时刻一笔在飞请求、迟到应答按 id 丢掉。
-// 页面只在挂载时 createAiEngine()，之后借 request(fen, level) 拿回子，交给 session.play 写回会话。
+// 页面只在挂载时 createAiEngine()，之后借 request(fen, level, history, startFen) 拿回子，交给 session.play 写回会话。
 // 注入形状照 src/client/online/socket.ts 的 WebSocketImpl：用例传假 Worker，不必真起线程。
 
-import type { AiLevel, AiReply } from '../../shared/index.ts';
+import type { AiLevel, AiReply, HistoryEntry } from '../../shared/index.ts';
 import type { AiRequest, AiResponse } from './protocol.ts';
 
 /** 应答事件只取 data。不用 DOM 的 MessageEvent，假 Worker 才不必扮成浏览器。 */
@@ -30,7 +30,7 @@ export interface AiEngine {
    * 发一着请求。同一时刻只允许一笔在飞：第二笔当场抛错，由页面那条输入闸门（未终局 && 轮到 AI
    * && !thinking）负责拦住。排队不行——旧局面的回子落进新局面比报错更难查。
    */
-  request(fen: string, level: AiLevel): Promise<AiReply>;
+  request(fen: string, level: AiLevel, history: readonly HistoryEntry[], startFen: string): Promise<AiReply>;
   /** 丢弃在飞结果：迟到的应答按 id 比对后直接丢，调用方既不会 resolve 也不会 reject。 */
   cancel(): void;
   /** 结束线程。之后 request 一律 rejected；重复调用无害。 */
@@ -97,7 +97,7 @@ export function createAiEngine(factory: AiWorkerFactory = createBrowserWorker): 
   }
 
   return {
-    request(fen, level) {
+    request(fen, level, history, startFen) {
       if (disposed) return Promise.reject(new Error(DISPOSED));
       if (active !== null) throw new Error(IN_FLIGHT);
 
@@ -119,7 +119,7 @@ export function createAiEngine(factory: AiWorkerFactory = createBrowserWorker): 
         active = { id, resolve, reject };
       });
       try {
-        live.postMessage({ id, fen, level });
+        live.postMessage({ id, fen, level, history, startFen });
       } catch (error) {
         // 送不出去的请求当场抛：留着 active 会让引擎永远以为自己有一笔在飞。
         active = null;
