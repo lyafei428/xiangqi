@@ -174,21 +174,19 @@ export function GamePanel(props: GamePanelProps) {
           <span className={`clock clock-black${blackMs < 60_000 ? ' is-low' : ''}`}>
             黑 {formatClock(blackMs)}
           </span>
-          {/* 开局先按「开始」才走表：刷新页面不该白丢时间。 */}
-          {session.started ? (
-            <button
-              type="button"
-              className="resign"
-              onClick={onResign}
-              disabled={over || resignDisabled}
-            >
-              认输
-            </button>
-          ) : (
-            <button type="button" className="start-clock" onClick={onStart}>
-              开始
-            </button>
-          )}
+          {/* 一个按钮两种身份：开局是「开始」，开表后变「认输」。
+              外观与尺寸全按认输来（同一个 .resign），切换只换字并做一次淡入位移动画，
+              所以位置和大小在整个对局里都不跳。 */}
+          <button
+            type="button"
+            className="resign clock-action"
+            onClick={session.started ? onResign : onStart}
+            disabled={session.started && (over || resignDisabled)}
+          >
+            <span key={session.started ? 'resign' : 'start'} className="clock-action-label">
+              {session.started ? '认输' : '开始'}
+            </span>
+          </button>
         </div>
 
         <div className="panel-actions">

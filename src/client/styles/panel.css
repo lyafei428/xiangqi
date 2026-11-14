@@ -312,6 +312,12 @@
   box-shadow: var(--raise-flat);
   font-weight: 600;
   cursor: pointer;
+  /* 「开始」与「认输」共用这一个按钮：换身份时底色与字色平滑过渡，不闪。 */
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .resign:hover:not(:disabled) {

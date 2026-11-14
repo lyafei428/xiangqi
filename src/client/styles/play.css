@@ -360,14 +360,28 @@
   color: var(--muted-2);
 }
 
-/* 开局前那个「开始」按钮：它替代认输的位置，样式与认输同尺寸。 */
-.start-clock {
-  border: 1px solid var(--accent-strong);
-  background: var(--accent-strong);
-  color: var(--on-accent);
-  padding: 7px 14px;
-  border-radius: var(--radius-pill);
-  box-shadow: var(--raise-flat);
-  font-weight: 600;
-  cursor: pointer;
+/*
+ * 「开始 / 认输」是同一个按钮：外观、尺寸、位置全按认输来，只换里面的字。
+ * 两个字两个字的换，宽度不跳；换字时淡入 + 轻微上移，读起来是「同一个按钮换了身份」。
+ */
+.clock-action-label {
+  display: inline-block;
+  animation: clock-action-in 200ms ease-out;
+}
+
+@keyframes clock-action-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clock-action-label {
+    animation: none;
+  }
 }
