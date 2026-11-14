@@ -127,3 +127,5 @@ recordText(record): string           // JSON 文本，缩进 2
 
 
 「我的棋谱」列表的表头（标题 + `导入`）吸在列表顶部：`.replay-head` 是 `position: sticky` + 页面底色 + 一条分隔线。棋谱攒多以后往下拉，表头不跟着走——这是「列表能滚动，但入口不动」的固定做法。
+
+每步胜率：回放页的记谱每格带一个红方视角的百分比，着法区顶部一条红黑概率条；逐着局面用 `src/client/online/history.ts` 的 `replayHistory(record.startFen, record.moves)` 还原，取值与标定见 `docs/design/modules/ai.md` §9。

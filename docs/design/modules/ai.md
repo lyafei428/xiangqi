@@ -227,3 +227,109 @@ F1-7 四个业务结果各自的落点：
 - `test/client-session.test.ts`：`play` 动作的合法性闸门与记谱、终局、切时钟。
 - `test/game-panel.test.tsx`：模式标签按 prop 渲染，默认仍是「本地双人」。
 - `test/integration/navigation.test.tsx`：F4-1 的对弈半段保持原样，新增人机半段（人机 → 课程 → 人机，棋盘与记谱不变）。
+
+## 9. 每步胜率
+
+每一着后给出红方与黑方的胜率，四个棋局页面都显示。概率来自**静态评估**，不跑搜索——理由在下面「为什么不做搜索」。
+
+Closest precedent: `src/shared/ai/evaluate.ts`（局面评估，红正黑负、出口切行棋方视角）与 `src/client/panel/GamePanel.tsx`（记谱按回合两列渲染）。
+对齐：概率就是评估值的一次单调映射，不另立第二套局面判断；显示挂在既有的记谱区与面板顶部，不新开一栏。
+偏离：评估原本只服务搜索，现在要给人看——所以必须**标定**（分差 → 百分比）并把常数集中在一处；搜索侧不需要这个映射。
+
+Survey evidence: 已核对 `docs/design/modules/board-ui.md`（棋盘与面板的渲染归属）、`docs/design/modules/local-play.md`（`HistoryEntry` 每着都带走完后的 FEN）、`docs/requirements/xiangqi.md` F5.1 与 F5.7。相关：FEN 逐着可得、记谱区已有两列结构两处被沿用；其余来源与本题无关。
+
+### 概率模型
+
+| 项 | 规则 |
+|---|---|
+| 出口 | `redExpectation(position, result): number`，红方期望分 0..1。结果由调用方给（`GameResult` 或 `null`），函数的活只做「局面 → 期望分」。 |
+| 取值 | `evaluate` 返回的是**行棋方视角**，先按 `turn` 换成红方视角的 `score`，再 `p = 1 / (1 + 10 ** (-score / 400))`。 |
+| 常数 400 | 一车 900 分 → 99%，一马 400 分 → 91%，一兵 100 分 → 64%。这是「差一子≈九成」的标定，与象棋残局的常识量级一致；常数只写一处，可调。 |
+| 终局 | `result !== null` 时按结果收敛：红胜 1、黑胜 0、和棋 0.5（和棋各得半分）。为什么结果必须从外面传：和棋来自三次重复 / 自然限着 / 协议和棋，认输与超时也不是棋盘状态——`statusOf` 只有 playing / check / checkmate / stalemate 四值，一个 `Position` 推不出这些。 |
+| 和棋口径 | 显示的是**期望分**（胜 1、和 0.5、负 0），所以和棋终局读作 50%。两列数字永远互补，合计 100%。 |
+
+**要同步的三处**：本批改到联机页与回放页的显示、以及设置浮层里的开关，这三处分别由 `docs/design/modules/online.md`、`docs/design/modules/replay.md`、`docs/design/modules/board-ui.md` 拥有——每档各补一句（联机/回放的记谱带百分比与条；`docs/design/modules/board-ui.md` 的开关清单加「胜率」），避免同一页面行为只在本档一侧有描述。
+
+**为什么不做搜索**：每走一着就跑一次浅层搜索，实时对局里会有可感延迟（普通档实测 1.2 秒），且要再进一次 Worker；静态评估是 O(81) 的纯函数，一局 200 着不到两万次操作。代价是看不见下一步的战术，这一点在界面上如实呈现（只给数字，不写「红方必败」这类判断）。
+
+### 显示
+
+| 位置 | 规格 |
+|---|---|
+| 记谱每一格（两列：对弈 / 人机） | 着法后面跟一个小字百分比，取**该着之后**的红方期望分，四舍五入到整数；红黑两列写同一个数（都是红方视角——一列换一次视角会让同一行的两个数看着像两份判断）。 |
+| 记谱每一格（单列：联机 / 回放） | 同样跟一个小字百分比，同样是红方视角。这两页的记谱本来就是平铺一列（`src/client/pages/OnlinePage.tsx` 的 `{index + 1}. {move}`、回放页的 `replay-moves`），没有第二列可对齐。 |
+| 着法区的顶部 | 一条红黑概率条（左红右黑，宽度按百分比分配）+ 两个数字「红 62% · 黑 38%」，后者是前者的补数。放在可收起的着法区里、不占常驻条：需求 F1.10 把对弈页与人机页的默认可见集定成「默认只显示棋盘、行棋方与双方计时、新局与认输」，常驻一条胜率条会改写那个列举。 |
+| 终局后 | 条按结果贴边：红胜满红、黑胜满黑、和棋对半；数字与结果文案并列，不重复解释。 |
+| 手机档 | 概率条占一行 20px，数字与条同行；记谱字不因此缩小。 |
+
+- 开关：`xiangqi.eval.v1`，默认开；设置浮层里「胜率 开/关」。关掉后条与记谱数字都不渲染（不留空位）。
+- 着色按 `docs/design/modules/theme.md` §2 的「结果着色」：红方数字用 `--red-text`、黑方用 `--black-text`，条本身用两个色块加 `--line` 分隔，不新增颜色。
+- 无障碍：条外面包 `role="img"` 并给 `aria-label`（「红方胜率 62%」），两个数字本身是文本，读屏直接读得到。
+
+### 四个页面的数据来源
+
+| 页面 | 着法序列 | 当前局面 | 传给 `redExpectation` 的 result（**只在该着之后正是终局那一着时传，其余传 `null`**） |
+|---|---|---|
+| 对弈 / 人机 | `session.history`（每项带 `fen`） | `session.history` 末项或开局 FEN | 末格（即当前局面）且 `session.result !== null` 时传 `session.result`，其余格传 `null` |
+| 联机 | `replayHistory(snapshot.startFen, snapshot.moveLog)` | `snapshot.fen` | 末格且 `snapshot.result !== null` 时传它，其余格传 `null` |
+| 回放 | `replayHistory(record.startFen, record.moves)`（与联机页同一个函数，不另起 `playMove` 循环） | 回放游标那一着之后 | 回放到终局那一着时传 `record.result`，否则 `null` |
+
+- 增量算，不整段重算：记谱的百分比按着法数缓存——新着一只补算一格（一次 `parseFen` + 一次 `evaluate`），着法数不变时命中缓存。整段重算会在每走一着时做 N 次 `parseFen`，与需求 F5.3 的「走子到画面 < 16ms」相冲。
+- 实现形制：`useMemo` 依着法数，内部用一个 `useRef` 缓存已算好的前缀数组，只追加新格；**_着法数变小时截断到新长度_**（新局、联机再来一局都会让着法数从 0 长回原值，不截断会把上一局的数贴到新局上）。
+- 联机与回放不另写判定：同一份 `redExpectation`。
+
+### 边界
+
+- 只覆盖棋局页面（对弈、人机、联机、回放）。课程、练习、对弈题不显示：那些页面的任务是「走对下一步」，给一条胜率条只会分心。
+- 不预测「几着内必胜」，不标「妙手 / 漏着」，不显示搜索深度。
+- 概率是评估值的映射，不是引擎的搜索结论——文案只说「胜率」，不说「引擎认为」。
+
+### 命名与文件
+
+| 名字 | 三问答复 |
+|---|---|
+| `redExpectation` | `none found`：新增纯函数，住在 `src/shared/ai/probability.ts`；不碰 DOM，可直接单测。 |
+| `EVAL_SCALE` | `none found`：新增常量（400），同上文件，标定只此一处。 |
+| `EvalBar` | `none found`：新增组件，住在 `src/client/panel/EvalBar.tsx`；三个页面共用。 |
+| `xiangqi.eval.v1` | `none found`：新存储键，读写都在 `src/client/storage/prefs.ts`，与另外三个开关同处。 |
+| `useEvalEnabled` | `none found`：新增 hook，住在 `src/client/panel/useEval.ts`；沿用 `src/client/board/useMoveTrail.ts` 的定式（`useSyncExternalStore` + 模块级 store），理由同它注释里那句「多个页面要读同一个值」——联机页与回放页也要读到开关状态。 |
+| 「胜率 开/关」 | `none found`：新文案，与「音效 / 走子轨迹 / 对坐下棋」并列在设置浮层。 |
+
+| 文件 | 改动 |
+|---|---|
+| `src/shared/ai/probability.ts` | 新增：`redExpectation` 与 `EVAL_SCALE` |
+| `src/shared/ai/index.ts` | 导出 `redExpectation`（`evaluate` 也一并出口，页面侧要用） |
+| `src/client/panel/EvalBar.tsx` | 新增：条 + 两个数字 |
+| `src/client/panel/GamePanel.tsx` | 记谱格加百分比（`.move-eval` 兄弟节点）；着法区顶部插 `EvalBar` |
+| `src/client/pages/OnlinePage.tsx` | 用 `replayHistory` 算序列，插 `EvalBar`，记谱行加百分比 |
+| `src/client/pages/ReplayPage.tsx` | 同上 |
+| `src/client/App.tsx` | 设置浮层加开关 |
+| `src/client/storage/prefs.ts` | `xiangqi.eval.v1` 读写（沿用 `KeyValueStore` 注入、默认 `defaultStore()` 的既有形制） |
+| `src/client/panel/useEval.ts` | 新增：`useEvalEnabled`（`useSyncExternalStore` + 模块级 store） |
+| `src/client/styles/panel.css` | 概率条与 `.move-eval` 的版式（条、两色块、手机档 20px 行） |
+| `src/client/styles/play.css` | 联机页单列记谱的 `.move-eval` 版式 |
+| `test/probability.test.ts` | 新增：映射单调、终局收敛、互补 |
+| `test/integration/eval.test.tsx` | 新增：F5-7 的集成行（四页观察 + 开关记住） |
+| `test/RTM.md` | 新增 F5-7 行；「用例实现」段补一句 |
+
+分档结论：涉及的每个文件都在 500 行内。实测 `src/client/panel/GamePanel.tsx` 244 行、`src/client/pages/ReplayPage.tsx` 373 行、`src/client/pages/OnlinePage.tsx` 444 行（本批最大的一个，加条与逐着百分比后预计 +20 行，仍离 500 档有三十余行余量）；`src/client/App.tsx` 与新增件都在 300 行内。**本批不需要拆分方案**；若实施时 `src/client/pages/OnlinePage.tsx` 越过 500 行，按面板/联机两块拆出，不拖到下一批。
+
+### 验收
+
+| 层 | 手段 |
+|---|---|
+| 概率函数 | `test/probability.test.ts`：均势≈50%、红方净一车≥95%、黑白互补；终局三分支（红胜/黑胜/和）分别 100/0/50——直接传 `result` 断言，不靠局面推 |
+| 显示 | 集成用例：对弈页走两着，两格都有百分比、条上的数字与末格一致；联机页与回放页各一条最小观察（条在、数字与末格一致）；人机页共用 `GamePanel`，随对弈一并覆盖 |
+| 改动面命令 | `node --test test/probability.test.ts`（集成半段在收口行报告） |
+
+### 集成测试设计
+
+起点是 `test/RTM.md` 的「## 性能（需求 F5）」：该节现有 F5-1 / F5-2 / F5-3 / F5-4 / F5-6 五行，**本变更新增 F5-7「每步胜率」一行**（业务结果「每一着后给出双方胜负概率；四个棋局页面都显示；有开关且记住」，用户入口「打开页面 → 对弈 → 走子」，需求 F5.7，用例实现 `test/integration/eval.test.tsx`）。「用例实现」段同步补一句，形如既有的「F5-6 另有一条集成用例 `test/integration/sound.test.tsx`」。
+
+| 分类 | 结论 |
+|---|---|
+| 破坏 | **有，一处**：`test/integration/navigation.test.tsx` 对 `.move-red` / `.move-black` 用 `toBe` 断言整段文本（F4-1 的「切页回来记谱不变」）。百分比必须渲染在这两个 span **之外**的兄弟节点上（`.move-eval`），格子文本保持原样；若放进格子里，那三处断言要同批改。本批取前者。 |
+| 冗余 | 无：不复制任何既有对局用例 |
+| 缺失 | 一行：F5-7 的集成行——对弈页走两着，断言「两格都有百分比」「概率条数字与末格一致」「关掉开关后两者都不显示、重开页面仍是关」；同一行再带两条最小观察：联机页收到快照后条在且数字与末格一致、回放页游标走到终局后条与结果一致 |
+
+该行的断言只取业务可观察结果（有没有数字、数字是否一致、开关是否记住），不取内部浮点精度；映射精度留给 `test/probability.test.ts`。
