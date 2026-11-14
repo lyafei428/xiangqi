@@ -156,9 +156,19 @@ beforeEach(() => {
 });
 
 describe('F5-7 每步胜率', () => {
-  it('对弈页走两着：每格都有百分比，条上的数字与末格一致', () => {
+  it('对弈页首次进入就看得见三段条，走两着每格都有百分比', () => {
     window.location.hash = '#/play';
     const view = render(<App />);
+
+    // 着法区默认收起——条如果落在里面就等于看不见（用户 2026-11-14 报的就是这个）。
+    expect(view.container.querySelector('.panel-body')?.hasAttribute('hidden')).toBe(true);
+    const bar = view.container.querySelector('.eval-bar');
+    expect(bar).not.toBeNull();
+    expect(bar?.closest('.panel-body')).toBeNull();
+    expect(bar?.closest('.panel-focus')).not.toBeNull();
+    expect(bar?.textContent).toMatch(/红 \d+%/);
+    expect(bar?.textContent).toMatch(/黑 \d+%/);
+
     playMove(FIRST_NOTATION);
     playMove(SECOND_NOTATION);
 

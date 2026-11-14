@@ -295,32 +295,34 @@ Survey evidence: 已核对 `docs/design/modules/board-ui.md`（棋盘与面板�
 | `useMoveEvals` / `useEvalPoint` | `none found`：新增 hook，同上文件；前者给记谱逐格（前缀缓存），后者给条上的数字——三个页面共用同一段增量逻辑，分放三处会漂。 |
 | `useEvalEnabled` | `none found`：新增 hook，住在 `src/client/panel/useEval.ts`；沿用 `src/client/board/useMoveTrail.ts` 的定式（`useSyncExternalStore` + 模块级 store），理由同它注释里那句「多个页面要读同一个值」——联机页与回放页也要读到开关状态。 |
 | 「胜率 开/关」 | `none found`：新文案，与「音效 / 走子轨迹 / 对坐下棋」并列在设置浮层。 |
+| 「红 62%」/「黑 38%」 | `none found`：新文案，由 `EvalBar` 渲染，四页共用同一组件因此同一处文案。 |
+| `aria-label`「红方胜率 62%」 | `none found`：给 `role="img"` 的条用；数字取整口径与两个可见数字同源（`percentText`）。 |
 
 | 文件 | 改动 |
 |---|---|
 | `src/shared/ai/probability.ts` | 新增：`redExpectation` 与 `EVAL_SCALE` |
 | `src/shared/ai/index.ts` | 导出 `redExpectation`（`evaluate` 也一并出口，页面侧要用） |
 | `src/client/panel/EvalBar.tsx` | 新增：条 + 两个数字 |
-| `src/client/panel/GamePanel.tsx` | 记谱格加百分比（`.move-eval` 兄弟节点）；着法区顶部插 `EvalBar` |
-| `src/client/pages/OnlinePage.tsx` | 用 `replayHistory` 算序列，插 `EvalBar`，记谱行加百分比 |
-| `src/client/pages/ReplayPage.tsx` | 同上 |
+| `src/client/panel/GamePanel.tsx` | 记谱格加百分比（`.move-eval` 兄弟节点，仍留在可收起的着法区里）；`EvalBar` 插在常驻区——`.clock-row` 之后、`.panel-actions` 之前 |
+| `src/client/pages/OnlinePage.tsx` | 用 `replayHistory` 算序列；`EvalBar` 插在常驻区——房间行之后、`.panel-actions` 之前；记谱行加百分比 |
+| `src/client/pages/ReplayPage.tsx` | `EvalBar` 插在回放控制区内——`.replay-range` 与 `.replay-moves` 之间；记谱行加百分比 |
 | `src/client/App.tsx` | 设置浮层加开关 |
 | `src/client/storage/prefs.ts` | `xiangqi.eval.v1` 读写（沿用 `KeyValueStore` 注入、默认 `defaultStore()` 的既有形制） |
-| `src/client/panel/useEval.ts` | 新增：`useEvalEnabled`（`useSyncExternalStore` + 模块级 store） |
+| `src/client/panel/useEval.ts` | 新增：`useEvalEnabled`（`useSyncExternalStore` + 模块级 store）、`useMoveEvals`（前缀缓存，给记谱逐格）、`useEvalPoint`（给条上的数字） |
 | `src/client/styles/panel.css` | 概率条与 `.move-eval` 的版式（条、两色块、手机档 20px 行） |
 | `src/client/styles/play.css` | 联机页单列记谱的 `.move-eval` 版式 |
 | `test/probability.test.ts` | 新增：映射单调、终局收敛、互补 |
 | `test/integration/eval.test.tsx` | 新增：F5-7 的集成行（四页观察 + 开关记住） |
 | `test/RTM.md` | 新增 F5-7 行；「用例实现」段补一句 |
 
-分档结论：涉及的每个文件都在 500 行内。实测 `src/client/panel/GamePanel.tsx` 244 行、`src/client/pages/ReplayPage.tsx` 373 行、`src/client/pages/OnlinePage.tsx` 444 行（本批最大的一个，加条与逐着百分比后预计 +20 行，仍离 500 档有三十余行余量）；`src/client/App.tsx` 与新增件都在 300 行内。**本批不需要拆分方案**；若实施时 `src/client/pages/OnlinePage.tsx` 越过 500 行，按面板/联机两块拆出，不拖到下一批。
+分档结论：本批落地的文件都不跨 500 行档，也没有 300 行以上的单函数，**不需要拆分方案**。
 
 ### 验收
 
 | 层 | 手段 |
 |---|---|
 | 概率函数 | `test/probability.test.ts`：均势≈50%、红方净一车≥95%、黑白互补；终局三分支（红胜/黑胜/和）分别 100/0/50——直接传 `result` 断言，不靠局面推 |
-| 显示 | 集成用例：对弈页走两着，两格都有百分比、条上的数字与末格一致；联机页与回放页各一条最小观察（条在、数字与末格一致）；人机页共用 `GamePanel`，随对弈一并覆盖 |
+| 显示 | 集成用例：首次进入对弈页（着法区收起）三段条仍在、红黑两个数字可读；再走两着，两格都有百分比、条上的数字与末格一致；联机页与回放页各一条最小观察（条在、数字与末格一致）；人机页共用 `GamePanel`，随对弈一并覆盖 |
 | 改动面命令 | `node --test test/probability.test.ts`（集成半段在收口行报告） |
 
 ### 集成测试设计
@@ -329,7 +331,7 @@ Survey evidence: 已核对 `docs/design/modules/board-ui.md`（棋盘与面板�
 
 | 分类 | 结论 |
 |---|---|
-| 破坏 | **有，一处**：`test/integration/navigation.test.tsx` 对 `.move-red` / `.move-black` 用 `toBe` 断言整段文本（F4-1 的「切页回来记谱不变」）。百分比必须渲染在这两个 span **之外**的兄弟节点上（`.move-eval`），格子文本保持原样；若放进格子里，那三处断言要同批改。本批取前者。 |
+| 破坏 | **有，一处**：`test/integration/navigation.test.tsx` 对 `.move-red` / `.move-black` 用 `toBe` 断言整段文本（F4-1 的「切页回来记谱不变」）。百分比必须渲染在这两个 span **之外**的兄弟节点上（`.move-eval`），格子文本保持原样；若放进格子里，那三处断言要同批改。本批取前者。条从着法区搬到常驻区这一改**不破坏任何既有用例**：现存用例只断言着法区里的记谱与记谱框，不观察 `.eval-bar` 的宿主位置，条相关的查询全在新增的 `test/integration/eval.test.tsx` 里。 |
 | 冗余 | 无：不复制任何既有对局用例 |
 | 缺失 | 一行：F5-7 的集成行——对弈页走两着，断言「两格都有百分比」「概率条数字与末格一致」「关掉开关后两者都不显示、重开页面仍是关」；同一行再带两条最小观察：联机页收到快照后条在且数字与末格一致、回放页游标走到终局后条与结果一致 |
 
