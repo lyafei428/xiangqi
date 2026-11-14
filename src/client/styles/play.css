@@ -79,8 +79,8 @@
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--board-bg);
-  /* 全站唯一的外投影：深色桌面上要把棋盘读成一张纸。 */
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28), 0 14px 40px rgba(0, 0, 0, 0.32);
+  /* 全站唯一的外投影：深色桌面上要把棋盘读成一张纸；浅色下自动变轻。 */
+  box-shadow: var(--board-shadow);
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
