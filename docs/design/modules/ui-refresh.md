@@ -44,8 +44,8 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md` §3 的 F1.1–F1.10�
 | 对弈 | 棋盘、行棋方与双方计时、新局、认输 | 着法记录、记谱输入 |
 | 人机 | 同上 + 难度与阵营（仅未走子时） | 着法记录、记谱输入 |
 
-- 终局结果按胜方着色：红胜红字、黑胜黑字、和棋留蓝（状态行与放大提示同色，用 `*_text` 那组令牌）。
-- 终局提示：结果文字放大到棋盘中央停 3 秒，再缩回面板状态行原处（`ResultPop`）。落点用 FLIP 量算：起点是 `.board` 矩形中心，终点是 `.status-line` 矩形中心，缩放到状态行行高的一档；量不到目标就原地淡出，不做假动画。`prefers-reduced-motion: reduce` 时只停不飞。提示自身 `aria-hidden`——状态行的 `role="status"` 已经播报过同一句话，重复播报会吵。
+- 终局结果按胜方着色：红胜红字、黑胜黑字、和棋留蓝。红黑用 `*_text` 那组（`--red-text`／`--black-text`），和棋用 `--accent`——它是文字与描边那一档；`--accent-strong` 是填充按钮底，当文字只有 3.31:1。状态行与放大提示同色。
+- 终局提示：结果文字放大到棋盘中央停 3 秒，再缩回面板状态行原处（`ResultPop`）。提示自带一枚 `--panel-bg` 底（见 `ResultPop` 的 `.result-pop`）：它压在浅色棋盘上，直接裸字会让 `--red-text` 只剩 2.40:1、`--black-text` 只剩 0.74:1（同一公式复算）——有底才谈得上对比度。落点用 FLIP 量算：起点是 `.board` 矩形中心，终点是 `.status-line` 矩形中心，缩放到状态行行高的一档；量不到目标就原地淡出，不做假动画。`prefers-reduced-motion: reduce` 时只停不飞。提示自身 `aria-hidden`——状态行的 `role="status"` 已经播报过同一句话，重复播报会吵。
 - 人机页的难度与阵营：未走子时铺开；选过难度或阵营之后，鼠标移出控件组就收成一行摘要（显示当前难度与阵营），点摘要可再展开；新局重新铺开。玩家走完第一着后同样收成摘要。它不属「默认收起」——进入页面时它就在。
 - 收起条件写在两处状态里：`picked`（这一局选过没有，没选过就不收）与 `collapsedByLeave`（被移开收起过）。新局把两者一起复位——只靠 `hasMoves` 的 effect 不够：还没走过子的新局里 `hasMoves` 没变，effect 不会重跑。
 - 「指针离开」由全局 `pointermove` 判定，不用 `pointerleave`：后者只在指针悬停过该元素后才发，二次展开或键盘选择之后根本不会来，表现为「选完有时不收」。
@@ -54,11 +54,11 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md` §3 的 F1.1–F1.10�
 - **只有第一次进来是收起的**：用户的展开/收起选择写进 `localStorage`（`xiangqi.panel-open.v1`），切页回来、刷新、重开浏览器都沿用；主动收起也记住。存储不可用（隐私模式、配额满）时按「未展开」处理，不报错。`/` 展开也记一笔（用户按了它就是意图要看）。
 - ≥1024px 与 768–1023px 两档的面板几何不变（右侧栏 / 底抽屉），只改默认收起；<768px 按 §4。≥1024 档的侧栏本身常驻（`docs/design/modules/local-play.md` §5 的「不提供收起」不变），收起的是侧栏里的着法记录与记谱输入；收起后侧栏只留「着法」切换按钮与行棋方/计时，不留空白块。
 - `/` 的规则：记谱区处于收起态时，先展开再聚焦输入框；已展开则只聚焦。幂等，不改变局面。焦点已在文本输入框里时不抢。
-- 观战、联机、棋谱、课程、练习页不在本批改动范围。
+- 观战、棋谱、课程、练习页不在本批改动范围。联机页只共用面板状态行那套样式（`.status-line` 与结果着色），本批没有为它新增文件。
 
 ## 4. 手机一屏
 
-现状（需要一条可复现的读数支撑）：<768px 上面板占 40dvh 并与棋盘争高度，375×667 上棋盘被顶出可视区。执行前先跑 `node scripts/acceptance.mjs` 取现读数（棋盘底边与滚动高度），把数写进批次实施记录；读数与「棋盘完整可见」不符时，以读数为准修正本节。
+改前的现状：<768px 上面板占 40dvh 并与棋盘争高度，375×667 上棋盘被顶出可视区；读数见批次记录的 F4-6 一行（`node scripts/acceptance.mjs` 的「手机一屏」表）。改后该表在 375×667 与 360×740 两档都给出「棋盘完整可见、无纵向滚动」。
 
 改法两条：
 
@@ -74,8 +74,10 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md` §3 的 F1.1–F1.10�
 | 行 | 验的交互 | 用户可见结果 | 入口 | 需求 | 用例实现 |
 |---|---|---|---|---|---|
 | F4-6 | 视口 375×667 → 对弈页 → 棋盘底边与页面滚动容器 | 棋盘第 10 行完整可见；`document.scrollingElement.scrollHeight <= clientHeight`；展开「着法」后抽屉盖在棋盘上方，收起后棋盘恢复完整 | 打开页面 → 对弈（375×667 视口） | F4.6 | `scripts/acceptance.mjs` |
-| F1-10 | 对弈页 → 「着法」切换 → `/` | 初始看不到着法记录与记谱框；点「着法」后两者出现，再点收起；收起态按 `/` 展开并聚焦记谱框 | 打开页面 → 对弈 | F1.10 | `test/integration/local-play.test.tsx` |
+| F1-10 | 对弈页 → 「着法」切换 → `/` | 首次进入看不到着法记录与记谱框；点「着法」后两者出现，再点收起；展开过一次则之后进入即展开（存 `xiangqi.panel-open.v1`）；收起态按 `/` 展开并聚焦记谱框 | 打开页面 → 对弈 | F1.10 | `test/integration/local-play.test.tsx` |
 | F1-10 | 人机页 → 走第一着 → 难度与阵营 | 进入时可见；走一着后收为一行摘要；点摘要可展开 | 打开页面 → 人机 | F1.10 | `test/integration/ai.test.tsx` |
+
+| F1-11 | 终局 → 结果放大提示 → 面板状态行 | 任一终局在棋盘中央放大显示结果，停 3 秒后缩回原处；同一句话仍留在状态行 | 打开页面 → 对弈 → 认输 | F1.11 | `test/integration/local-play.test.tsx` |
 
 受影响行（不复述断言，只记入口与归属）：
 
@@ -106,7 +108,8 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md` §3 的 F1.1–F1.10�
 | `src/client/styles/replay.css` | 新增：棋谱页与棋谱库分栏 |
 | `src/client/app.css` | 只留八条 `@import`，顺序与原分节顺序一致：base → shell → play → panel → learn → drill → responsive → replay（`responsive` 在原文件里就排在 `replay` 之前，拆后不变），`main.tsx` 的引入不变。构建口径：生产构建把八份合成一张 CSS（`npm run preview` 的读数按此口径取）；dev 下按文件分请求，不计入 F5.2 的请求数 |
 | `src/client/pages/PlayPage.tsx`、`src/client/pages/AiPage.tsx` | 面板默认收起；人机页按着法数决定难度与阵营的显隐 |
-| `src/client/panel/GamePanel.tsx` | 「着法」切换按钮与 `aria-expanded`；`/` 先展开再聚焦 |
+| `src/client/panel/GamePanel.tsx` | 「着法」切换按钮与 `aria-expanded`；`/` 先展开再聚焦；结果行挂 `resultTone` 类名 |
+| `src/client/panel/ResultPop.tsx` | 终局放大提示（FLIP 缩回状态行，3 秒停留，`prefers-reduced-motion` 时只停不飞） |
 | `scripts/acceptance.mjs` | F4-6 读数（滚动高度、棋盘底边） |
 | `test/RTM.md` | F4-6、F1-10 两行 + 受影响行改写 + 用例实现 |
 | `test/integration/local-play.test.tsx`、`test/integration/ai.test.tsx` | F1-10 各一条 |

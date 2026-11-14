@@ -2,7 +2,10 @@
 
 一套组件，三种模式。对弈、教学、练习共用，不各写一份。
 
-Closest precedent: `docs/design/modules/local-play.md` — 棋盘的尺寸测量、三档布局与对弈模式的行为已由该模块定下。本模块只把入参收口成 `BoardMode`，不改变 M1 的棋盘几何与视觉。
+Closest precedent: `docs/design/modules/local-play.md` — 棋盘的尺寸测量、三档布局与对弈模式的行为已由该模块定下；落点对齐它的 §5 三档表与 `BoardMode` 收口。
+
+偏离一：棋子材质允许描边内 1px 内阴影（§2）——M1 的「平涂棋子」在浅色棋盘上够用，深色桌面下棋子与盘面同属浅色，需要一点厚度才不糊成一片。
+偏离二：<768px 的棋盘舞台左右不再留页边距、可用高不含面板（§5）——M1 的 40px 格宽下限是按「有页边距」写的，实机 360px 宽会把棋盘顶出屏幕；改成按整屏宽排后 360 上仍是 40px。抽屉几何不在这里定义，归 `docs/design/modules/local-play.md` §5。
 
 Survey evidence: 已核对 `docs/requirements/xiangqi.md`（F1.2 棋盘交互、F2.1 演示、F3.1 判定题）、`docs/design/modules/local-play.md`（尺寸与对局交互）、`src/shared/` 的 `generateLegalMoves` / `playMove` 契约。未发现与 M2 冲突的既有设计。
 
@@ -103,7 +106,7 @@ interface BoardProps {
 ```
 
 - 容器宽/高指棋盘舞台的可用尺寸（已扣掉面板与内边距）。宽与高同时受约束，棋盘不越出舞台——唯一例外是格宽下限那一档（见下条）。
-- ≥1024px 与右侧栏并排；768–1023px 在下抽屉上方；<768px 下，面板为覆盖式底部抽屉：`position: fixed` 贴底、`max-height: 50dvh`、自身纵向滚动，不占棋盘高度；收起时 `translateY(100%)` 并 `visibility: hidden`，不参与布局也不可聚焦。棋盘舞台的可用高 = 视口高减页面壳（顶栏 + 对弈页常驻的状态与按钮区），不含面板。
+- ≥1024px 与右侧栏并排；768–1023px 在下抽屉上方；<768px 的面板是覆盖式底部抽屉，几何（`position: fixed` 贴底、`max-height: 50dvh`、自身滚动、收起 `translateY(100%)` + `visibility: hidden`）以 `docs/design/modules/local-play.md` §5 为唯一出处，本节只记结论：覆盖式不占棋盘高度。棋盘舞台的可用高 = 视口高减页面壳（顶栏 + 对弈页常驻的状态与按钮区），不含面板。
 - 格宽 = 棋盘渲染宽度 / 9。棋盘宽度**永不超过可用宽**：宽与高同时受约束时取小者，不做「撑到 40px 再横向滚动」——对弈时看不全棋盘比格子小 2px 严重得多（360px 的手机上撑到 360 会顶出屏幕右边）。
 - 手机档（<768px）棋盘左右不留页边距，按整屏宽排：360 的机器正好 40px 一格（需求 F4.3），375 上是 41.7。屏幕窄于 360 时格宽随宽度同缩，完整可见优先。
 - `ResizeObserver` 监听容器变化重算，旋转屏幕不重挂载组件。

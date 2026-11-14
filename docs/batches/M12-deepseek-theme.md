@@ -45,8 +45,27 @@
 
 不动布局结构、对局专注、手机一屏几何；只做深色一套，不做 `prefers-color-scheme` 分支、不做主题开关。
 
+**批内接续（本批进行中用户追加的指令，逐条落在原范围之外）**
+
+原范围写的是「只做深色一套」（见上方边界）。批内用户先后给了八条指令，都做了、都留了文档落点；本节按「类别 ∥ 来源 ∥ 落地坐标 ∥ 文档归位」记，不合并进原设计段落——原段是当时的判断，改它等于改写历史。
+
+| # | 类别 | 来源（用户原话） | 落地坐标 | 文档归位 |
+|---|---|---|---|---|
+| 1 | 交互 | 「按钮形状对齐 DeepSeek」 | `src/client/styles/base.css` 新增 `--radius-pill: 4096px`；`src/client/styles/shell.css` 按钮胶囊 + 字重 500 | `docs/design/modules/theme.md` §2 取值表 |
+| 2 | 交互 | 「难度和阵营选择后鼠标移开消失，除非重开局」 | `src/client/pages/AiPage.tsx` 的 `picked`／`collapsedByLeave`／全局 `pointermove`+`pointerdown` 收起；新局复位 | `docs/design/modules/ai.md` §4、`docs/design/modules/ui-refresh.md` §3 |
+| 3 | 功能 | 「DeepSeek 界面是浅色，增加浅色样式」+「浅色主题也没有看到」 | `src/client/styles/base.css` 的 `:root[data-theme='light']` 令牌块；`src/client/storage/prefs.ts` 三档偏好；`src/client/App.tsx` 导航开关；`src/client/main.tsx` 首屏前落档 | `docs/design/modules/theme.md` §2 浅色段与 §3 浅色读数、`docs/requirements/xiangqi.md` F5.5、`test/RTM.md` F5-4 |
+| 4 | 修复 | 「每走一步显示 AI 思考中，导致棋盘被挤压」 | `src/client/pages/AiPage.tsx` 的 `.ai-status` 常驻状态行；`src/client/styles/play.css` 的 `min-height: 20px` | `docs/design/modules/ai.md` §4 |
+| 5 | 功能 | 「最后胜利者文字放大到棋盘中央，2s（后改 3s）缩小到正常字体，原先位置」 | `src/client/panel/ResultPop.tsx`（FLIP 飞行）；`src/client/styles/panel.css` 的 `.result-pop`；`src/client/panel/result-text.ts` 的 `resultTone` | `docs/requirements/xiangqi.md` F1.11、`docs/design/modules/ui-refresh.md` §3 |
+| 6 | 交互 | 「红方胜显示红字」 | 状态行与放大提示按 `resultTone` 上色；`src/client/styles/panel.css` 的 `.is-red`／`.is-black` | `docs/design/modules/theme.md` §2 结果着色 |
+| 7 | 修复 | 「棋盘在手机上不能显示全部」 | `src/client/board/geometry.ts` 棋盘宽度不再超过可用宽；`src/client/styles/responsive.css` 手机档棋盘吃满整屏宽、导航不换行 | `docs/requirements/xiangqi.md` F4.3、`docs/design/modules/board-ui.md` §5、`scripts/acceptance.mjs` 溢出断言 |
+| 8 | 参数 | 「高手增加时间」「深度上限 8」「15 分钟」 | `src/shared/ai/levels.ts`（高手 3000ms／深度 8）；`src/shared/clock.ts` 的 `CLOCK_MS = 900_000`；`src/shared/record.ts` 上限同步 | `docs/requirements/xiangqi.md` F1.3／F1.4、`docs/design/modules/ai.md` §2 表 |
+
+**验证口径变更**
+
+`test/RTM.md` 的 F5-4 从「界面上没有图片与渐变」扩成「深浅两套各量 17 对，且两套 `--page-bg` 不同」；新增 F1-11 一行（终局放大提示）。第 7 条另加两条会失败的断言：棋盘不得超出视口、不得比棋盘舞台大。
+
 ## §3 设计评审（评审子代理）
-**状态行**：评审通过
+**状态行**：进行中（第 3 轮打回）
 
 
 
@@ -110,6 +129,36 @@ VERDICT: changes-required
 备注：前轮唯一 🔴 已修实；余留项无遗留，批准通过。
 
 VERDICT: pass
+
+### 轮次 3（评审子代理）
+
+> 状态行重置：第 3 轮打回（changes-required）· 上一轮状态行 = 评审通过 → 进行中 · 2026-11-14
+
+**复核对象**：M12 落地文档（`docs/design/modules/theme.md`、`docs/design/modules/ui-refresh.md`、`docs/design/modules/ai.md`、`docs/design/modules/board-ui.md`、`docs/requirements/xiangqi.md`、`test/RTM.md`），状态「已实现」，本文为这批档的独立复核。范围限定六份文档；Document Map 未提供，文档归属只按 `AGENTS.md` 的层表判断；源码文件未取新读数（见第 17 条）。
+
+| # | 类别 | 严重度 | 问题 | 建议 |
+|---|---|---|---|---|
+| 1 | 需求覆盖 | 🔴 | `docs/design/modules/theme.md` §2「红胜 `--red-text`、黑胜 `--black-text`、和棋 `--accent-strong`」把填充令牌当文字色：深色值 `#3964fe` 落在 `--panel-bg #232324` 上，按本档同一 WCAG 公式为 3.31:1，低于 `docs/requirements/xiangqi.md` F5.5 与 `test/RTM.md` F5-4 的 4.5:1；这一对不在 §3 断言表内，而 §3 的禁止块把 3.37:1 判为「不达标，不得作填充底」。`docs/design/modules/ui-refresh.md` §3 又写「和棋留蓝（状态行与放大提示同色，用 `*_text` 那组令牌）」，而 `--accent-strong` 不属于 `*_text` 组——同一归属两处给出不同答案。 | 和棋给一个文字档的蓝（新令牌或重取值），使其在 `--panel-bg` 上 ≥ 4.5:1；把该对写进 §3 断言表与该脚本的 F5-4 读数；`docs/design/modules/ui-refresh.md` §3 的令牌组表述与 `docs/design/modules/theme.md` 对齐。 |
+| 2 | 需求覆盖 / 文档归属 | 🔴 | `docs/requirements/xiangqi.md` F1.10「进入对局页看不到着法记录与记谱框」与 `test/RTM.md` F1-10「进入对弈页看不到着法记录与记谱框」对「进入时的状态」只给一个答案，而 `docs/design/modules/ui-refresh.md` §3 写「只有第一次进来是收起的」并把选择存进 `xiangqi.panel-open.v1`：上次留在展开态的回头用户一进页就看到两者，需求验收与 RTM 断言同时落空，RTM 该行还变成依赖上一用例残留存储的条件用例。 | 二选一并在三处同改：去掉持久化（按需求验收读数），或把 F1.10 与 RTM F1-10 改写成「按存储值决定进入态」并各给一条断言（新态 / 已展开态）。 |
+| 3 | 分支溯源（6b） | 🔴 | `docs/design/modules/ui-refresh.md` §3「存储不可用（隐私模式、配额满）时按「未展开」处理，不报错。」是一条新分支，但既无实读或用户报告的引文，也无复现路径；同批 `docs/design/modules/ai.md` §3 的 Worker 崩溃分支则带了「复现：把 `new Worker(new URL('./worker.ts', …))` 的路径改成不存在的文件」。 | 给这条分支一个场景（触发手段 + 观察到的行为 + 断言），或删掉它、让读写走同一条失败路径。 |
+| 4 | 文档归属 | 🟡 | `docs/design/modules/ai.md` §4「每人 10 分钟包干，AI 思考耗时计在它自己那份里」对 `docs/requirements/xiangqi.md` F1.4「计时对局：每方 15 分钟包干，走子后切给对方；己方归零判负」：同一时钟机制两处取值不同，且无一处说明人机局是例外。 | 明确哪个值管人机局及其理由（若为特例，写成一句「人机局 X 分钟，其余 15 分钟」），否则把数对齐。 |
+| 5 | 清晰度 | 🟡 | `docs/design/modules/theme.md` §4 的算术与 `docs/design/modules/board-ui.md` §5 的几何互斥：前者「**<768 档页内边距保持现状 8px**（375 − 16 = 359」把棋盘算进有 8px 内边距的列里（359/9 = 39.9，低于 `test/RTM.md` F4-4 的「格宽不低于 40px」），后者写「手机档（<768px）棋盘左右不留页边距，按整屏宽排」（375/9 = 41.7）；`docs/design/modules/theme.md` 还把 360 称作「§5 的 360px 下限」，而 `docs/design/modules/board-ui.md` §5 写的是「屏幕窄于 360 时格宽随宽度同缩」。 | 指明 8px 内边距作用在哪个容器（外壳 / 棋盘舞台），让手机档棋盘宽单值化；并修正或删掉「360px 下限」这处引用。 |
+| 6 | 清晰度 | 🟡 | 两个令牌缺可用取值、深色还缺一项：`docs/design/modules/theme.md` 浅色表 `--raise` / `--raise-flat` 写「内高光 + 两层柔和投影」、`--board-shadow` 写「更轻的一档」（都是描述不是值）；深色表完全没有 `--board-shadow`，而 §2 固定项说「棋盘的外投影是分层手段，不是装饰」、§4 说棋盘带「一圈柔和外投影（唯一的投影）」。 | 两个令牌在两套配色下各给具体值（深色含 `--board-shadow`），使落地档记下已发布的形态。 |
+| 7 | 清晰度 | 🟡 | 放大提示自身的表面没有一份档写明：`docs/design/modules/ui-refresh.md` §3 只写「结果文字放大到棋盘中央停 3 秒」。若它直接落在棋盘上，所选 `*_text` 值对 `--board-bg #f7f2e6` 分别只有 2.40:1（`--red-text` #f27b6e）与 0.74:1（`--black-text` #cfd3d6），同公式计算。 | 写明放大提示的底（建议一枚 `--panel-bg` 的承载面），使 `*_text` 落在 §3 已断言的背景上。 |
+| 8 | 验收 / 集成设计 | 🟡 | `test/RTM.md` F5-4 断言四件事（可切换 / 棋盘两套皆浅 / 对比度 / 无图片与渐变），`docs/design/modules/theme.md` §5 的 F5-4 行只断言「上列每一对的对比度均 ≥ 4.5:1；白字不作 `--accent` 填充底」；三档开关这条交互在该节没有行承载，只在 §7 以无跑法的条目出现。 | 把 §5 的 F5-4 行补到 RTM 的四条业务结果，或为三档开关单开一行（交互 / 结果 / 入口 / 需求 / 跑法）。 |
+| 9 | 集成设计 delta | 🟡 | `docs/design/modules/ui-refresh.md` §3 设计 ResultPop，`test/RTM.md` 已有「终局提示放大后缩回」这一行，但 §5 的两张表（新增三行 + 受影响行五条）都不提 F1-11：既不记为新增，也不记为受影响。 | 在 §5 补 F1-11 一行：放大提示 ↔ 状态行／棋盘的交互、业务结果（放大 → 3 秒收回 → 状态行仍在）、入口、需求、实现文件。 |
+| 10 | 文档归属 | 🟡 | 覆盖式抽屉几何同时写在 `docs/design/modules/board-ui.md` §5（「面板为覆盖式底部抽屉：`position: fixed` 贴底、`max-height: 50dvh`、自身纵向滚动」）与 `docs/design/modules/local-play.md` §5（`docs/design/modules/ui-refresh.md` §6 记该行「改为覆盖式」，而它的 Closest precedent 又说面板三档高度表归 `docs/design/modules/local-play.md` §5）。Document Map 缺失，此处只按层表判断归属。 | 保留一份权威几何（`docs/design/modules/local-play.md` §5），`docs/design/modules/board-ui.md` §5 只留「可用高不含面板」这一句并指向它。 |
+| 11 | 最近先例 | 🟡 | `docs/design/modules/board-ui.md` 的先例行仍写「本模块只把入参收口成 `BoardMode`，不改变 M1 的棋盘几何与视觉。」，而本批改了它 §2（「可加一圈 1px 内阴影表现厚度」）与 §5 的 <768 几何（`docs/design/modules/ui-refresh.md` §6 已登记这两处改写）。 | 更新该先例行：写出改动的两处与「为什么原形不适用」。 |
+| 12 | 现有件 | 🟡 | `docs/design/modules/theme.md` §6「文案：本批不新增用户可见文案。」与 §2「界面右上角有三档开关：跟随系统 / 浅色 / 深色」矛盾；且 `resultTone`（`docs/design/modules/theme.md` §2）与 `ResultPop`（`docs/design/modules/ui-refresh.md` §3）两个新名字在两份档的现有件检查里都没有三问答案（existing / none found / existing but unusable）。 | 改写那句文案结论（列出三档开关的标签），并给 `resultTone`、`ResultPop` 各补一条检查结论。 |
+| 13 | 文档归属 | 🟡 | `docs/design/modules/theme.md` §2「归属由 `resultTone` 一处判定，三处显示（面板、放大提示、联机页）共用，不各判一次。」与 `docs/design/modules/ui-refresh.md` §3「观战、联机、棋谱、课程、练习页不在本批改动范围。」冲突：同一批一处说改、一处说不改。 | 二选一：把联机页从「三处」里去掉，或在文件划分里补上它改到的文件。 |
+| 14 | 文档卫生 | 🟡 | `docs/design/modules/ui-refresh.md` §4 仍留着执行期指令：「执行前先跑 `node scripts/acceptance.mjs` 取现读数（棋盘底边与滚动高度），把数写进批次实施记录；读数与「棋盘完整可见」不符时，以读数为准修正本节。」档面在已实现态下读起来仍是待办，本节也没有落到一个确定的读数。 | 把已取得的读数写进批次实施记录，并在本节把「执行前先跑…不符时修正」改成现在成立的几何陈述。 |
+| 15 | 文档卫生 | 🔵 | 同档两处数值互不一：`docs/design/modules/theme.md` §3「**断言集**是断言列为「过」的十七行」，而表中标「过」的是 18 行；§8「`--muted-2` 余量最小（`--raise-bg` 上 4.59）」与 §3 的 4.52（按同公式复算也是 4.52）不符。 | 改「十七行」为实际行数；§8 的 4.59 改成 4.52。 |
+| 16 | 清晰度 | 🔵 | `docs/design/modules/theme.md` §2 只写「前置 `Inter`」，没写 Inter 从哪来：不随包则整栈静默回退（等于没改动），改为外链则计入 `docs/requirements/xiangqi.md` F5.2「请求数 ≤ 6」。 | 补一句「仅栈前置，不引请求」，或写明随包方式与代价。 |
+| 17 | 分档抽查 | 🔵 | 本次范围限定六份文档，未对 §6 表内源码文件取新读数，故 `docs/design/modules/theme.md`「`base.css` 现 121 行、`responsive.css` 296 行、其余分表最大 312 行」与 `docs/design/modules/ai.md`「无文件跨 500 行档」两处结论标为 unverified。`scripts/acceptance.mjs` 596 行在两份档中一致，按页拆到 `scripts/acceptance/` 的方案已写，但连续两批顺延，属记录性债务。 | 收口时补一次实测行数；拆分批次写进批次记录，别只写在设计档里。 |
+
+计数：🔴 3 · 🟡 11 · 🔵 3（共 17 条）。
+
+VERDICT: changes-required
 
 ## §4 用户批准（主 agent）
 ## §5 实施记录（实施者：主 agent ∥ coder）

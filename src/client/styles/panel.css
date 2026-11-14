@@ -129,8 +129,9 @@
 }
 
 .status-line.is-result {
-  /* 结果行是正文级字号（18px），不能用 --accent 本色：它在 --panel-bg 上只有 3.8:1。 */
-  color: var(--accent-strong);
+  /* 和棋没有胜方，用文字档的蓝 --accent（--panel-bg 上 4.66:1）。
+     不用 --accent-strong：那一档是填充按钮底，当文字只有 3.31:1。 */
+  color: var(--accent);
 }
 
 /* 胜方用自己的颜色说「谁赢了」：红胜红字、黑胜黑字，和棋留蓝。
@@ -327,6 +328,8 @@
  * 用 fixed：棋盘可能在滚动容器里，fixed 才不受裁剪。
  */
 .result-pop {
+  /* 和棋用文字档的蓝；胜负由下面的 .is-red / .is-black 覆盖。 */
+  color: var(--accent);
   position: fixed;
   left: 50%;
   top: 50%;
