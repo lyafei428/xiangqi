@@ -25,7 +25,7 @@ Survey evidence: 已核对 `docs/design/architecture.md`（分层、技术栈、
 | `src/client/main.tsx` | 挂载入口。 |
 | `index.html` | Vite 入口，提供 `#root` 挂载点。 |
 
-本批源文件与测试文件均未跨 500 行档（最大 `src/client/board/Board.tsx` 265 行）；样式集中在 `src/client/app.css` 一处维护，不按源文件分档。
+本批源文件与测试文件均未跨 500 行档（最大 `src/client/board/Board.tsx` 265 行）；样式已过 800 行硬上限，按 `docs/design/modules/ui-refresh.md` §6 拆成按层的多个样式文件，`src/client/app.css` 只作引入入口。
 
 现有件检查：
 
@@ -83,7 +83,7 @@ Survey evidence: 已核对 `docs/design/architecture.md`（分层、技术栈、
 |---|---|
 | ≥1024px | 右侧固定侧栏 320px，常驻，不提供收起 |
 | 768–1023px | 底部抽屉 40dvh，可收 |
-| <768px | 底部抽屉 42dvh（不超过 50dvh），可收 |
+| <768px | 覆盖式底部抽屉（`position: fixed`，`max-height: 50dvh`，自身滚动，不占棋盘高度），可收；细则见 `docs/design/modules/board-ui.md` §5 |
 
 - 棋盘尺寸公式、格宽下限与滚动规则由 `docs/design/modules/board-ui.md` §5 规定。
 - 面板在 M1 只有固定宽与全宽两态，没有宽度驱动的内部重排，不需要容器查询；等面板可拖动改宽的批次再按 `docs/design/architecture.md` §6 用 `@container`。
