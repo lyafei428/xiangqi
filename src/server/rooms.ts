@@ -10,6 +10,7 @@ import {
   createRoom,
   joinRoom,
   offerDrawRoom,
+  rematchRoom,
   removeSpectator,
   resignRoom,
   respondDrawRoom,
@@ -89,6 +90,14 @@ export class Rooms {
     const room = this.rooms.get(code);
     if (room === undefined) return { ok: false, reason: 'not-in-room' };
     const outcome = applyRoomMove(room, token, move, seq);
+    if (outcome.ok) this.rooms.set(code, outcome.room);
+    return outcome;
+  }
+
+  rematch(code: string, token: string, now = Date.now()): MoveOutcome {
+    const room = this.rooms.get(code);
+    if (room === undefined) return { ok: false, reason: 'not-in-room' };
+    const outcome = rematchRoom(room, token, now);
     if (outcome.ok) this.rooms.set(code, outcome.room);
     return outcome;
   }

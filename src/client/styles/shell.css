@@ -192,3 +192,16 @@
   filter: brightness(0.92);
 }
 
+
+/* 手机档标题收一档：24px 的页标题在 390 宽上占掉三行，标题不该比内容还抢地方。 */
+@media (max-width: 767px) {
+  .page-title {
+    font-size: 20px;
+    margin-bottom: 4px;
+  }
+
+  .page-subtitle {
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+}

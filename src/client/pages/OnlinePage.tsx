@@ -375,6 +375,11 @@ export function OnlinePage() {
             >
               着法
             </button>
+            {over && !spectating ? (
+              <button type="button" className="new-game" onClick={() => socketRef.current?.rematch()}>
+                再来一局
+              </button>
+            ) : null}
             <button type="button" className="new-game" onClick={leaveRoom}>
               离开房间
             </button>

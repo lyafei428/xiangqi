@@ -32,6 +32,7 @@ export type ClientMessage =
   | { readonly type: 'resign' }
   | { readonly type: 'offer-draw' }
   | { readonly type: 'draw-response'; readonly accept: boolean }
+  | { readonly type: 'rematch' }
   | { readonly type: 'leave' }
   | { readonly type: 'ping' };
 
@@ -61,7 +62,8 @@ export type RejectReason =
   | 'illegal-move'
   | 'draw-blocked'
   | 'draw-pending'
-  | 'no-draw-offer';
+  | 'no-draw-offer'
+  | 'not-over';
 
 export type ErrorCode = 'room-not-found' | 'bad-message' | 'spectators-full';
 

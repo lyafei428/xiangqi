@@ -94,6 +94,10 @@ export class OnlineSocket {
     }
   }
 
+  rematch(): void {
+    this.send({ type: 'rematch' });
+  }
+
   leave(): void {
     this.intentional = true;
     this.clearTimer();

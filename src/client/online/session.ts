@@ -52,6 +52,7 @@ const REJECT_TEXT: Readonly<Record<RejectReason, string>> = {
   'draw-blocked': '对方还没走棋，暂时不能再提议和棋',
   'draw-pending': '已有待答的和棋提议',
   'no-draw-offer': '没有待答的和棋提议',
+  'not-over': '对局还没结束',
 };
 
 export function createOnlineState(): OnlineState {

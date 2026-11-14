@@ -239,6 +239,32 @@ export function resignRoom(room: RoomState, token: string, now = Date.now()): Mo
   };
 }
 
+/**
+ * 再来一局：终局后在同一房间重开，棋手与座位不变、时钟重置。
+ * 只认棋手（观战者没有座位），也只在终局后——对局中「重开」等于单方面毁局。
+ */
+export function rematchRoom(room: RoomState, token: string, now = Date.now()): MoveOutcome {
+  if (seated(room, token) === null) return { ok: false, reason: 'not-in-room' };
+  if (room.result === null) return { ok: false, reason: 'not-over' };
+  const position = parseFen(room.startFen);
+  return {
+    ok: true,
+    room: {
+      ...room,
+      position,
+      history: [],
+      result: null,
+      status: statusOf(position),
+      seq: 0,
+      lastMove: null,
+      moves: [],
+      clock: createClock(now, room.clockMs),
+      drawOffer: null,
+      drawBlocked: null,
+    },
+  };
+}
+
 /** 提议和棋：任一棋手，仅受 drawBlocked 与待答提议限制。 */
 export function offerDrawRoom(room: RoomState, token: string): MoveOutcome {
   const player = seated(room, token);

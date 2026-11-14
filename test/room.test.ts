@@ -6,6 +6,7 @@ import {
   applyRoomMove,
   applyTimeout,
   offerDrawRoom,
+  rematchRoom,
   resignRoom,
   respondDrawRoom,
   setConnected,
@@ -13,7 +14,7 @@ import {
   MAX_SPECTATORS,
   removeSpectator,
 } from '../src/server/room.ts';
-import { INITIAL_FEN, generateLegalMoves, parseFen } from '../src/shared/index.ts';
+import { INITIAL_FEN, generateLegalMoves, indexOf, parseFen } from '../src/shared/index.ts';
 import { Rooms } from '../src/server/rooms.ts';
 
 const MATE_IN_ONE = '4k4/9/9/9/9/R8/3R1R3/9/9/3K5 w - - 0 1';
@@ -416,3 +417,45 @@ test('两人未坐满时不接受落子', () => {
   if (!outcome.ok) assert.equal(outcome.reason, 'not-in-room');
 });
 
+
+test('再来一局：终局后同房间重开，座位与时钟重置', () => {
+  const room = createRoom('ABC234', 'red-token', INITIAL_FEN, 900_000, 0);
+  const joined = joinRoom(room, 'blue-token', 0);
+  assert.equal(joined.ok, true);
+  if (!joined.ok) return;
+  const played = applyRoomMove(joined.room, 'red-token', { from: indexOf(1, 7), to: indexOf(1, 6) }, 0, 5_000);
+  assert.equal(played.ok, true);
+  if (!played.ok) return;
+  const resigned = resignRoom(played.room, 'blue-token', 6_000);
+  assert.equal(resigned.ok, true);
+  if (!resigned.ok) return;
+  assert.notEqual(resigned.room.result, null);
+
+  const again = rematchRoom(resigned.room, 'red-token', 10_000);
+  assert.equal(again.ok, true);
+  if (!again.ok) return;
+  assert.equal(again.room.result, null, '结果清空');
+  assert.equal(again.room.moves.length, 0, '着法清空');
+  assert.equal(again.room.seq, 0, '序号归零');
+  assert.equal(again.room.clock.redMs, 900_000, '时钟重置');
+  assert.equal(again.room.clock.blackMs, 900_000);
+  assert.equal(again.room.red?.token, 'red-token', '座位不变');
+  assert.equal(again.room.black?.token, 'blue-token');
+});
+
+test('再来一局：对局中拒绝，观战者拒绝', () => {
+  const room = createRoom('ABC234', 'red-token', INITIAL_FEN, 900_000, 0);
+  const joined = joinRoom(room, 'blue-token', 0);
+  assert.equal(joined.ok, true);
+  if (!joined.ok) return;
+
+  // 还没打完：不能单方面重开
+  const early = rematchRoom(joined.room, 'red-token', 1_000);
+  assert.equal(early.ok, false);
+  if (!early.ok) assert.equal(early.reason, 'not-over');
+
+  // 观战者没有座位
+  const spectator = rematchRoom(joined.room, 'watcher-token', 1_000);
+  assert.equal(spectator.ok, false);
+  if (!spectator.ok) assert.equal(spectator.reason, 'not-in-room');
+});

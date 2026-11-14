@@ -29,10 +29,11 @@
   flex: 0 0 auto;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 16px;
+  gap: 4px 10px;
   align-items: center;
   justify-content: center;
-  padding: 6px 10px;
+  /* 这两组只是选项，不该抢棋盘的高度：标签与选项都收一档。 */
+  padding: 4px 8px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--panel-bg);
@@ -218,3 +219,45 @@
   pointer-events: none;
 }
 
+
+/* 难度与阵营：只收紧这里的选项，不影响练习页的同类控件。 */
+.ai-controls .mission-actions {
+  gap: 4px;
+}
+
+.ai-controls .drill-hint {
+  font-size: 12px;
+}
+
+.ai-controls .option {
+  padding: 3px 9px;
+  font-size: 13px;
+}
+
+.ai-controls input[type='radio'] {
+  width: 12px;
+  height: 12px;
+}
+
+/*
+ * 手机档把「难度 / 阵营」两个标签藏起来（只藏视觉，读屏仍能读到——radiogroup 自带
+ * aria-label）：选项本身已经说明一切（入门/普通/高手、执红/执黑），标签占的那一列
+ * 会把控件挤成三行，白占棋盘上方 30px。
+ */
+@media (max-width: 767px) {
+  .ai-controls .drill-hint {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* 标签藏了就得给一条分隔线：不然「入门 普通 高手 执红 执黑」连成一片，
+     看不出前三个是难度、后两个是阵营。 */
+  .ai-controls .mission-actions + .mission-actions {
+    border-left: 1px solid var(--line);
+    padding-left: 10px;
+  }
+}

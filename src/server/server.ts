@@ -181,6 +181,22 @@ export async function createOnlineServer(options: OnlineServerOptions = {}): Pro
         broadcastPresence(outcome.room);
         return;
       }
+      case 'rematch': {
+        if (conn.room === undefined || conn.token === undefined) {
+          send(conn.ws, { type: 'error', code: 'bad-message', message: '先加入房间' });
+          return;
+        }
+        const outcome = rooms.rematch(conn.room, conn.token);
+        if (!outcome.ok) {
+          const current = rooms.get(conn.room);
+          if (current !== undefined) {
+            send(conn.ws, { type: 'rejected', reason: outcome.reason, snapshot: snapshotOf(current) });
+          }
+          return;
+        }
+        broadcast(conn.room, { type: 'state', snapshot: snapshotOf(outcome.room) });
+        return;
+      }
       case 'resign':
       case 'offer-draw':
       case 'draw-response': {
