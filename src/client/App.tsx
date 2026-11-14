@@ -16,11 +16,12 @@ import { createSession, restoreSession, sessionReducer } from './game/session.ts
 import type { GameSession } from './game/session.ts';
 import { clockFrom, positionAt, remainingOf } from '../shared/index.ts';
 import { clearCurrent, loadCurrent, saveCurrent, saveRecord } from './storage/records.ts';
-import { applyTheme, readTheme, writeTheme } from './storage/prefs.ts';
+import { applyTheme, readSound, readTheme, writeSound, writeTheme } from './storage/prefs.ts';
 import type { ThemeChoice } from './storage/prefs.ts';
 import type { Route } from './shell/routes.ts';
 import { routeHash } from './shell/routes.ts';
 import { useRoute } from './shell/useRoute.ts';
+import { useGameSound } from './sound/useGameSound.ts';
 
 const NAV: readonly { readonly label: string; readonly route: Route; readonly match: Route['name'][] }[] = [
   { label: '对弈', route: { name: 'play' }, match: ['play'] },
@@ -56,8 +57,12 @@ export function App() {
   const [visited, setVisited] = useState<ReadonlySet<string>>(() => new Set());
   // 配色：auto 跟系统；首屏由 main.tsx 落一次，这里只管用户切档与系统变化。
   const [theme, setTheme] = useState<ThemeChoice>(readTheme);
+  // 音效开关：缺省开，选择记在本地（配置项必须有写面）。
+  const [sound, setSound] = useState<boolean>(readSound);
   const route = useRoute();
   const savedRef = useRef<string>('');
+
+  useGameSound(session, sound);
 
   useEffect(() => {
     if (theme !== 'auto') return;
@@ -137,6 +142,18 @@ export function App() {
             </a>
           ))}
         </span>
+        <button
+          type="button"
+          className="sound-toggle"
+          aria-pressed={sound}
+          onClick={() => {
+            const next = !sound;
+            setSound(next);
+            writeSound(next);
+          }}
+        >
+          声音{sound ? '开' : '关'}
+        </button>
         <label className="theme-picker">
           <select
             className="theme-select"

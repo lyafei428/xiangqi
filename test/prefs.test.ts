@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { KeyValueStore } from '../src/client/storage/prefs.ts';
-import { applyTheme, readPanelOpen, readTheme, writePanelOpen, writeTheme } from '../src/client/storage/prefs.ts';
+import { applyTheme, readPanelOpen, readSound, readTheme, writePanelOpen, writeSound, writeTheme } from '../src/client/storage/prefs.ts';
 
 /** 隐私模式下的存储：连读都会抛。 */
 const throwingStore: KeyValueStore = {
@@ -33,13 +33,16 @@ function memoryStore(initial: Record<string, string> = {}): KeyValueStore & { re
 test('存储不可用：读一律退回缺省，写不抛', () => {
   assert.equal(readPanelOpen(throwingStore), false, '着法区按收起处理');
   assert.equal(readTheme(throwingStore), 'auto', '配色按跟随系统处理');
+  assert.equal(readSound(throwingStore), true, '音效按开处理');
   assert.doesNotThrow(() => writePanelOpen(true, throwingStore));
   assert.doesNotThrow(() => writeTheme('dark', throwingStore));
+  assert.doesNotThrow(() => writeSound(false, throwingStore));
 });
 
 test('没有存储（隐私模式下连 localStorage 都取不到）同样是缺省', () => {
   assert.equal(readPanelOpen(null), false);
   assert.equal(readTheme(null), 'auto');
+  assert.equal(readSound(null), true);
 });
 
 test('存过的值读得回来，坏值退回缺省', () => {
@@ -50,6 +53,11 @@ test('存过的值读得回来，坏值退回缺省', () => {
   const junk = memoryStore({ 'xiangqi.panel-open.v1': 'yes', 'xiangqi.theme.v1': '紫色' });
   assert.equal(readPanelOpen(junk), false);
   assert.equal(readTheme(junk), 'auto');
+
+  const muted = memoryStore({ 'xiangqi.sound.v1': '0' });
+  assert.equal(readSound(muted), false, '关过就记住');
+  writeSound(true, muted);
+  assert.equal(readSound(muted), true);
 });
 
 test('三档落地：auto 跟系统，明确档位压过系统', () => {

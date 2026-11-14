@@ -29,6 +29,28 @@
   gap: 4px;
 }
 
+/* 声音开关：两态、带文字，不靠图标猜。 */
+.sound-toggle {
+  border: 1px solid var(--line);
+  background: var(--raise-bg);
+  color: var(--muted);
+  border-radius: var(--radius-pill);
+  padding: 5px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.sound-toggle[aria-pressed='true'] {
+  color: var(--text);
+}
+
+@media (max-width: 420px) {
+  .sound-toggle {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+}
+
 /* 配色开关：三个固定档位，用下拉而不是循环按钮——循环按钮看不出当前是哪一档。 */
 .theme-picker {
   margin-left: auto;

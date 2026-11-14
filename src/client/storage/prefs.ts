@@ -11,6 +11,7 @@ export interface KeyValueStore {
 
 const PANEL_KEY = 'xiangqi.panel-open.v1';
 const THEME_KEY = 'xiangqi.theme.v1';
+const SOUND_KEY = 'xiangqi.sound.v1';
 
 /** 配色偏好：auto 跟系统，其余两档是用户明确选的。 */
 export type ThemeChoice = 'auto' | 'light' | 'dark';
@@ -61,6 +62,25 @@ export function writeTheme(choice: ThemeChoice, store: KeyValueStore | null = de
     store.setItem(THEME_KEY, choice);
   } catch {
     // 同上：存不下只影响下次进来，不影响这一局。
+  }
+}
+
+/** 走子音效是否开。缺省开：有声音的对局才像在落子；读不出来也按开处理。 */
+export function readSound(store: KeyValueStore | null = defaultStore()): boolean {
+  if (store === null) return true;
+  try {
+    return store.getItem(SOUND_KEY) !== '0';
+  } catch {
+    return true;
+  }
+}
+
+export function writeSound(on: boolean, store: KeyValueStore | null = defaultStore()): void {
+  if (store === null) return;
+  try {
+    store.setItem(SOUND_KEY, on ? '1' : '0');
+  } catch {
+    // 存不下只影响下次进来，不影响这一局。
   }
 }
 
