@@ -41,12 +41,12 @@ describe('F2-1 课程演示可播放', () => {
     const labels = Array.from(document.querySelectorAll('.piece')).map((piece) =>
       piece.getAttribute('aria-label'),
     );
-    expect(labels).toContain('红方车，第 5 列第 3 行');
+    expect(labels).toContain('红方俥，第 5 列第 3 行');
 
     fireEvent.click(screen.getByRole('button', { name: '上一步' }));
     const labelsBack = Array.from(document.querySelectorAll('.piece')).map((piece) =>
       piece.getAttribute('aria-label'),
     );
-    expect(labelsBack).toContain('红方车，第 5 列第 5 行');
+    expect(labelsBack).toContain('红方俥，第 5 列第 5 行');
   });
 });

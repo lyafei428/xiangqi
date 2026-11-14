@@ -6,14 +6,21 @@ import { BOARD_HEIGHT, indexOf, pieceAt, xOf, yOf } from './board.ts';
 const RED_NUMERALS: readonly string[] = ['一', '二', '三', '四', '五', '六', '七', '八', '九'];
 const BLACK_NUMERALS: readonly string[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
+// 记谱用常见字：棋谱是拿来读和抄的，重字会让人卡住。
 const PIECE_NAMES: Readonly<Record<Color, Readonly<Record<PieceType, string>>>> = {
   red: { K: '帅', A: '仕', B: '相', N: '马', R: '车', C: '炮', P: '兵' },
   black: { K: '将', A: '士', B: '象', N: '马', R: '车', C: '炮', P: '卒' },
 };
 
-/** 棋子的界面用字：红方用帅仕相，黑方将士象，兵卒分开。 */
+// 棋盘上按传统实体棋的写法：红方俥傌炮，黑方車馬砲，将帅也带各自的名字。
+const PIECE_GLYPHS: Readonly<Record<Color, Readonly<Record<PieceType, string>>>> = {
+  red: { K: '帥', A: '仕', B: '相', N: '傌', R: '俥', C: '炮', P: '兵' },
+  black: { K: '將', A: '士', B: '象', N: '馬', R: '車', C: '砲', P: '卒' },
+};
+
+/** 棋子摆在棋盘上的字：传统写法，红黑一眼分得开。 */
 export function pieceName(color: Color, type: PieceType): string {
-  return PIECE_NAMES[color][type];
+  return PIECE_GLYPHS[color][type];
 }
 
 // 车、炮、兵、帅记移动行数，马、相、仕记目标纵线。记反了整盘棋谱就读不出来。

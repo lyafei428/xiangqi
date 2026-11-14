@@ -181,14 +181,14 @@ describe('F1-7 人机页：难度与阵营', () => {
     };
 
     // 默认执红：黑将在上（纵坐标小），红帅在下。
-    expect(yOf('黑方将，第 5 列第 1 行')).toBeLessThan(500);
-    expect(yOf('红方帅，第 5 列第 10 行')).toBeGreaterThan(500);
+    expect(yOf('黑方將，第 5 列第 1 行')).toBeLessThan(500);
+    expect(yOf('红方帥，第 5 列第 10 行')).toBeGreaterThan(500);
 
     fireEvent.click(screen.getByRole('radio', { name: '执黑' }));
 
     // 执黑后镜像：黑将落到下半盘，红帅回到上边。
-    expect(yOf('黑方将，第 5 列第 1 行')).toBeGreaterThan(500);
-    expect(yOf('红方帅，第 5 列第 10 行')).toBeLessThan(500);
+    expect(yOf('黑方將，第 5 列第 1 行')).toBeGreaterThan(500);
+    expect(yOf('红方帥，第 5 列第 10 行')).toBeLessThan(500);
   });
 
   it('换阵营等同重开：AI 执红开局即回一着', async () => {
@@ -233,7 +233,7 @@ describe('F1-7 人机页：走子、回子与思考锁', () => {
     expect(screen.queryByText('AI 思考中…')).toBeNull();
     // 棋盘跟着回子动了：AI 的炮落在目标交叉点。
     const arrived = container.querySelector(`[data-square="${String(aiMove.to)}"]`);
-    expect(arrived?.getAttribute('aria-label')).toBe('黑方炮，第 2 列第 4 行');
+    expect(arrived?.getAttribute('aria-label')).toBe('黑方砲，第 2 列第 4 行');
     expect(container.querySelectorAll('.piece')).toHaveLength(32);
   });
 
