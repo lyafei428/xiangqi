@@ -211,7 +211,10 @@
   border: 1px solid var(--line);
   background: var(--panel-bg);
   color: var(--text);
-  padding: 7px 14px;
+  /* 与「着法」「开始/认输」同一档字号：面板里的胶囊按钮只允许一种字号，
+     否则同一行里 13px 和 16px 并排，看起来像两个不同层级的控件。 */
+  padding: 7px 12px;
+  font-size: 13px;
   border-radius: var(--radius-pill);
   box-shadow: var(--raise-flat);
   font-weight: 600;
