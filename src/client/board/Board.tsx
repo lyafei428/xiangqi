@@ -45,6 +45,8 @@ export interface BoardProps {
   readonly lastMove?: Move | null;
   /** 走子轨迹：从起点到落点的一道光影，看清「刚才谁动了、从哪来」。 */
   readonly trail?: boolean;
+  /** 对坐下棋（两人共用一台机器、面对面坐）：黑方棋子倒转 180°，各看各的正字。 */
+  readonly faceOff?: boolean;
   readonly checkSquare?: number | null;
   readonly marks?: readonly BoardMark[];
   readonly onSelect?: (square: number) => void;
@@ -77,7 +79,7 @@ function neighborSquare(square: number, dx: number, dy: number): number {
 }
 
 export function Board(props: BoardProps) {
-  const { mode, size, position, lastMove = null, checkSquare = null, marks = [], trail = false } = props;
+  const { mode, size, position, lastMove = null, checkSquare = null, marks = [], trail = false, faceOff = false } = props;
   const selection = props.selection ?? { selected: null, targets: [] };
   const selected = selection.selected;
   const targets = selection.targets;
@@ -222,7 +224,7 @@ export function Board(props: BoardProps) {
       onFocus={handleBoardFocus}
       onBlur={handleBoardBlur}
     >
-      <BoardBackground />
+      <BoardBackground faceOff={faceOff} />
       <BoardHints position={position} lastMove={lastMove} targets={targets} flipped={flipped} trail={trail} />
 
       {position.board.map((piece, square) => {
@@ -243,7 +245,14 @@ export function Board(props: BoardProps) {
             onKeyDown={(event) => handlePieceKeyDown(event, square)}
           >
             <circle r={42} className="piece-disc" />
-            <text className="piece-text" textAnchor="middle" dominantBaseline="central">
+            {/* 对坐时黑方棋子转 180°：坐在对面的人读到的也是正字。
+                只转字形，不转格位——位置仍按棋理排。 */}
+            <text
+              className="piece-text"
+              textAnchor="middle"
+              dominantBaseline="central"
+              transform={faceOff && piece.color === 'black' ? 'rotate(180)' : undefined}
+            >
               {pieceName(piece.color, piece.type)}
             </text>
           </g>

@@ -13,6 +13,7 @@ const PANEL_KEY = 'xiangqi.panel-open.v1';
 const THEME_KEY = 'xiangqi.theme.v1';
 const SOUND_KEY = 'xiangqi.sound.v1';
 const TRAIL_KEY = 'xiangqi.trail.v1';
+const FACEOFF_KEY = 'xiangqi.faceoff.v1';
 
 /** 配色偏好：auto 跟系统，其余两档是用户明确选的。 */
 export type ThemeChoice = 'auto' | 'light' | 'dark';
@@ -82,6 +83,25 @@ export function writeSound(on: boolean, store: KeyValueStore | null = defaultSto
     store.setItem(SOUND_KEY, on ? '1' : '0');
   } catch {
     // 存不下只影响下次进来，不影响这一局。
+  }
+}
+
+/** 对弈页是否按「两人面对面」摆字（黑方棋子倒转）。缺省开——那是这一页的默认用法。 */
+export function readFaceOff(store: KeyValueStore | null = defaultStore()): boolean {
+  if (store === null) return true;
+  try {
+    return store.getItem(FACEOFF_KEY) !== '0';
+  } catch {
+    return true;
+  }
+}
+
+export function writeFaceOff(on: boolean, store: KeyValueStore | null = defaultStore()): void {
+  if (store === null) return;
+  try {
+    store.setItem(FACEOFF_KEY, on ? '1' : '0');
+  } catch {
+    // 存不下只影响下次进来。
   }
 }
 

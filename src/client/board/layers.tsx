@@ -48,7 +48,7 @@ function markerPath(center: Point, col: number): string {
   return segments.join(' ');
 }
 
-export function BoardBackground() {
+export function BoardBackground({ faceOff = false }: { readonly faceOff?: boolean } = {}) {
   return (
     <g aria-hidden="true" pointerEvents="none">
       <rect x={0} y={0} width={VIEW_WIDTH} height={VIEW_HEIGHT} className="board-bg" />
@@ -93,7 +93,15 @@ export function BoardBackground() {
       {MARKER_SQUARES.map((square) => (
         <path key={`m${square}`} d={markerPath(pointOf(square), square % BOARD_COLS)} className="marker" />
       ))}
-      <text x={250} y={500} textAnchor="middle" dominantBaseline="central" className="river-text">
+      {/* 对坐下棋时两块河界各朝一方：对面那位读到的是正的。 */}
+      <text
+        x={250}
+        y={500}
+        textAnchor="middle"
+        dominantBaseline="central"
+        className="river-text"
+        transform={faceOff ? 'rotate(180 250 500)' : undefined}
+      >
         楚河
       </text>
       <text x={650} y={500} textAnchor="middle" dominantBaseline="central" className="river-text">

@@ -9,6 +9,7 @@ import { checkSquareOf } from '../game/session.ts';
 import type { GameAction, GameSession } from '../game/session.ts';
 import { GamePanel } from '../panel/GamePanel.tsx';
 import { useMoveTrailEnabled } from '../board/useMoveTrail.ts';
+import { useFaceOffEnabled } from '../board/useFaceOff.ts';
 import { readPanelOpen, writePanelOpen } from '../storage/prefs.ts';
 
 export interface PlayPageProps {
@@ -22,6 +23,8 @@ export function PlayPage({ session, dispatch }: PlayPageProps) {
   const [panelOpen, setPanelOpen] = useState(readPanelOpen);
   // 走子轨迹：默认开，设置里可关。
   const trail = useMoveTrailEnabled();
+  // 对坐下棋：两人面对面，黑方棋子转过来朝对面那位。
+  const faceOff = useFaceOffEnabled();
   const [now, setNow] = useState(() => Date.now());
   const stageRef = useRef<HTMLDivElement | null>(null);
   const stage = useStageSize(stageRef);
@@ -50,6 +53,7 @@ export function PlayPage({ session, dispatch }: PlayPageProps) {
               selection={{ selected: session.selected, targets: session.targets }}
               lastMove={session.lastMove}
               trail={trail}
+              faceOff={faceOff}
               checkSquare={checkSquareOf(session)}
               onSelect={over ? undefined : (square) => dispatch({ type: 'select', square, now: Date.now() })}
               onTap={over ? undefined : (square) => dispatch({ type: 'tap', square, now: Date.now() })}
