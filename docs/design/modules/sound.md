@@ -33,6 +33,8 @@ Closest precedent: `docs/design/modules/local-play.md` §4（`session` 的着法
 
 `useGameSound(session, enabled)` 只盯两个观测点：
 
+**每份 session 各自挂一次**：对弈页的 session 在 `App`，人机页的在 `AiPage`——只在 `App` 挂过一次，人机页就永远没有声音（这就是「试听会响、走子不响」的根因）。开关用 `useSoundEnabled()` 这个共享 store 读，两处拿到的必然是同一个值。
+
 - 结果从无到有 → 终局音；
 - 着法数比上次多一 → 按 `classify` 响一着。
 
@@ -60,4 +62,5 @@ Closest precedent: `docs/design/modules/local-play.md` §4（`session` 的着法
 |---|---|
 | 判定正确 | `test/sound.test.ts`：用真实局面走出的 `HistoryEntry` 覆盖四条路径（普通落子、吃子、将军、终局压过一切） |
 | 偏好读写 | `test/prefs.test.ts`：读回、坏值退缺省、存储抛错时不炸 |
+| 人机页 | 浏览器探针在 `#/ai` 用触摸走一着：振荡器计数 +2（玩家一着 + AI 回一着），上下文 `running` |
 | 真响了 | 浏览器探针记 `OscillatorNode.start` 与 `AudioContext.state`：**真实指针按下**（CDP Input，带用户激活）后上下文进 `running`、缓冲区计数 +1；随后走一着再 +1；关掉声音再走不增；重新打开后认输出现 3 个正弦波。用 `element.click()` 这类合成事件测不出来——它们不产生用户激活，上下文会一直停在 `suspended`，看起来「建了不响」 |

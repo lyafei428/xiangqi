@@ -14,6 +14,8 @@ import { useStageSize } from '../board/useStageSize.ts';
 import { checkSquareOf, createSession, sessionReducer } from '../game/session.ts';
 import type { GameSession } from '../game/session.ts';
 import { GamePanel } from '../panel/GamePanel.tsx';
+import { useGameSound } from '../sound/useGameSound.ts';
+import { useSoundEnabled } from '../sound/useSoundEnabled.ts';
 import { readPanelOpen, writePanelOpen } from '../storage/prefs.ts';
 import { saveRecord } from '../storage/records.ts';
 
@@ -49,6 +51,8 @@ export function AiPage() {
   const [controlsOpen, setControlsOpen] = useState(false);
   /** 这一局已经在控件组里选过难度或阵营；选过之后鼠标移开就收起。 */
   const [picked, setPicked] = useState(false);
+  // 音效：人机页有自己的一份 session，必须在这里也挂一次（只在 App 挂过，这页就没声）。
+  useGameSound(session, useSoundEnabled());
   /** 选过之后被鼠标移开收起了：与「摘要点开」分开存，才能做到移开就收、点摘要再铺开。 */
   const [collapsedByLeave, setCollapsedByLeave] = useState(false);
   const [now, setNow] = useState(() => Date.now());

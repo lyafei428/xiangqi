@@ -65,7 +65,7 @@
 `test/RTM.md` 的 F5-4 从「界面上没有图片与渐变」扩成「深浅两套各量 17 对，且两套 `--page-bg` 不同」；新增 F1-11 一行（终局放大提示）。第 7 条另加两条会失败的断言：棋盘不得超出视口、不得比棋盘舞台大。
 
 ## §3 设计评审（评审子代理）
-**状态行**：进行中（第 3 轮打回）
+**状态行**：评审通过
 
 
 
@@ -159,6 +159,39 @@ VERDICT: pass
 计数：🔴 3 · 🟡 11 · 🔵 3（共 17 条）。
 
 VERDICT: changes-required
+
+### 轮次 4（评审子代理）
+
+**第二轮复核（M12 落地文档 · 已实现态）**：逐条核验上一轮 17 条处置，并只看修复引入的新问题。六份文档本轮全部重读，对比度按 `docs/design/modules/theme.md` 自引公式由档内 hex 复算。
+
+| # | 原# | 文件 | 严重度 | 状态 | 说明 |
+|---|---|---|---|---|---|
+| 1 | 1 | docs/design/modules/theme.md | 🔴 | Fixed | 和棋改 `--accent`：§2 结果着色写「和棋 `--accent`」，下一段补取舍「和棋用 `--accent` 而不是 `--accent-strong`：…当文字压在 `--panel-bg` 上只有 3.31:1」；4.66（深）与 5.81（浅）都在断言/读数表内。`docs/design/modules/ui-refresh.md` §3 同口径：「和棋用 `--accent`——它是文字与描边那一档」。 |
+| 2 | 2 | docs/requirements/xiangqi.md · test/RTM.md · docs/design/modules/ui-refresh.md | 🔴 | Fixed | 三处同改：F1.10「首次进入对局页看不到着法记录与记谱框（展开过就记住，之后进入保持展开）」；RTM F1-10「首次进入…展开过一次则之后进入即展开（选择记在本地）」；`docs/design/modules/ui-refresh.md` §5「首次进入看不到着法记录与记谱框…展开过一次则之后进入即展开（存 `xiangqi.panel-open.v1`）」。 |
+| 3 | 3 | docs/design/modules/ui-refresh.md | 🔴 | Fixed | 分支复现已落地：本轮 grep 实见 `import { applyTheme, readPanelOpen, readSound, readTheme, writePanelOpen, writeSound, writeTheme } from '../src/client/storage/prefs.ts';`（store 可注入即抛错 store 的接缝）。测试体未读（超范围，unverified）。残留见 20。 |
+| 4 | 4 | docs/design/modules/ai.md | 🟡 | Fixed | §4 已改「每方 15 分钟包干（与需求 F1.4 同一个 `CLOCK_MS`，不是另设一个值）」，与 F1.4「每方 15 分钟包干」一致。 |
+| 5 | 5 | docs/design/modules/theme.md | 🟡 | Fixed | §4 改为「<768 档页内边距保持 8px（面板与常驻条用；棋盘舞台左右为 0…375 上格宽 41.7、360 上 40.0）」，「360px 下限」错引已删；375/9=41.7、360/9=40.0 复算成立。残留见 19。 |
+| 6 | 6 | docs/design/modules/theme.md | 🟡 | Fixed | 深色 `--board-shadow` 给出 `0 2px 6px rgba(0,0,0,.28), 0 14px 40px rgba(0,0,0,.32)`；浅色 `--raise`／`--raise-flat`／`--board-shadow` 均为具体 box-shadow。 |
+| 7 | 7 | docs/design/modules/ui-refresh.md | 🟡 | Fixed | §3 写明「提示自带一枚 `--panel-bg` 底（见 `ResultPop` 的 `.result-pop`）」，并把 2.40／0.74 写进理由，与复算一致。 |
+| 8 | 8 | docs/design/modules/theme.md | 🟡 | Fixed | §5 F5-4 行已含四条业务结果（逐对 ≥4.5、白字不作 `--accent` 底、两套 `--page-bg` 不同、棋盘皆浅、无渐变与 `url(`）与「右上角切三档」入口。 |
+| 9 | 9 | docs/design/modules/ui-refresh.md | 🟡 | Fixed | §5 已有 F1-11 行（交互/结果/入口/需求/实现）。该行的渲染问题见 18。 |
+| 10 | 10 | docs/design/modules/board-ui.md | 🟡 | Fixed | §5 把抽屉几何的「唯一出处」让给 `docs/design/modules/local-play.md` §5，本节只留「覆盖式不占棋盘高度」结论；指针问题见 19。 |
+| 11 | 11 | docs/design/modules/board-ui.md | 🟡 | Fixed | 先例行改为「偏离一／偏离二」并各给理由；原「不改变 M1 的棋盘几何与视觉」已删。 |
+| 12 | 12 | docs/design/modules/theme.md · docs/design/modules/ui-refresh.md | 🟡 | Fixed | 文案结论改为「本批新增三处可见文案——配色开关的「跟随系统 / 浅色 / 深色」三个选项」；`resultTone`（GamePanel 行）与 `ResultPop.tsx` 在 `docs/design/modules/ui-refresh.md` §6 表内各有职责行。`现有件检查` 仍缺这两个名字的 none-found 行（🔵，不阻断）。 |
+| 13 | 13 | docs/design/modules/ui-refresh.md | 🟡 | Fixed | 「联机页只共用面板状态行那套样式…本批没有为它新增文件」与 `docs/design/modules/theme.md` §2「三处共用同一个类名」口径一致。 |
+| 14 | 14 | docs/design/modules/ui-refresh.md | 🟡 | Fixed | §4 改为已成立的陈述「读数见批次记录的 F4-6 一行…改后该表在 375×667 与 360×740 两档都给出…」，执行期指令已删。 |
+| 15 | 15 | docs/design/modules/theme.md | 🔵 | Fixed | §3 改「**断言集**是断言列为「过」的十八行」（表内标「过」确为 18 行）；§8 改「`--muted-2` 余量最小（`--raise-bg` 上 4.52）」。 |
+| 16 | 16 | docs/design/modules/theme.md | 🔵 | Fixed | `--font-ui` 行补「**只做栈前置、不引外链**」及其与需求 F5.2 的关系。 |
+| 17 | 17 | docs/design/modules/theme.md · docs/design/modules/ai.md | 🔵 | Accepted | 分档抽查仍无实测：理由（本次范围限六份文档）成立，收口时记一次实测行数；`acceptance.mjs` 596 行的按页拆分仍为记录性债务。 |
+| 18 | (new) | docs/design/modules/ui-refresh.md | 🔵 | New | F1-11 行与表头之间被空行隔断，成为无表头、无分隔行的孤立行：「| F1-11 | 终局 → 结果放大提示 → 面板状态行 | 任一终局在棋盘中央放大显示结果，停 3 秒后缩回原处；同一句话仍留在状态行 | 打开页面 → 对弈 → 认输 | F1.11 | `test/integration/local-play.test.tsx` |」——不渲染为该表的一部分。修法：删掉两处空行，接在第二条 F1-10 行之后。 |
+| 19 | (new) | docs/design/modules/ui-refresh.md | 🔵 | New | 指针两跳 + 旧错引残留：「（几何写进 `docs/design/modules/board-ui.md` §5）」与「公式、720 上限与 360 下限全部按 `docs/design/modules/board-ui.md` §5 不变」，而 `docs/design/modules/board-ui.md` §5 已写「以 `docs/design/modules/local-play.md` §5 为唯一出处」，其正文是「屏幕窄于 360 时格宽随宽度同缩，完整可见优先。」（与需求 F4.3「格宽允许略小」一致，360 不是下限）。 |
+| 20 | (new) | docs/design/modules/theme.md · docs/design/modules/ui-refresh.md | 🟡 | New | 偏好落地的文件不在任何文件表里：两份档都设计 localStorage（`xiangqi.theme.v1`、`xiangqi.panel-open.v1`），但 `docs/design/modules/theme.md` §6 表未列正文已引用的 `main.tsx` 与三档开关所在文件，`docs/design/modules/ui-refresh.md` §6／§7 未列 `src/client/storage/prefs.ts` 与 `test/prefs.test.ts`（两份文件均存在，见 3 的 grep）。落地档因此没记下开关与读写归属。 |
+| 21 | (new) | docs/design/modules/theme.md | 🔵 | New | §5 两处措辞与改动后的正文不一致：「配色不改变几何与结构，它们的断言不动」vs §4 设了 16／8px 内边距与棋盘舞台 0；「| F1-10 | 对局专注 | 默认收起与常驻条不变 |」vs F1.10 的「首次进入…收起」。 |
+| 22 | (new) | docs/design/modules/ui-refresh.md | 🔵 | New | §5 的 F1-10 行未写用例如何进入「首次」态：「首次进入看不到着法记录与记谱框；…展开过一次则之后进入即展开（存 `xiangqi.panel-open.v1`）」——两条断言共用一份 localStorage，单进程里需在用例内清键或分文件，否则互相污染。 |
+
+计数：上一轮 17 条 = 16 Fixed + 1 Accepted（无遗留 🔴）；本轮新增 5 条 = 🔴 0 · 🟡 1 · 🔵 4。
+
+VERDICT: pass
 
 ## §4 用户批准（主 agent）
 ## §5 实施记录（实施者：主 agent ∥ coder）

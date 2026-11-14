@@ -49,6 +49,14 @@
 
 不做音量滑杆、不做按棋子材质分级、不做背景音乐；不做「对方走子单独音色」。这些都不在本批。
 
+**批内接续：接线漏了一份 session（用户报「试听有声音、走子没声音」）**
+
+根因：`useGameSound` 只在 `App` 里挂了一次，而**人机页有自己的 session**（`AiPage` 内部 `useReducer`），这页走子根本走不到声音那段代码。对弈页有声音、人机页没有——用户主要在人机页下棋，于是表现为「都没声音」。
+
+处置：开关提成共享 store（`src/client/sound/useSoundEnabled.ts`，`useSyncExternalStore` 最小实现，不引状态管理框架），`App` 与 `AiPage` 各自 `useGameSound(session, useSoundEnabled())`。顺带修了「从存档恢复的对局第一着不响」：基线改成挂载时的着法数，不再从 0 起算。
+
+实测（浏览器探针，触摸）：人机页走一着 → 振荡器 +2（玩家一着 + AI 回一着）、上下文 `running`。
+
 ## §3 设计评审（评审子代理）
 ## §4 用户批准（主 agent）
 ## §5 实施记录（实施者：主 agent ∥ coder）

@@ -35,7 +35,8 @@
 .rules-table {
   width: 100%;
   border-collapse: collapse;
-  background: #fffdf7;
+  /* 用令牌，别写死底色：写死的浅色会在深色主题下把白字吞掉（规则页的「判罚口径」踩过）。 */
+  background: var(--panel-bg);
   border: 1px solid var(--line);
   font-size: 15px;
 }
@@ -49,7 +50,7 @@
 }
 
 .rules-table thead th {
-  background: #f7eeda;
+  background: var(--sunken-bg);
   color: var(--muted);
   font-size: 13px;
   font-weight: 600;

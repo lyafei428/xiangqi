@@ -716,6 +716,27 @@ function report(data) {
   for (const pattern of ['linear-gradient', 'radial-gradient', 'url(']) {
     if (css.includes(pattern)) failures.push(`样式表里出现了 ${pattern}（F5.5 要求无渐变、无装饰图片）`);
   }
+  // 颜色只许出现在令牌层（base.css）：别处写死一个浅色，深色主题下就会把文字吞掉。
+  // 规则页的「判罚口径」表就这么瞎过一次——这条断言就是为了让下一次当场变红。
+  const tokenHome = readFileSync(join(repoRoot, 'src/client/styles/base.css'), 'utf8');
+  const strayColors = [];
+  for (const name of readdirSync(join(repoRoot, 'src/client/styles')).filter((item) => item.endsWith('.css'))) {
+    if (name === 'base.css') continue;
+    const text = readFileSync(join(repoRoot, 'src/client/styles', name), 'utf8');
+    for (const match of text.matchAll(/#[0-9a-fA-F]{3,8}\b/g)) strayColors.push(`${name}: ${match[0]}`);
+  }
+  for (const file of readdirSync(join(repoRoot, 'src/client'), { recursive: true })) {
+    if (!`${file}`.endsWith('.css')) continue;
+    const full = join(repoRoot, 'src/client', `${file}`);
+    if (full.endsWith(join('styles', 'base.css'))) continue;
+    if (full.endsWith('app.css')) continue;
+    const text = readFileSync(full, 'utf8');
+    for (const match of text.matchAll(/#[0-9a-fA-F]{3,8}\b/g)) strayColors.push(`${file}: ${match[0]}`);
+  }
+  if (strayColors.length > 0) {
+    failures.push(`样式表里出现写死的颜色（应改用令牌）：${[...new Set(strayColors)].join('、')}`);
+  }
+  if (tokenHome.length === 0) failures.push('读不到 base.css 的令牌层');
   // 棋盘色只许落在棋盘上：拿它们当界面文字或填充底，深色下会掉到 2.4:1 与 1.0:1。
   // 这条与配色方案无关，所以查源码而不是查对比度（浅色下黑字压白底反而是对的）。
   const boardTokens = ['--red', '--black', '--target'];
