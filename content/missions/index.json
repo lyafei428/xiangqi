@@ -54,10 +54,10 @@
     "type": "attack",
     "lesson": "iron-bolt",
     "title": "铁门栓：两步杀",
-    "fen": "4k4/9/9/p4N3/9/R1p6/3R1R3/4P4/9/4K4 w - - 0 1",
+    "fen": "4k2C1/9/9/p4N3/9/R1p6/3R5/4P4/9/4K4 w - - 0 1",
     "plies": 2,
     "source": "自编",
-    "hint": "先吃掉挡在横线上的那枚卒，下一着再平车。"
+    "hint": "先用马逼将：黑将进一格就落进炮口，平移则被车封住。"
   },
   {
     "id": "mission-defense-left",
