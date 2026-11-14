@@ -27,7 +27,7 @@ interface GameRecord {
   readonly savedAt: number;   // 存盘时刻（毫秒时间戳）
 }
 
-positionAt(record, step): Position   // 重放前 step 着；step 夹到 [0, moves.length]；非法着法抛错
+positionAt(record, step): Position   // 重放前 step 着；step 夹到 [0, moves.length]；非法着法抛错；内部委托 positionAtMoves(startFen, moves, step)
 isReplayable(record): boolean        // 全量重放一次，能走完 true
 parseRecord(text): GameRecord | null // 结构校验失败返回 null
 recordText(record): string           // JSON 文本，缩进 2
@@ -102,7 +102,7 @@ recordText(record): string           // JSON 文本，缩进 2
 - `GameRecord`、`positionAt`、`isReplayable`、`parseRecord`、`recordText`、`clockFrom`、`restoreSession`、`ReplayPage`、「棋谱」「还没有棋谱」「这条棋谱无法回放」「棋谱不存在」「文件不是有效的棋谱」：none found——项目内无同名函数与同句文案。
 - 命名：`GameRecord` 与既有的 `HistoryEntry` 不同层级（前者整局、后者单着），不合并。
 
-文件分档：本批改动文件实测均未跨 500 行档（`src/client/App.tsx` 139 行、`src/client/pages/OnlinePage.tsx` 339 行、`src/client/game/session.ts` 212 行），无 300+ 行单函数；新增 `ReplayPage.tsx`（243 行）按「列表」「回放」两个内部区块切分，各自不承担对方的状态。
+文件分档：本批改动文件均未跨 500 行档，无 300+ 行单函数；`ReplayPage.tsx` 按「列表」「回放」两个内部区块切分，各自不承担对方的状态。
 
 本批验收命令（只跑改动面）：`node --test test/record.test.ts test/records-storage.test.ts`；`npx vitest run test/integration/replay.test.tsx test/integration/local-play.test.tsx`。
 

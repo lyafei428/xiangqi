@@ -451,6 +451,44 @@ button {
 .new-game:active {
   transform: translateY(1px);
 }
+
+/* 记谱输入 */
+
+.notation {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.notation-input {
+  border: 1px solid var(--line);
+  background: #fffdf7;
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 14px;
+}
+
+.notation-input:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.notation-error {
+  margin: 0;
+  color: var(--red);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.notation-example {
+  margin-left: 6px;
+  color: var(--muted);
+  /* 面板宽度不足时整句换行，不从例子中间拆开。 */
+  white-space: nowrap;
+}
+
 .clock-row {
   display: flex;
   flex-wrap: wrap;

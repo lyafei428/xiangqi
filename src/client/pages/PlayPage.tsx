@@ -54,6 +54,9 @@ export function PlayPage({ session, dispatch }: PlayPageProps) {
         session={session}
         open={panelOpen}
         now={now}
+        notationDisabled={over}
+        onPlay={(move) => dispatch({ type: 'play', move, now: Date.now() })}
+        onRequestExpand={() => setPanelOpen(true)}
         onToggle={() => setPanelOpen((open) => !open)}
         onReset={() => dispatch({ type: 'reset' })}
         onResign={() => dispatch({ type: 'resign', now: Date.now() })}

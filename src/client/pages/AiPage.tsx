@@ -252,6 +252,9 @@ export function AiPage() {
         now={now}
         modeLabel={`人机 · ${LEVEL_LABEL[level]}`}
         resignDisabled={session.result !== null || session.position.turn !== side}
+        notationDisabled={!canPlay}
+        onPlay={(move) => dispatch({ type: 'play', move, now: Date.now() })}
+        onRequestExpand={() => setPanelOpen(true)}
         onToggle={() => setPanelOpen((open) => !open)}
         onReset={newGame}
         onResign={resign}

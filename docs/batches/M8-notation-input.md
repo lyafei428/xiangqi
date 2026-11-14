@@ -57,6 +57,9 @@
 不改棋盘的键盘路径；不碰联机页与观战；解析只认生成侧写出来的记谱形态，不做模糊匹配。
 
 ## §3 设计评审（评审子代理）
+**状态行**：评审通过
+
+
 
 ### 轮次 1（评审子代理）
 
@@ -83,6 +86,82 @@
 
 VERDICT: changes-required
 
+### 轮次 2（评审子代理）
+
+### 设计评审（第三轮，独立评审子代理）
+
+评审对象：`docs/design/modules/notation-input.md`（状态「待评审」）。
+配套读：`docs/design/modules/local-play.md`、`docs/design/modules/board-ui.md`、`docs/requirements/xiangqi.md`、`test/RTM.md`。
+
+**文档归属判据的说明**：评审上下文未提供 Document Map（声明「No document map found」），故归属只按 `AGENTS.md` 的分层判断。
+本设计把「记谱输入」作为新的模块主题落在 `docs/design/modules/notation-input.md`。
+`docs/design/modules/local-play.md` §5 只留一行指针，未把细则塞进该档已有小节——合规，不构成拆分既有小节。
+
+**已核验通过（不计入发现）**：
+
+- 最接近先例行在位，引用准确：`src/shared/notation.ts` 的 `toChineseNotation` 确实已存在，被 `src/shared/record.ts`、`src/client/game/session.ts` 共用。
+- 调研证据行在位，列了 `docs/design/rules-engine.md`、`docs/design/modules/board-ui.md`、`docs/design/modules/local-play.md`、`docs/requirements/xiangqi.md`、`test/RTM.md`、`src/client/game/session.ts`。
+- 现有件检查三种形态齐备：existing / none found / 文案。
+- 「文本命令 → 着法零命中」复现属实：`src/` 内只有 `toChineseNotation` 及其调用点。
+- 分档塔位自查属实。本轮重新量过：`src/shared/notation.ts` 103 行、`src/client/panel/GamePanel.tsx` 144 行、`src/client/pages/PlayPage.tsx` 63 行、`src/client/pages/AiPage.tsx` 261 行，均未跨 500 行档，也没有 300+ 行的单函数，故「涉及文件均未跨 500 行档，无需拆分。」成立。
+- `src/shared/index.ts` 是 `export * from './notation.ts';`，新增导出不必动它，§6 文件表未漏项。
+- 不成环：`src/shared/notation.ts` 加 `import ... from './rules.ts'` 后，`rules.ts` 只依赖 `moves.ts` / `fen.ts` / `board.ts`，无一回到 `notation.ts`，可行性无阻断。
+- 集成测试设计以 `test/RTM.md` 的 F1-8 行为起点，行号先定死，四列（交互链 / 用户可见结果 / 入口 / 追溯需求）齐备。
+- 用例标题按行号命名的写法与既有一致，如 `test/integration/local-play.test.tsx` 的 `describe('F1-1 本地双人走完一局并判和'`。
+
+| # | 类别 | 严重度 | 问题 | 建议 |
+|---|------|--------|------|------|
+| 1 | 清晰度 | 🟡 | 提示的落点在文内有两处说法。§1 口径表写「不落子，输入框下方提示「这步走不了：检查棋子、纵线和方向」」；§3 写「提示放在面板已有的播报区里（`role="status"`、`aria-live="polite"`），与状态行共用同一套播报口径。」面板已有的播报区是 `src/client/panel/GamePanel.tsx` 的 `.status-line`，里面只有 `aria-hidden` 圆点加唯一一处 `{statusText(session)}`（「红方走棋」/「黑方胜 · 超时」），没有第二个承载提示的格子。实现者无法判断：提示行自己就是 live region（那就不是「已有的」），还是把提示插进状态行（那就顶掉行棋方播报，与 `docs/design/modules/local-play.md` §4「将军与胜负写进 `aria-live="polite"` 的状态区」的同一处展示打架）。 | 在 §3 把 DOM 定死：提示行自带 `role="status"`，视觉位置就在输入框下方，并写明状态行文案不因提示改写。若坚持共用状态区，写出状态行如何同时承载行棋方与提示（两段？谁先播？）以及提示的清除时机。 |
+| 2 | 清晰度 | 🟡 | 面板到底多几行没有定死。§3 同时写「一行输入框 + 一行提示。」与「面板新增这一行只占一行高度，不改三档布局的断点与棋盘尺寸公式。」，而 `docs/design/modules/local-play.md` §5 只承认「记谱输入占着法记录下方一行」。提示行是常驻占位还是仅零命中时渲染，文中没说。若非常驻，提示出现时面板内部从 1 行变 2 行，抽屉高度固定（同档 §5「底部抽屉 42dvh（不超过 50dvh），可收」），着法列表让出空间这一段没人认领，F4.3 缩放不丢状态与 F5.4 CLS 都未覆盖。 | 明确提示行「常驻占位」或「仅零命中时渲染」，并指出面板内哪一块让出高度。再把 `docs/design/modules/local-play.md` §5 的「一行」与所选方案对齐；若确为两行，改写成「输入框与提示各一行」。 |
+| 3 | 分支来源 | 🟡 | §6 契约写「比对全部合法着法的记谱，命中返回该着法；零命中或不止一条返回 null。」，§1 又说「「一条输入对应多个着法」不作为一种状态处理」，靠 §7 单测守住记谱两两不同。于是「不止一条」是一支设计自认不可能发生的分支，§7 的测试清单（解析、归一化、零命中、两两不同）里也没有它的用例。不判 🔴 的理由：它给出了消歧来源与不变量测试这条验证路径，且不带提示文案、不带跨端一致性，代价只有一行返回。 | 二选一。删掉「不止一条」，只留零命中；或在 §1 注明它只是 `length !== 1` 的同一行返回、不产生任何提示分支，§7 因此不单列用例。别让它以「一种状态」的措辞留在契约里。 |
+| 4 | 分支来源 | 🔵 | §3 写「快捷键：页面上按 `/` 聚焦输入框。焦点已在输入类元素里时不抢。」这一支守的场景没有命名。对弈页与人机页上唯一的文本输入框就是这个记谱框本身，页面其余输入件是 `src/client/pages/AiPage.tsx` 的难度与阵营 radio，`/` 在那里被抢或不抢都没有可观察差别。 | 要么点名场景（用户在记谱框内敲 `/` 不应打断输入，或为将来含文本输入的页面预留），要么删掉这半句，只留「按 `/` 聚焦输入框」。 |
+| 5 | 验收 | 🟡 | §7 第三条把全量套件写进了「验收」小节：「提交门 `npm run check` 按 `AGENTS.md` 执行，不属于本模块的验收。」本条自己声明了它不是验收，第一条也已是改动面单测「单测：`node --test test/notation-input.test.ts`」，所以不构成把全量套件当验收口径。但下一轮实现者读到的仍是「§7 验收里有一条要跑 check」，与验收只认改动面单测的口径混在一起。 | 把这一条移出 §7：并入 §8 风险，或单列一行「提交门见 `AGENTS.md`」。§7 只留 `node --test test/notation-input.test.ts` 这条可执行口径，并保留「F1-8 的集成那一半在收口行报告」这句。 |
+| 6 | 一致性 | 🔵 | §4 追溯表写「命中即 `dispatch({ type: 'play', move })`」，而 `docs/design/modules/local-play.md` §3 的口径是「时间由页面随动作传入，会话本身不读墙钟。」两个现有调用点都显式传时间：`src/client/pages/PlayPage.tsx` 的 `dispatch({ type: 'resign', now: Date.now() })`、`src/client/pages/AiPage.tsx` 的 `dispatch({ type: 'play', move, now: Date.now() });`。漏传不会算错（reducer 里 `const now = action.now ?? Date.now();`），但新代码会与既有口径分叉。 | 追溯表写成 `dispatch({ type: 'play', move, now: Date.now() })`，与两个页面同形。 |
+| 7 | 验收 | 🔵 | 空输入没有口径。§2 归一化把「空格（半角与全角）、`、`、`，`、句号」全部删除，纯空格或误按回车得到空串，落进零命中分支，弹「这步走不了：检查棋子、纵线和方向」。用户只是误按了回车，却被告知这步走不了。 | §1 增一行「空输入：不提交、不提示」，并在 §7 单测里定一条空串行为，免得实现者各自决定。 |
+| 8 | 清晰度 | 🔵 | `test/notation.test.ts` 已存在，且通篇测的就是 `src/shared/notation.ts` 的生成侧（含「同纵线两个车用前后消歧」「同纵线四个以上按前到后编号」）。§6 又新增 `test/notation-input.test.ts` 测同一模块的反向侧，两份文件同模块并存而分工未写明。 | 要么把解析与归一化用例并入 `test/notation.test.ts`（同模块同文件，离 500 行档很远），要么在 §6 写明分档理由（生成侧 / 反向侧各一份），避免后续两边各写一半。 |
+
+计数：🔴 0 · 🟡 4 · 🔵 4。
+
+VERDICT: pass
+
 ## §4 用户批准（主 agent）
 ## §5 实施记录（实施者：主 agent ∥ coder）
+
+实施者：coder（M8 记谱输入）。按已评审通过的设计档 `docs/design/modules/notation-input.md` 落地。
+
+**改动的文件与落点**
+
+| 文件 | 改法 |
+|---|---|
+| `src/shared/notation.ts` | 追加 `normalizeNotation(color, text)` 与 `parseChineseNotation(position, text)`，新增对 `./rules.ts` 的 `generateLegalMoves` 引用（不成环）。归一化表：全角数字与半角统一、汉字/阿拉伯数字统一到行棋方形态、繁体棋子字与 `進` 换字、空白与 `、，。` 删除。解析遍历全部合法着法的 `toChineseNotation`，两边过同一张表；不止一条命中按零命中返回 null。 |
+| `src/client/panel/NotationInput.tsx`（新） | 输入框与提示行。`Enter` 提交；成功清空并保持焦点，失败保留原文；纯空白按回车不提交、不提示；提示行自带 `role="status"` 与 `aria-live="polite"`，文案「这步走不了：检查棋子、纵线和方向」+「如：炮二平五」；可访问名「记谱输入」；`focusSignal` 变化时把焦点交回输入框。 |
+| `src/client/panel/GamePanel.tsx` | 着法记录与「新局」之间接入输入框；新增可选 props `onPlay` / `notationDisabled` / `onRequestExpand`（`onPlay` 不传则不渲染输入框，组件级用例不必改）。`/` 用 window keydown 监听：焦点在文本输入件时不抢；面板收起时先 `onRequestExpand()`，等 `open` 变 true 后再递增聚焦计数。置灰 = `session.result !== null || notationDisabled`，终局在面板兜底。 |
+| `src/client/pages/PlayPage.tsx` | 传 `onPlay`（`dispatch({ type: 'play', move, now: Date.now() })`）、`notationDisabled={over}`、`onRequestExpand={() => setPanelOpen(true)}`。 |
+| `src/client/pages/AiPage.tsx` | 同上，`notationDisabled={!canPlay}`（终局 / AI 回合 / 思考中都置灰）。 |
+| `src/client/app.css` | 新增 `.notation`、`.notation-input`、`.notation-error`、`.notation-example`；示例整句不拆行（`white-space: nowrap`）。 |
+| `test/notation-input.test.ts`（新） | 12 条：红方「炮二平五」、黑方「炮8平5」与「炮八平五」、红方「炮2平5」、全角数字、繁体棋子字、`進`、空白与句读、零命中、空输入、初始与拥挤局面的记谱两两不同、生成→解析往返。 |
+| `test/integration/notation-input.test.tsx`（新） | 5 条 F1-8：走子成功（棋盘 + 着法记录 + 清空并保持焦点）、零命中不落子并出提示、终局置灰、`/` 聚焦（含收起先展开）、人机页 AI 回合置灰。 |
+
+**关键决策（实施层）**
+
+- 只做「生成侧清单比对」：`parseChineseNotation` 遍历 `generateLegalMoves(position)`，唯一命中才返回；多于一条按零命中，不替用户挑一条。
+- 归一化两边都过：生成侧输出再过一次表是空操作，但保证红方敲 `炮2平5`、黑方敲 `炮八平五` 与繁体写法都命中。
+- `/` 监听放在面板：面板展开状态由页面持有，收起时只发「请求展开」，等 `open` 变 true 后再交焦点，避免对 `display: none` 的输入框调 focus 无效。
+- 空输入按纯空白判定（`trim()`），此时既不调解析也不提示；只有分隔符的输入归一后为空，解析返回 null，按零命中提示。
+- `onPlay` 设为可选：既有 `test/game-panel.test.tsx` 直接构造面板、没有页面可回调；不传时不渲染输入框，既有「唯一 role=status」断言不受影响。
+- 提示出现时由 `.moves`（flex 增长项）让出高度，抽屉断点与棋盘尺寸公式未动。
+
+**偏差**：无（设计档 §1 / §2 / §3 逐条对齐）。
+
+**验证读数**
+
+- `npm run typecheck` → 退出码 0。
+- `node --test test/notation-input.test.ts` → 12 通过 / 0 失败。
+- `npx vitest run test/integration/notation-input.test.tsx` → 5 通过 / 0 失败。
+- `npm run check` → 退出码 0；`node --test` 241 通过 / 0 失败（基线 229，新增 12）；vitest 11 文件 59 用例通过（基线 54，新增 5）。
+- `npm run build` → 退出码 0（`✓ built in 1.25s`）。
+- 浏览器实跑（`npm run preview` + 内置浏览器，视口约 1400×800）：输入「炮二平五」回车 → 炮落中路、着法记录出现该步、输入清空且保持焦点；输入「炮二平九」→ 不落子、提示出现且原文保留；点「认输」→ 输入框置灰；人机页点「执黑」→ AI 回合输入框置灰；棋盘棋子聚焦时按 `/` → 焦点落到记谱输入框。
+
+**未做（设计未要求）**：输入框未加 placeholder——设计档只定了提示行与可访问名，未定占位文案。实机截图里空输入框没有可见文字，是否补一句占位示例待父代理定。
+
 ## §6 验证与收口（父代理）

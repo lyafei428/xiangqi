@@ -1,10 +1,11 @@
 // 对局面板：行棋方、状态播报、着法记录、新局。
 // 面板只保留完成本地对局必需的控件，不加装饰性元素。
 
-import { useEffect, useRef } from 'react';
-import type { Color, GameResult } from '../../shared/index.ts';
+import { useEffect, useRef, useState } from 'react';
+import type { Color, GameResult, Move } from '../../shared/index.ts';
 import { formatClock, remainingOf } from '../../shared/index.ts';
 import type { GameSession } from '../game/session.ts';
+import { NotationInput } from './NotationInput.tsx';
 import { resultLabel } from './result-text.ts';
 
 export interface GamePanelProps {
@@ -15,6 +16,12 @@ export interface GamePanelProps {
   readonly modeLabel?: string;
   /** 认输需额外置灰时传 true（人机页：AI 回合玩家不能认输）。默认 false。 */
   readonly resignDisabled?: boolean;
+  /** 记谱输入通道：不传时不渲染输入框（组件级用例没有页面可回调）。 */
+  readonly onPlay?: (move: Move) => void;
+  /** 记谱输入置灰：终局、人机页 AI 回合由页面判定后传入。默认 false。 */
+  readonly notationDisabled?: boolean;
+  /** 面板收起时按 `/`：先请页面展开，再由输入框接住焦点。 */
+  readonly onRequestExpand?: () => void;
   readonly onToggle: () => void;
   readonly onReset: () => void;
   readonly onResign: () => void;
@@ -22,6 +29,30 @@ export interface GamePanelProps {
 
 function colorName(color: Color): string {
   return color === 'red' ? '红方' : '黑方';
+}
+
+const TEXT_INPUT_TYPES = new Set([
+  'text',
+  'search',
+  'tel',
+  'url',
+  'email',
+  'password',
+  'number',
+  'date',
+  'month',
+  'week',
+  'time',
+  'datetime-local',
+]);
+
+/** 焦点已经在文本输入件里时不抢 `/`：用户在记谱框里敲 `/` 不该被打断。 */
+function isTextField(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.isContentEditable) return true;
+  if (target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return true;
+  if (target.tagName !== 'INPUT') return false;
+  return TEXT_INPUT_TYPES.has((target as HTMLInputElement).type);
 }
 
 function statusText(session: GameSession): string {
@@ -59,6 +90,9 @@ export function GamePanel(props: GamePanelProps) {
     now,
     modeLabel = '本地双人',
     resignDisabled = false,
+    onPlay,
+    notationDisabled = false,
+    onRequestExpand,
     onToggle,
     onReset,
     onResign,
@@ -68,11 +102,41 @@ export function GamePanel(props: GamePanelProps) {
   const redMs = remainingOf(session.clock, 'red', now);
   const blackMs = remainingOf(session.clock, 'black', now);
   const over = session.result !== null;
+  const notationOff = over || notationDisabled;
+  // `/` 之后要交焦点的次数：收起态先等页面把面板展开，再递增这个计数。
+  const [notationFocus, setNotationFocus] = useState(0);
+  const [focusAfterExpand, setFocusAfterExpand] = useState(false);
 
   useEffect(() => {
     const element = movesRef.current;
     if (element !== null) element.scrollTop = element.scrollHeight;
   }, [session.notations.length]);
+
+  useEffect(() => {
+    if (!focusAfterExpand || !open) return;
+    setFocusAfterExpand(false);
+    setNotationFocus((value) => value + 1);
+  }, [focusAfterExpand, open]);
+
+  // 页面级 `/`：输入框在面板里，快捷键归面板管；面板收起时先请页面展开。
+  useEffect(() => {
+    if (onPlay === undefined) return undefined;
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (notationOff || isTextField(event.target)) return;
+      if (!open) {
+        if (onRequestExpand === undefined) return;
+        event.preventDefault();
+        setFocusAfterExpand(true);
+        onRequestExpand();
+        return;
+      }
+      event.preventDefault();
+      setNotationFocus((value) => value + 1);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [notationOff, onPlay, onRequestExpand, open]);
 
   return (
     <aside className="panel" aria-label="对局面板">
@@ -134,6 +198,15 @@ export function GamePanel(props: GamePanelProps) {
             </ol>
           )}
         </div>
+
+        {onPlay === undefined ? null : (
+          <NotationInput
+            position={session.position}
+            disabled={notationOff}
+            focusSignal={notationFocus}
+            onPlay={onPlay}
+          />
+        )}
 
         <button type="button" className="new-game" onClick={onReset}>
           新局

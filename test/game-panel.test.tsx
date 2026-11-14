@@ -25,7 +25,9 @@ function statusTextOf(result: GameResult): string {
       onResign={() => {}}
     />,
   );
-  const text = screen.getByRole('status').textContent ?? '';
+  // 取面板顶部状态行：面板里可能还有记谱提示行（同样是 role="status"），
+  // getByRole 单匹配会在那里抛错。
+  const text = view.container.querySelector('.status-line')?.textContent ?? '';
   view.unmount();
   return text;
 }
