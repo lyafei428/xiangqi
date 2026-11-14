@@ -7,7 +7,7 @@ import type { Color, GameResult, Move } from '../../shared/index.ts';
 import { formatClock, remainingOf } from '../../shared/index.ts';
 import type { GameSession } from '../game/session.ts';
 import { NotationInput } from './NotationInput.tsx';
-import { resultLabel } from './result-text.ts';
+import { resultLabel, resultTone } from './result-text.ts';
 import { ResultPop } from './ResultPop.tsx';
 
 export interface GamePanelProps {
@@ -154,7 +154,7 @@ export function GamePanel(props: GamePanelProps) {
 
       <div className="panel-focus">
         <p
-          className={`status-line${session.result === null ? '' : ' is-result'}`}
+          className={`status-line${session.result === null ? '' : ` is-result is-${resultTone(session.result)}`}`}
           role="status"
           aria-live="polite"
         >

@@ -7,6 +7,7 @@ import type { GameResult } from '../src/shared/index.ts';
 import type { GameSession } from '../src/client/game/session.ts';
 import { createSession } from '../src/client/game/session.ts';
 import { GamePanel } from '../src/client/panel/GamePanel.tsx';
+import { resultTone } from '../src/client/panel/result-text.ts';
 
 afterEach(cleanup);
 
@@ -63,6 +64,15 @@ describe('对局结果文案', () => {
 
   it('双方同意显示和棋', () => {
     expect(statusTextOf({ type: 'agreement', winner: null })).toContain('和棋 · 双方同意');
+  });
+});
+
+describe('结果着色', () => {
+  it('胜方决定颜色归属：红胜红字、黑胜黑字、和棋留蓝', () => {
+    expect(resultTone({ type: 'checkmate', winner: 'red' })).toBe('red');
+    expect(resultTone({ type: 'checkmate', winner: 'black' })).toBe('black');
+    // 和棋没有胜方，走 draw 这一档（样式里保留蓝色强调）。
+    expect(resultTone({ type: 'repetition', winner: null })).toBe('draw');
   });
 });
 

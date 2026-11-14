@@ -22,3 +22,8 @@ export function resultLabel(result: GameResult): string {
   const head = result.winner === null ? '和棋' : `${sideName(result.winner)}胜`;
   return `${head} · ${REASON[result.type]}`;
 }
+
+/** 结果归属的类名后缀：red / black / draw。三处显示结果时都用它上色，免得各判一次。 */
+export function resultTone(result: GameResult): 'red' | 'black' | 'draw' {
+  return result.winner === null ? 'draw' : result.winner;
+}

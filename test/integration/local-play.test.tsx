@@ -136,6 +136,8 @@ describe('F1-3 本地计时与认输', () => {
     const { container } = setup();
     fireEvent.click(screen.getByRole('button', { name: '认输' }));
     expect(screen.getByRole('status').textContent).toContain('黑方胜 · 认输');
+    // 红方认输 = 黑方胜：状态行按胜方着色，别把黑色胜写成红字。
+    expect(screen.getByRole('status').className).toContain('is-black');
     expect(container.querySelectorAll('.piece[tabindex="0"]')).toHaveLength(0);
   });
 

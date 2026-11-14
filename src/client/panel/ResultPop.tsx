@@ -7,7 +7,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import type { GameResult } from '../../shared/index.ts';
-import { resultLabel } from './result-text.ts';
+import { resultLabel, resultTone } from './result-text.ts';
 
 /** 放大停留时长：短了看不清，长了挡着复盘。 */
 const HOLD_MS = 3000;
@@ -67,7 +67,7 @@ export function ResultPop({ result }: { result: GameResult | null }): ReactEleme
   return (
     <div
       ref={popRef}
-      className={`result-pop${flight === null ? '' : ' is-flying'}`}
+      className={`result-pop is-${resultTone(result)}${flight === null ? '' : ' is-flying'}`}
       style={{
         ...(place === null ? {} : { left: place.left, top: place.top }),
         ...(flight === null

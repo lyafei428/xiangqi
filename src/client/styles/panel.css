@@ -133,6 +133,16 @@
   color: var(--accent-strong);
 }
 
+/* 胜方用自己的颜色说「谁赢了」：红胜红字、黑胜黑字，和棋留蓝。
+   用的 *_text 那组（不是棋盘色）——棋盘色在深色面板上只有 2.6:1。 */
+.status-line.is-result.is-red {
+  color: var(--red-text);
+}
+
+.status-line.is-result.is-black {
+  color: var(--black-text);
+}
+
 .turn-dot {
   width: 10px;
   height: 10px;
@@ -333,6 +343,15 @@
   letter-spacing: 0.04em;
   color: var(--text);
   white-space: nowrap;
+}
+
+/* 放大提示与状态行同色：红胜红、黑胜黑、和棋蓝。 */
+.result-pop.is-red {
+  color: var(--red-text);
+}
+
+.result-pop.is-black {
+  color: var(--black-text);
 }
 
 /* 只有「缩回状态行」这一段有过渡；出现是瞬间的，放大才有分量。 */

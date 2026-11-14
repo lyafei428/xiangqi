@@ -15,7 +15,7 @@ import { boardSize } from '../board/geometry.ts';
 import { useStageSize } from '../board/useStageSize.ts';
 import { createOnlineState, onlineReducer } from '../online/session.ts';
 import { OnlineSocket, loadStored } from '../online/socket.ts';
-import { resultLabel } from '../panel/result-text.ts';
+import { resultLabel, resultTone } from '../panel/result-text.ts';
 import { saveRecord } from '../storage/records.ts';
 
 /** 以收到快照的时刻为锚做本地投影；归零仍由服务端裁决。 */
@@ -284,7 +284,7 @@ export function OnlinePage() {
             </p>
           )}
           <p className="online-color">{identityText}</p>
-          <p className={`status-line${snapshot.result === null ? '' : ' is-result'}`}>
+          <p className={`status-line${snapshot.result === null ? '' : ` is-result is-${resultTone(snapshot.result)}`}`}>
             <span
               className={`turn-dot ${
                 snapshot.result !== null
