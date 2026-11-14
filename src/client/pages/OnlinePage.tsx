@@ -1,7 +1,7 @@
 // 联机页：大厅（建房 / 加入）与房间（棋盘 + 面板）。
 
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import type { Color, GameResult, ResultType } from '../../shared/index.ts';
+import type { Color, GameResult, HistoryEntry, ResultType } from '../../shared/index.ts';
 import {
   formatClock,
   generateLegalMoves,
@@ -19,8 +19,13 @@ import { useMoveTrailEnabled } from '../board/useMoveTrail.ts';
 import { replayHistory } from '../online/history.ts';
 import { useGameSound } from '../sound/useGameSound.ts';
 import { useSoundEnabled } from '../sound/useSoundEnabled.ts';
+import { EvalBar, percentText } from '../panel/EvalBar.tsx';
+import { useEvalEnabled, useEvalPoint, useMoveEvals } from '../panel/useEval.ts';
 import { resultLabel, resultTone } from '../panel/result-text.ts';
 import { saveRecord } from '../storage/records.ts';
+
+/** 大厅里没有着法序列：常量空数组让 hook 的依赖身份稳定。 */
+const EMPTY_HISTORY: readonly HistoryEntry[] = [];
 
 /** 以收到快照的时刻为锚做本地投影；归零仍由服务端裁决。 */
 function projectedMs(
@@ -81,16 +86,22 @@ export function OnlinePage() {
   const spectating = state.role === 'spectator';
   const position = useMemo(() => (snapshot === null ? null : parseFen(snapshot.fen)), [snapshot?.fen]);
 
-  // 联机页也有音效：用 startFen + moveLog 重放出与本地对局同形状的着法记录，
-  // 走子音与终局音都走同一处判断（见 useGameSound）。
-  const soundSource = useMemo(
-    () =>
-      snapshot === null
-        ? null
-        : { history: replayHistory(snapshot.startFen, snapshot.moveLog), result: snapshot.result },
+  // 联机页也有音效与每步胜率：用 startFen + moveLog 重放出与本地对局同形状的着法记录，
+  // 走子音与逐着期望分都读这一份（见 useGameSound 与 useEval）。
+  const history = useMemo(
+    () => (snapshot === null ? EMPTY_HISTORY : replayHistory(snapshot.startFen, snapshot.moveLog)),
     [snapshot?.startFen, snapshot?.seq, snapshot?.result],
   );
+  const soundSource = useMemo(
+    () => (snapshot === null ? null : { history, result: snapshot.result }),
+    [history, snapshot?.result],
+  );
   useGameSound(soundSource, useSoundEnabled());
+
+  // 每步胜率：开关关掉时条与逐格数字都不渲染（条在可收起的着法区里，不占常驻条）。
+  const showEval = useEvalEnabled();
+  const evals = useMoveEvals(history, snapshot?.result ?? null);
+  const currentEval = useEvalPoint(position, snapshot?.result ?? null);
 
   // 只跟服务端生成的快照走：presence 会新建快照对象，但时钟引用不变，不能因它重置锚点。
   useEffect(() => {
@@ -424,6 +435,7 @@ export function OnlinePage() {
               收起着法
             </button>
           </div>
+          {showEval && currentEval !== null ? <EvalBar red={currentEval} /> : null}
           <div className="moves">
             {snapshot.moves.length === 0 ? (
               <p className="moves-empty">尚未走子</p>
@@ -432,6 +444,9 @@ export function OnlinePage() {
                 {snapshot.moves.map((move, index) => (
                   <li className="online-move" key={`${index}-${move}`}>
                     {index + 1}. {move}
+                    {showEval && evals[index] !== undefined ? (
+                      <span className="move-eval">{percentText(evals[index])}</span>
+                    ) : null}
                   </li>
                 ))}
               </ol>

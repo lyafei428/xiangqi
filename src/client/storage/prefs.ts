@@ -14,6 +14,7 @@ const THEME_KEY = 'xiangqi.theme.v1';
 const SOUND_KEY = 'xiangqi.sound.v1';
 const TRAIL_KEY = 'xiangqi.trail.v1';
 const FACEOFF_KEY = 'xiangqi.faceoff.v1';
+const EVAL_KEY = 'xiangqi.eval.v1';
 
 /** 配色偏好：auto 跟系统，其余两档是用户明确选的。 */
 export type ThemeChoice = 'auto' | 'light' | 'dark';
@@ -121,6 +122,25 @@ export function writeMoveTrail(on: boolean, store: KeyValueStore | null = defaul
     store.setItem(TRAIL_KEY, on ? '1' : '0');
   } catch {
     // 存不下只影响下次进来。
+  }
+}
+
+/** 每步胜率是否开。缺省开：走势是这一栏的主线信息；读不出来也按开处理。 */
+export function readEval(store: KeyValueStore | null = defaultStore()): boolean {
+  if (store === null) return true;
+  try {
+    return store.getItem(EVAL_KEY) !== '0';
+  } catch {
+    return true;
+  }
+}
+
+export function writeEval(on: boolean, store: KeyValueStore | null = defaultStore()): void {
+  if (store === null) return;
+  try {
+    store.setItem(EVAL_KEY, on ? '1' : '0');
+  } catch {
+    // 存不下只影响下次进来，不影响这一局。
   }
 }
 

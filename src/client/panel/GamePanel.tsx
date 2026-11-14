@@ -7,6 +7,8 @@ import type { Color, GameResult, Move } from '../../shared/index.ts';
 import { formatClock, remainingOf } from '../../shared/index.ts';
 import type { GameSession } from '../game/session.ts';
 import { NotationInput } from './NotationInput.tsx';
+import { EvalBar, percentText } from './EvalBar.tsx';
+import { useEvalEnabled, useEvalPoint, useMoveEvals } from './useEval.ts';
 import { resultLabel, resultTone } from './result-text.ts';
 import { ResultPop } from './ResultPop.tsx';
 
@@ -72,15 +74,20 @@ interface RoundRow {
   readonly no: number;
   readonly red: string;
   readonly black: string;
+  /** 该格之后的红方期望分；那一格还没走时为 null（关掉开关时整列都是 null）。 */
+  readonly redEval: number | null;
+  readonly blackEval: number | null;
 }
 
-function toRounds(notations: readonly string[]): RoundRow[] {
+function toRounds(notations: readonly string[], evals: readonly number[]): RoundRow[] {
   const rounds: RoundRow[] = [];
   for (let index = 0; index < notations.length; index += 2) {
     rounds.push({
       no: index / 2 + 1,
       red: notations[index] ?? '',
       black: notations[index + 1] ?? '',
+      redEval: evals[index] ?? null,
+      blackEval: evals[index + 1] ?? null,
     });
   }
   return rounds;
@@ -102,7 +109,11 @@ export function GamePanel(props: GamePanelProps) {
     onStart,
   } = props;
   const movesRef = useRef<HTMLDivElement | null>(null);
-  const rounds = toRounds(session.notations);
+  // 每步胜率：开关关掉时逐格数字与条都不渲染，也不留空位。
+  const showEval = useEvalEnabled();
+  const evals = useMoveEvals(session.history, session.result);
+  const currentEval = useEvalPoint(session.position, session.result);
+  const rounds = toRounds(session.notations, showEval ? evals : []);
   const redMs = remainingOf(session.clock, 'red', now);
   const blackMs = remainingOf(session.clock, 'black', now);
   const over = session.result !== null;
@@ -213,6 +224,8 @@ export function GamePanel(props: GamePanelProps) {
           </button>
         </div>
 
+        {showEval && currentEval !== null ? <EvalBar red={currentEval} /> : null}
+
         <div className="moves" ref={movesRef} aria-label="着法记录">
           {rounds.length === 0 ? (
             <p className="moves-empty">尚未走子</p>
@@ -221,8 +234,19 @@ export function GamePanel(props: GamePanelProps) {
               {rounds.map((round) => (
                 <li className="move-row" key={round.no}>
                   <span className="move-no">{round.no}.</span>
-                  <span className="move-red">{round.red}</span>
-                  <span className="move-black">{round.black}</span>
+                  {/* 百分比是 .move-red / .move-black 的兄弟节点：格子文本仍是纯记谱。 */}
+                  <span className="move-cell">
+                    <span className="move-red">{round.red}</span>
+                    {round.redEval === null ? null : (
+                      <span className="move-eval">{percentText(round.redEval)}</span>
+                    )}
+                  </span>
+                  <span className="move-cell">
+                    <span className="move-black">{round.black}</span>
+                    {round.blackEval === null ? null : (
+                      <span className="move-eval">{percentText(round.blackEval)}</span>
+                    )}
+                  </span>
                 </li>
               ))}
             </ol>

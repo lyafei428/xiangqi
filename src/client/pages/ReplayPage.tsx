@@ -2,7 +2,7 @@
 // 回放不重算判罚，只按记录里的着法还原局面——判罚已经写在结果里。
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Move, Position } from '../../shared/index.ts';
+import type { HistoryEntry, Move, Position } from '../../shared/index.ts';
 import {
   isReplayable,
   notationsOf,
@@ -16,12 +16,18 @@ import type { StudyRecord } from '../../shared/study.ts';
 import { Board } from '../board/Board.tsx';
 import { boardSize } from '../board/geometry.ts';
 import { useStageSize } from '../board/useStageSize.ts';
+import { replayHistory } from '../online/history.ts';
+import { EvalBar, percentText } from '../panel/EvalBar.tsx';
+import { useEvalEnabled, useEvalPoint, useMoveEvals } from '../panel/useEval.ts';
 import { resultLabel } from '../panel/result-text.ts';
 import { deleteRecord, findRecord, listRecords, saveRecord } from '../storage/records.ts';
 import { StudyLibrary } from '../study/StudyLibrary.tsx';
 import { routeHash } from '../shell/routes.ts';
 
 type ReplayTab = 'mine' | 'library';
+
+/** 没有打开棋谱时的空序列：常量让 hook 的依赖身份稳定。 */
+const EMPTY_HISTORY: readonly HistoryEntry[] = [];
 
 function stampText(ms: number): string {
   const date = new Date(ms);
@@ -36,10 +42,12 @@ interface StepControlsProps {
   readonly total: number;
   readonly notations: readonly string[];
   readonly onStep: (step: number) => void;
+  /** 每步胜率：不传表示这一份场景拿不到走势（没有可回放的记录 / 开关关掉）。 */
+  readonly evalView?: { readonly moves: readonly number[]; readonly current: number };
 }
 
 /** 步进条与记谱列表：本地存局与棋谱库共用，两路的操作手感一致。 */
-function StepControls({ step, total, notations, onStep }: StepControlsProps) {
+function StepControls({ step, total, notations, onStep, evalView }: StepControlsProps) {
   return (
     <>
       <div className="replay-controls">
@@ -83,19 +91,26 @@ function StepControls({ step, total, notations, onStep }: StepControlsProps) {
         value={step}
         onChange={(event) => onStep(Number(event.target.value))}
       />
+      {evalView === undefined ? null : <EvalBar red={evalView.current} />}
       <ol className="replay-moves">
-        {notations.map((text, index) => (
-          <li key={`${String(index)}-${text}`}>
-            <button
-              className="replay-move"
-              type="button"
-              aria-current={index + 1 === step ? 'true' : undefined}
-              onClick={() => onStep(index + 1)}
-            >
-              {`${String(index + 1)}. ${text}`}
-            </button>
-          </li>
-        ))}
+        {notations.map((text, index) => {
+          const value = evalView?.moves[index];
+          return (
+            <li key={`${String(index)}-${text}`}>
+              <button
+                className="replay-move"
+                type="button"
+                aria-current={index + 1 === step ? 'true' : undefined}
+                onClick={() => onStep(index + 1)}
+              >
+                {`${String(index + 1)}. ${text}`}
+                {value === undefined ? null : (
+                  <span className="move-eval">{percentText(value)}</span>
+                )}
+              </button>
+            </li>
+          );
+        })}
       </ol>
     </>
   );
@@ -126,6 +141,15 @@ function StudyReplay({ record }: StudyReplayProps) {
   );
   const note = record.notes.find((item) => item.step === step) ?? null;
 
+  // 每步胜率：与「我的棋谱」同一条路——库内棋谱同样带着起始局面、着法与结果。
+  const showEval = useEvalEnabled();
+  const evalHistory = useMemo(() => replayHistory(record.startFen, record.moves), [record]);
+  const evals = useMoveEvals(evalHistory, record.result);
+  const cursorResult = step === record.moves.length ? record.result : null;
+  const currentEval = useEvalPoint(frame.position, cursorResult);
+  const evalView =
+    showEval && currentEval !== null ? { moves: evals, current: currentEval } : undefined;
+
   return (
     <div className="replay-stage">
       <div className="board-fit" ref={stageRef}>
@@ -142,6 +166,7 @@ function StudyReplay({ record }: StudyReplayProps) {
         step={step}
         total={record.moves.length}
         notations={notations}
+        evalView={evalView}
         onStep={setStep}
       />
       {note !== null ? <p className="study-note">{note.text}</p> : null}
@@ -240,6 +265,19 @@ export function ReplayPage({ id }: ReplayPageProps) {
       frame = null;
     }
   }
+
+  // 每步胜率：着法序列与联机页同一个重放函数，不另起 playMove 循环。
+  // 逐格数字取整局的末格按结果收敛；条跟游标走，游标停在终局那一着时才传结果。
+  const showEval = useEvalEnabled();
+  const evalHistory = useMemo(
+    () => (record === null ? EMPTY_HISTORY : replayHistory(record.startFen, record.moves)),
+    [record],
+  );
+  const evals = useMoveEvals(evalHistory, record?.result ?? null);
+  const cursorResult = record !== null && step === record.moves.length ? record.result : null;
+  const currentEval = useEvalPoint(frame?.position ?? null, cursorResult);
+  const evalView =
+    showEval && currentEval !== null ? { moves: evals, current: currentEval } : undefined;
 
   return (
     <div className="page page-replay">
@@ -343,6 +381,7 @@ export function ReplayPage({ id }: ReplayPageProps) {
                     step={step}
                     total={record.moves.length}
                     notations={notations}
+                    evalView={evalView}
                     onStep={setStep}
                   />
                   <div className="replay-actions">

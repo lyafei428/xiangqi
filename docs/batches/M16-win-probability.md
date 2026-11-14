@@ -135,4 +135,41 @@ VERDICT: pass
 
 ## §4 用户批准（主 agent）
 ## §5 实施记录（实施者：主 agent ∥ coder）
+
+### 实施（coder · 2026-11-14）
+
+**完成面**（14 个文件，全部在 §2 的受影响文件表内；无越界改动）：
+
+| 文件 | 改动 |
+|---|---|
+| `src/shared/ai/probability.ts`（新，31 行） | `redExpectation(position, result = null)` + `EVAL_SCALE = 400`；`result` 非空按结果收敛（红 1 / 黑 0 / 和 0.5），否则 `score = turn === 'red' ? evaluate : -evaluate`，`1 / (1 + 10 ** (-score / 400))` |
+| `src/shared/ai/index.ts` | 出口 `evaluate` / `EVAL_SCALE` / `redExpectation`（经 `src/shared/index.ts` 到页面侧） |
+| `src/client/storage/prefs.ts` | `xiangqi.eval.v1` 的 `readEval` / `writeEval`，沿用 `KeyValueStore` 注入 + 默认 `defaultStore()` |
+| `src/client/panel/useEval.ts`（新，101 行） | `useEvalEnabled`（`useSyncExternalStore` + 模块级 store，照 `useMoveTrail`）；`useMoveEvals`（`useRef` 前缀缓存：按 fen 前缀复用、着法数变小截断、末格按结果收敛）；`useEvalPoint`（条上的数字，与末格同算） |
+| `src/client/panel/EvalBar.tsx`（新，32 行） | 两色条 + 「红 x% · 黑 y%」，`y = 100 - x`；`role="img"` + `aria-label="红方胜率 x%"`；导出 `percentText` 统一取整口径 |
+| `src/client/panel/GamePanel.tsx` | 记谱格改为 `.move-cell` 包住 `.move-red` / `.move-black` + 兄弟 `.move-eval`（两个 span 的 textContent 不变）；着法区顶部（`.panel-body` 内、记谱列表之上）插 `EvalBar` |
+| `src/client/pages/OnlinePage.tsx` | `replayHistory` 结果提到一处 memo（音效与胜率共用同一份序列）；面板着法区插 `EvalBar`；`online-move` 加 `.move-eval` |
+| `src/client/pages/ReplayPage.tsx` | `StepControls` 增可选 `evalView`；「我的棋谱」与「棋谱库」两条回放都用 `replayHistory` 接上；条跟游标走，游标停在终局那一着才传 `record.result` |
+| `src/client/App.tsx` | 设置浮层加「胜率开/关」（与音效、走子轨迹、对坐下棋同列同形） |
+| `src/client/styles/panel.css` | `.eval-bar` / `.eval-track` / 两色块（`--red`、`--black`，`--line` 分隔）/ 数字用 `--red-text`、`--black-text`；`.move-cell` / `.move-eval` |
+| `src/client/styles/play.css` | 联机页单列记谱（`.online-move`）的 `.move-eval` 版式 |
+| `test/probability.test.ts`（新） | 4 条断言组：均势≈50%（红黑两种行棋方同值）、净一车 ≥95% 且高于净一马（400 分差≈91%）、颜色镜像互补（p + q = 1）、终局三分支 100/0/50 且压过局面 |
+| `test/integration/eval.test.tsx`（新） | 4 条：对弈页两着两格有百分比且条上的数字=末格、关开关后都不渲染且重开会话仍是关、联机页条在且数字=末格、回放页游标到终局条与结果一致（红 100% · 黑 0%） |
+| `test/RTM.md` | 性能（F5）表新增 F5-7 行；「用例实现」段补 F5-7 一句 |
+
+**验证读数**：
+
+- `npm run check`：typecheck 通过；`node --test` **272 pass / 0 fail**（基线 268 + 4）；`vitest run` **14 文件 / 77 pass**（基线 73 + 4）。
+- `node --test test/probability.test.ts`：4 pass / 0 fail。
+- `npx vitest run test/integration/eval.test.tsx`：4 pass / 0 fail。
+- `test/integration/navigation.test.tsx` 一字未改，2 条仍全过（`.move-red` / `.move-black` 文本未被污染，`git status` 里没有该文件）。
+- 浏览器实跑（vite dev + 截图，深色与浅色两套配色）：两步后条与逐格数字都渲染；认输终局后条贴黑、数字 0/100，与结果一致。
+
+**与设计的偏差 / 判断（无行为偏离，四处实现取舍）**：
+
+1. 显示表「红黑两列写同一个数」按「同一视角（红方视角）」落实：同一回合红格与黑格是两个不同局面，数值不同（写同值等于说黑方那一着没改变走势）。
+2. `src/client/panel/useEval.ts` 里除 `useEvalEnabled` 还多了 `useMoveEvals` / `useEvalPoint`：增量缓存与「条上的数字与末格一致」是三个页面共用的同一段逻辑，分放三处会漂。设计表只点名了 `useEvalEnabled`，这是同文件内的实现形制补充。
+3. 回放页的「棋谱库」分栏也接上了：`StudyRecord` 同样带 `startFen` / `moves` / `result`，设计的数据来源行对两者都成立；同一页两条回放入口只给一条会不一致。若判定棋谱库属课程面，删掉 `StudyReplay` 里那 6 行即可。
+4. `src/client/styles/replay.css` 未动：`.move-eval` 的基础版式写在 `panel.css`（全局类），回放页的按钮直接继承；设计文件表也未列该文件。
+
 ## §6 验证与收口（父代理）

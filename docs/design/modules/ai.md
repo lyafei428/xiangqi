@@ -256,7 +256,7 @@ Survey evidence: 已核对 `docs/design/modules/board-ui.md`（棋盘与面板�
 
 | 位置 | 规格 |
 |---|---|
-| 记谱每一格（两列：对弈 / 人机） | 着法后面跟一个小字百分比，取**该着之后**的红方期望分，四舍五入到整数；红黑两列写同一个数（都是红方视角——一列换一次视角会让同一行的两个数看着像两份判断）。 |
+| 记谱每一格（两列：对弈 / 人机） | 着法后面跟一个小字百分比，取**该着之后**的红方期望分，四舍五入到整数。两列用同一个视角（红方），但**各算各的局面**：同一回合里红格与黑格是两个不同局面，数值本来就该不同。 |
 | 记谱每一格（单列：联机 / 回放） | 同样跟一个小字百分比，同样是红方视角。这两页的记谱本来就是平铺一列（`src/client/pages/OnlinePage.tsx` 的 `{index + 1}. {move}`、回放页的 `replay-moves`），没有第二列可对齐。 |
 | 着法区的顶部 | 一条红黑概率条（左红右黑，宽度按百分比分配）+ 两个数字「红 62% · 黑 38%」，后者是前者的补数。放在可收起的着法区里、不占常驻条：需求 F1.10 把对弈页与人机页的默认可见集定成「默认只显示棋盘、行棋方与双方计时、新局与认输」，常驻一条胜率条会改写那个列举。 |
 | 终局后 | 条按结果贴边：红胜满红、黑胜满黑、和棋对半；数字与结果文案并列，不重复解释。 |
@@ -272,7 +272,7 @@ Survey evidence: 已核对 `docs/design/modules/board-ui.md`（棋盘与面板�
 |---|---|---|
 | 对弈 / 人机 | `session.history`（每项带 `fen`） | `session.history` 末项或开局 FEN | 末格（即当前局面）且 `session.result !== null` 时传 `session.result`，其余格传 `null` |
 | 联机 | `replayHistory(snapshot.startFen, snapshot.moveLog)` | `snapshot.fen` | 末格且 `snapshot.result !== null` 时传它，其余格传 `null` |
-| 回放 | `replayHistory(record.startFen, record.moves)`（与联机页同一个函数，不另起 `playMove` 循环） | 回放游标那一着之后 | 回放到终局那一着时传 `record.result`，否则 `null` |
+| 回放（我的棋谱 / 棋谱库两条入口） | `replayHistory(record.startFen, record.moves)`（与联机页同一个函数，不另起 `playMove` 循环） | 回放游标那一着之后 | 回放到终局那一着时传 `record.result`，否则 `null` |
 
 - 增量算，不整段重算：记谱的百分比按着法数缓存——新着一只补算一格（一次 `parseFen` + 一次 `evaluate`），着法数不变时命中缓存。整段重算会在每走一着时做 N 次 `parseFen`，与需求 F5.3 的「走子到画面 < 16ms」相冲。
 - 实现形制：`useMemo` 依着法数，内部用一个 `useRef` 缓存已算好的前缀数组，只追加新格；**_着法数变小时截断到新长度_**（新局、联机再来一局都会让着法数从 0 长回原值，不截断会把上一局的数贴到新局上）。
@@ -292,6 +292,7 @@ Survey evidence: 已核对 `docs/design/modules/board-ui.md`（棋盘与面板�
 | `EVAL_SCALE` | `none found`：新增常量（400），同上文件，标定只此一处。 |
 | `EvalBar` | `none found`：新增组件，住在 `src/client/panel/EvalBar.tsx`；三个页面共用。 |
 | `xiangqi.eval.v1` | `none found`：新存储键，读写都在 `src/client/storage/prefs.ts`，与另外三个开关同处。 |
+| `useMoveEvals` / `useEvalPoint` | `none found`：新增 hook，同上文件；前者给记谱逐格（前缀缓存），后者给条上的数字——三个页面共用同一段增量逻辑，分放三处会漂。 |
 | `useEvalEnabled` | `none found`：新增 hook，住在 `src/client/panel/useEval.ts`；沿用 `src/client/board/useMoveTrail.ts` 的定式（`useSyncExternalStore` + 模块级 store），理由同它注释里那句「多个页面要读同一个值」——联机页与回放页也要读到开关状态。 |
 | 「胜率 开/关」 | `none found`：新文案，与「音效 / 走子轨迹 / 对坐下棋」并列在设置浮层。 |
 

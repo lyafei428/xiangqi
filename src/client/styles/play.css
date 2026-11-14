@@ -348,6 +348,17 @@
   }
 }
 
+/* 联机页的记谱是单列一行一着：百分比跟在同一行末尾，不与着法文字挤在一起。 */
+.online-move {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.online-move .move-eval {
+  margin-left: auto;
+}
+
 /* 联机页的身份与在线状态：红黑各用自己的字色，在线绿、离线灰。 */
 .online-color {
   margin: 0;

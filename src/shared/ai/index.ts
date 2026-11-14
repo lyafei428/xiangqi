@@ -8,6 +8,9 @@ import { search } from './search.ts';
 
 export { AI_LEVELS } from './levels.ts';
 export type { AiLevel } from './levels.ts';
+// 评估与它标定出的胜率一并出口：页面侧只从 shared 取，不直接摸 ai 目录里的文件。
+export { evaluate } from './evaluate.ts';
+export { EVAL_SCALE, redExpectation } from './probability.ts';
 
 export interface AiOptions {
   readonly level: AiLevel;

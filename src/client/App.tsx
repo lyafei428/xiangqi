@@ -25,6 +25,7 @@ import { useGameSound } from './sound/useGameSound.ts';
 import { setSoundEnabled, useSoundEnabled } from './sound/useSoundEnabled.ts';
 import { setMoveTrailEnabled, useMoveTrailEnabled } from './board/useMoveTrail.ts';
 import { setFaceOffEnabled, useFaceOffEnabled } from './board/useFaceOff.ts';
+import { setEvalEnabled, useEvalEnabled } from './panel/useEval.ts';
 import { createSoundPlayer } from './sound/sound.ts';
 
 const NAV: readonly { readonly label: string; readonly route: Route; readonly match: Route['name'][] }[] = [
@@ -67,6 +68,8 @@ export function App() {
   const trail = useMoveTrailEnabled();
   // 对弈页的对坐模式：黑方棋子转 180°，朝对面那位。
   const faceOff = useFaceOffEnabled();
+  // 每步胜率：默认开，可在设置里关。
+  const showEval = useEvalEnabled();
   const route = useRoute();
   const savedRef = useRef<string>('');
   const settingsRef = useRef<HTMLDetailsElement | null>(null);
@@ -230,6 +233,16 @@ export function App() {
               }}
             >
               对坐下棋{faceOff ? '开' : '关'}
+            </button>
+            <button
+              type="button"
+              className="sound-toggle"
+              aria-pressed={showEval}
+              onClick={() => {
+                setEvalEnabled(!showEval);
+              }}
+            >
+              胜率{showEval ? '开' : '关'}
             </button>
             {/* 试听：这一下本身就是用户手势，能就地解开浏览器的自动播放限制；
                 也让人一步就能判断「是我没开声音，还是浏览器不放行」。 */}
