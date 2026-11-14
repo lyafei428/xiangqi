@@ -2,7 +2,7 @@
   color-scheme: dark;
   /* 深色基准：页面底、卡片面、分隔线、字色四层各一档。取值与对比度表见 docs/design/modules/theme.md。 */
   --page-bg: #151517;
-  --panel-bg: #1b1b1c;
+  --panel-bg: #232324;
   /* 棋盘四色与棋子色不跟着界面变深：它们只落在浅色棋盘上。 */
   --board-bg: #f7f2e6;
   --board-line: #b9a98d;
@@ -15,30 +15,30 @@
   --board-ink: #846340;
   /* 界面上的红/黑/绿文字另有亮一档的取值：深底上写 --red / --black 会掉到 2.6:1 与 1.1:1。 */
   --red-text: #f27b6e;
-  --black-text: #c9ced6;
-  --target-text: #4f9c74;
+  --black-text: #cfd3d6;
+  --target-text: #4ed17e;
   --accent: #5686FE;
-  /* 填充按钮底：--accent 上压白字只有 3.37:1，压到这一档才有 5.27:1。 */
-  --accent-strong: #3f63d8;
-  /* 填充按钮上的字：白字在 --accent-strong 上是 5.27:1。 */
+  /* 填充按钮底：--accent 上压白字只有 3.37:1；这一档（DeepSeek 的 brand-500）有 4.74:1。 */
+  --accent-strong: #3964fe;
+  /* 填充按钮上的字：白字在 --accent-strong 上是 4.74:1。 */
   --on-accent: #ffffff;
-  /* 交互面：--raise-bg 是可按的浅面，--sunken-bg 是悬停/选中的凹面。 */
-  --raise-bg: #232325;
-  --sunken-bg: #101012;
+  /* 交互面：--raise-bg 是可按的浅面；--sunken-bg 是悬停与选中——深色下悬停是提一档，不是压暗。 */
+  --raise-bg: #2c2c2e;
+  --sunken-bg: #353638;
   /* 时钟低时、错误态。 */
-  --low: #ff6b6b;
+  --low: #f25a5a;
   --text: #f9fafb;
   /* 次要信息：在 --page-bg 上 8.5:1，在 --panel-bg 上 8.1:1。 */
   --muted: #adb2b8;
-  /* 第三档灰：只在元信息与占位符上用，它在 --raise-bg 上只剩 4.59:1。 */
-  --muted-2: #878b92;
+  /* 第三档灰：只在元信息与占位符上用，它在 --raise-bg 上只剩 4.52:1。 */
+  --muted-2: #8f939a;
   --line: rgba(255, 255, 255, 0.12);
   /* 深底上投影看不出来：立体改成内描边，分层靠线 + 底色差。棋盘的外投影是唯一例外。 */
   --raise: 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
   --raise-flat: 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
   --radius: 12px;
   --radius-lg: 14px;
-  --font-ui: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   --font-board: 'STKaiti', 'KaiTi', 'Songti SC', serif;
 }
 

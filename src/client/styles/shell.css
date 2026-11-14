@@ -96,8 +96,8 @@
   color: var(--on-accent);
 }
 
-/* 悬停不提亮底色：底色一改就要重算白字对比度，提亮整体不会有这个问题。 */
+/* 悬停压暗而不是提亮：底色一提亮，压在上面的白字对比度就掉。 */
 .btn.primary:hover:not(:disabled) {
-  filter: brightness(1.12);
+  filter: brightness(0.92);
 }
 
