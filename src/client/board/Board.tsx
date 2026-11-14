@@ -12,6 +12,7 @@ import {
   VIEW_HEIGHT,
   VIEW_WIDTH,
   clientToViewPoint,
+  mirrorSquare,
   pointOf,
   squareAtClientPoint,
 } from './geometry.ts';
@@ -38,6 +39,8 @@ export interface BoardProps {
   readonly mode: BoardMode;
   readonly size: BoardSize;
   readonly position: Position;
+  /** 从哪一方的视角摆棋：执黑时整盘翻转，自己的子在下。默认红方。 */
+  readonly orientation?: Color;
   readonly selection?: { readonly selected: number | null; readonly targets: readonly number[] };
   readonly lastMove?: Move | null;
   readonly checkSquare?: number | null;
@@ -76,6 +79,9 @@ export function Board(props: BoardProps) {
   const selection = props.selection ?? { selected: null, targets: [] };
   const selected = selection.selected;
   const targets = selection.targets;
+  const flipped = props.orientation === 'black';
+  /** 逻辑格号 → 显示格号。翻转只改显示，着法与记录都还用逻辑格号。 */
+  const view = (square: number): number => (flipped ? mirrorSquare(square) : square);
   const movable = mode.kind === 'play' ? mode.side : mode.kind === 'drill' ? mode.side : null;
   const interactive = movable !== null && props.onTap !== undefined;
   const { onSelect, onTap } = props;
@@ -132,7 +138,9 @@ export function Board(props: BoardProps) {
 
   const squareFromPointer = (event: PointerEvent<SVGSVGElement>): number | null => {
     const rect = event.currentTarget.getBoundingClientRect();
-    return squareAtClientPoint(event.clientX, event.clientY, rect);
+    const display = squareAtClientPoint(event.clientX, event.clientY, rect);
+    // 翻转时屏幕上的格号是镜像的，退回逻辑格号再交给着法与会话。
+    return display === null ? null : view(display);
   };
 
   const handlePointerDown = (event: PointerEvent<SVGSVGElement>): void => {
@@ -213,11 +221,11 @@ export function Board(props: BoardProps) {
       onBlur={handleBoardBlur}
     >
       <BoardBackground />
-      <BoardHints position={position} lastMove={lastMove} targets={targets} />
+      <BoardHints position={position} lastMove={lastMove} targets={targets} flipped={flipped} />
 
       {position.board.map((piece, square) => {
         if (piece === null) return null;
-        const point = pointOf(square);
+        const point = pointOf(view(square));
         const focusable =
           interactive && (movable === 'both' || piece.color === movable);
         return (
@@ -246,6 +254,7 @@ export function Board(props: BoardProps) {
         marks={marks}
         cursor={cursor}
         keyboardMode={keyboardMode}
+        flipped={flipped}
       />
 
       {drag !== null && dragPiece !== null ? (

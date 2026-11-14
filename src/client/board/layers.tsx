@@ -2,7 +2,7 @@
 
 import type { Move, Position } from '../../shared/index.ts';
 import { pieceAt } from '../../shared/index.ts';
-import { BOARD_COLS, BOARD_ROWS, GRID, ORIGIN_X, ORIGIN_Y, VIEW_HEIGHT, VIEW_WIDTH, pointOf } from './geometry.ts';
+import { BOARD_COLS, BOARD_ROWS, GRID, ORIGIN_X, ORIGIN_Y, VIEW_HEIGHT, VIEW_WIDTH, mirrorSquare, pointOf } from './geometry.ts';
 import type { Point } from './geometry.ts';
 
 export type BoardMarkKind = 'select' | 'correct' | 'wrong';
@@ -107,16 +107,18 @@ export interface BoardHintsProps {
   readonly position: Position;
   readonly lastMove: Move | null;
   readonly targets: readonly number[];
+  readonly flipped?: boolean;
 }
 
 /** 棋子下方的提示：上一着、可落点与可吃子环。 */
-export function BoardHints({ position, lastMove, targets }: BoardHintsProps) {
+export function BoardHints({ position, lastMove, targets, flipped = false }: BoardHintsProps) {
+  const at = (square: number): Point => pointOf(flipped ? mirrorSquare(square) : square);
   return (
     <g aria-hidden="true" pointerEvents="none">
       {lastMove === null
         ? null
         : [lastMove.from, lastMove.to].map((square) => {
-            const point = pointOf(square);
+            const point = at(square);
             return (
               <rect
                 key={`last${square}`}
@@ -130,7 +132,7 @@ export function BoardHints({ position, lastMove, targets }: BoardHintsProps) {
             );
           })}
       {targets.map((square) => {
-        const point = pointOf(square);
+        const point = at(square);
         return pieceAt(position.board, square) === null ? (
           <circle key={`t${square}`} cx={point.x} cy={point.y} r={13} className="target-dot" />
         ) : (
@@ -147,14 +149,23 @@ export interface BoardHighlightsProps {
   readonly marks: readonly BoardMark[];
   readonly cursor: number | null;
   readonly keyboardMode: boolean;
+  readonly flipped?: boolean;
 }
 
 /** 棋子之上的高亮：选中、将军、练习标记与键盘光标。 */
-export function BoardHighlights({ selected, checkSquare, marks, cursor, keyboardMode }: BoardHighlightsProps) {
+export function BoardHighlights({
+  selected,
+  checkSquare,
+  marks,
+  cursor,
+  keyboardMode,
+  flipped = false,
+}: BoardHighlightsProps) {
+  const at = (square: number): Point => pointOf(flipped ? mirrorSquare(square) : square);
   return (
     <g aria-hidden="true" pointerEvents="none">
       {marks.map((mark) => {
-        const point = pointOf(mark.square);
+        const point = at(mark.square);
         return (
           <circle
             key={`mark${mark.square}-${mark.kind}`}
@@ -166,15 +177,15 @@ export function BoardHighlights({ selected, checkSquare, marks, cursor, keyboard
         );
       })}
       {selected === null ? null : (
-        <circle cx={pointOf(selected).x} cy={pointOf(selected).y} r={46} className="piece-selected" />
+        <circle cx={at(selected).x} cy={at(selected).y} r={46} className="piece-selected" />
       )}
       {checkSquare === null ? null : (
-        <circle cx={pointOf(checkSquare).x} cy={pointOf(checkSquare).y} r={47} className="piece-check" />
+        <circle cx={at(checkSquare).x} cy={at(checkSquare).y} r={47} className="piece-check" />
       )}
       {keyboardMode && cursor !== null ? (
         <rect
-          x={pointOf(cursor).x - 46}
-          y={pointOf(cursor).y - 46}
+          x={at(cursor).x - 46}
+          y={at(cursor).y - 46}
           width={92}
           height={92}
           rx={10}

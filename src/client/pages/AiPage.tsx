@@ -228,6 +228,8 @@ export function AiPage() {
               mode={{ kind: 'play', side }}
               size={size}
               position={session.position}
+              // 执黑时把盘翻转：自己的子在下，跟对面摆棋一样。
+              orientation={side}
               selection={{ selected: session.selected, targets: session.targets }}
               lastMove={session.lastMove}
               checkSquare={checkSquareOf(session)}

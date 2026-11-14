@@ -171,6 +171,26 @@ describe('F1-7 人机页：难度与阵营', () => {
     expect(live().posted[0]?.level).toBe('easy');
   });
 
+  it('执黑时棋盘翻转：自己的子在下半盘', async () => {
+    const { container } = open();
+    const yOf = (label: string): number => {
+      const piece = container.querySelector(`[aria-label="${label}"]`);
+      const transform = piece?.getAttribute('transform') ?? '';
+      const matched = /translate\(\s*[-\d.]+[ ,]+([-\d.]+)\s*\)/.exec(transform);
+      return Number(matched?.[1] ?? Number.NaN);
+    };
+
+    // 默认执红：黑将在上（纵坐标小），红帅在下。
+    expect(yOf('黑方将，第 5 列第 1 行')).toBeLessThan(500);
+    expect(yOf('红方帅，第 5 列第 10 行')).toBeGreaterThan(500);
+
+    fireEvent.click(screen.getByRole('radio', { name: '执黑' }));
+
+    // 执黑后镜像：黑将落到下半盘，红帅回到上边。
+    expect(yOf('黑方将，第 5 列第 1 行')).toBeGreaterThan(500);
+    expect(yOf('红方帅，第 5 列第 10 行')).toBeLessThan(500);
+  });
+
   it('换阵营等同重开：AI 执红开局即回一着', async () => {
     const { container } = open();
     fireEvent.click(screen.getByRole('radio', { name: '执黑' }));

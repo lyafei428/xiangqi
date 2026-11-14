@@ -246,6 +246,8 @@ export function OnlinePage() {
               mode={spectating ? { kind: 'demo' } : { kind: 'play', side: state.color ?? 'red' }}
               size={size}
               position={position ?? parseFen(snapshot.fen)}
+              // 执黑的一方看到的棋盘要翻过来：自己的子在下。观战保持红方视角。
+              orientation={spectating ? undefined : (state.color ?? 'red')}
               selection={{ selected, targets }}
               lastMove={snapshot.lastMove}
               checkSquare={checkSquare}

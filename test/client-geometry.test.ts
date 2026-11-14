@@ -5,10 +5,27 @@ import {
   MIN_BOARD_WIDTH,
   boardSize,
   clientToViewPoint,
+  mirrorSquare,
   pointOf,
   squareAtClientPoint,
   squareAtViewPoint,
 } from '../src/client/board/geometry.ts';
+
+test('翻转取镜像：行列同时取反，取两次回原格', () => {
+  assert.equal(mirrorSquare(0), 89);
+  assert.equal(mirrorSquare(89), 0);
+  assert.equal(mirrorSquare(4), 85);
+  assert.equal(mirrorSquare(85), 4);
+  for (let square = 0; square < 90; square += 1) {
+    assert.equal(mirrorSquare(mirrorSquare(square)), square);
+  }
+});
+
+test('翻转后黑方的底线落在棋盘下方', () => {
+  // 黑将开局在 4 号交叉点（左上区域），执黑时应该出现在下半盘。
+  assert.ok(pointOf(mirrorSquare(4)).y > 500);
+  assert.ok(pointOf(4).y < 500);
+});
 
 test('交叉点与 viewBox 坐标一一对应', () => {
   assert.deepEqual(pointOf(0), { x: 50, y: 50 });

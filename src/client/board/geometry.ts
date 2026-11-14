@@ -43,6 +43,17 @@ export function pointOf(square: number): Point {
 }
 
 /**
+ * 执黑时棋盘翻转 180 度：逻辑坐标不变，只换显示。
+ * 行列同时取反，(列, 行) → (8 - 列, 9 - 行)，正好就是 89 - square。
+ */
+export function mirrorSquare(square: number): number {
+  if (!Number.isInteger(square) || square < 0 || square >= BOARD_COLS * BOARD_ROWS) {
+    throw new RangeError(`mirrorSquare: 交叉点 ${square} 越界`);
+  }
+  return BOARD_COLS * BOARD_ROWS - 1 - square;
+}
+
+/**
  * viewBox 坐标 → 交叉点下标。
  * 先找最近交叉点，再量距离：棋盘外缘留白处点下去不该落到边线上。
  */
