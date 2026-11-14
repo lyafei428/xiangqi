@@ -49,8 +49,9 @@ const manifest = asRecord(
 test('manifest 带齐安装所需字段', () => {
   assert.equal(manifest['name'], '中国象棋');
   assert.equal(manifest['short_name'], '象棋');
-  assert.equal(manifest['start_url'], '/');
-  assert.equal(manifest['scope'], '/');
+  // 相对值：按 manifest 自己的地址解析，根部署与 /<仓库名>/ 子路径部署都成立。
+  assert.equal(manifest['start_url'], '.');
+  assert.equal(manifest['scope'], '.');
   assert.equal(manifest['display'], 'standalone');
   // 与 index.html 的 theme-color 同值：启动闪屏切进应用时不跳色。
   assert.equal(manifest['theme_color'], '#e9e0cf');
@@ -76,7 +77,7 @@ test('manifest 图标覆盖 192 / 512 与一个 maskable，且指向真实文件
     assert.equal(typeof src, 'string', 'manifest 图标的 src 应为字符串');
     // 图标是脚本生成的静态文件：清单指了但文件没生成，装到一半才会发现。
     assert.ok(
-      existsSync(new URL(`public${String(src)}`, ROOT)),
+      existsSync(new URL(`public/${String(src)}`, ROOT)),
       `${String(src)} 不存在——先跑 node scripts/pwa-icons.mjs`,
     );
   }
@@ -105,16 +106,21 @@ test('sw.js 的缓存名等于 package.json 的版本', () => {
 test('sw.js 的预缓存清单含首页、manifest 与图标', () => {
   const body = /const PRECACHE = \[([\s\S]*?)\];/.exec(sw)?.[1];
   assert.ok(body !== undefined, 'sw.js 里找不到 PRECACHE 清单');
+  // 清单项一律经 assetUrl 按 sw 的 scope 拼绝对地址：写死 '/xxx' 在子路径部署下全是 404。
   for (const entry of [
-    '/manifest.webmanifest',
-    '/icons/icon-192.png',
-    '/icons/icon-512.png',
-    '/icons/icon-maskable-512.png',
-    '/icons/apple-touch-icon.png',
+    'manifest.webmanifest',
+    'icons/icon-192.png',
+    'icons/icon-512.png',
+    'icons/icon-maskable-512.png',
+    'icons/apple-touch-icon.png',
   ]) {
-    assert.ok(body.includes(`'${entry}'`), `预缓存清单缺 ${entry}`);
+    assert.ok(body.includes(`assetUrl('${entry}')`), `预缓存清单缺 ${entry}`);
   }
   assert.match(body, /SHELL_URL/, '预缓存清单缺首页条目');
+  assert.ok(
+    sw.includes('const SCOPE = self.registration.scope;'),
+    'sw.js 没有按 scope 推导部署根——子路径部署会拿根目录当首页',
+  );
 });
 
 test('sw.js 的 install 从首页 HTML 里扫出构建产物一并预缓存', () => {
@@ -135,6 +141,15 @@ test('sw.js 的 install 从首页 HTML 里扫出构建产物一并预缓存', ()
     '/assets/index-Bk3x.js',
     '/assets/index-C9pz.css',
   ]);
+
+  // 构建用相对 base（子路径部署）时 HTML 里是 "./assets/x.js"——同样要扫得出来。
+  const relativeHtml =
+    '<script type="module" crossorigin src="./assets/index-Bk3x.js"></script>' +
+    '<link rel="stylesheet" crossorigin href="./assets/index-C9pz.css">';
+  assert.deepEqual(relativeHtml.match(new RegExp(source, 'g')), [
+    './assets/index-Bk3x.js',
+    './assets/index-C9pz.css',
+  ]);
 });
 
 const indexHtml = readText('index.html');
@@ -142,18 +157,21 @@ const indexHtml = readText('index.html');
 test('index.html 引了 manifest 与 apple-touch-icon', () => {
   assert.ok(indexHtml.includes('rel="manifest"'), 'index.html 没有 manifest 链接');
   assert.ok(
-    indexHtml.includes('href="/manifest.webmanifest"'),
-    'index.html 的 manifest 链接没指向 /manifest.webmanifest',
+    indexHtml.includes('href="%BASE_URL%manifest.webmanifest"'),
+    'index.html 的 manifest 链接没走 BASE_URL——子路径部署会指到域名根',
   );
   assert.ok(indexHtml.includes('rel="apple-touch-icon"'), 'index.html 没有 apple-touch-icon 链接');
   assert.ok(
-    indexHtml.includes('href="/icons/apple-touch-icon.png"'),
-    'index.html 的 apple-touch-icon 没指向 /icons/apple-touch-icon.png',
+    indexHtml.includes('href="%BASE_URL%icons/apple-touch-icon.png"'),
+    'index.html 的 apple-touch-icon 没走 BASE_URL——子路径部署会指到域名根',
   );
 });
 
 test('service worker 只在生产构建下注册', () => {
   const main = readText('src/client/main.tsx');
   assert.ok(main.includes('import.meta.env.PROD'), '注册点没有生产态判断，开发态的 HMR 会撞缓存');
-  assert.ok(main.includes("serviceWorker.register('/sw.js')"), '注册点没有注册 /sw.js');
+  assert.ok(
+    main.includes('serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`)'),
+    '注册点没有按 BASE_URL 注册 sw.js——写死 /sw.js 在子路径部署下 404',
+  );
 });

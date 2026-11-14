@@ -4,26 +4,34 @@
 // 缓存名跟 package.json 的版本走：发版改 version，缓存名自动变，旧缓存才会被清。
 const CACHE = 'xiangqi-0.1.0';
 
-// 壳的入口。hash 路由不经过服务器，所有导航请求拿到的都是同一份 HTML，
-// 所以预缓存与离线回退都只认这一个键。
-const SHELL_URL = '/';
+// 部署根：service worker 的 scope 就是它被投放的目录（根部署是 /，GitHub Pages 项目站点是 /<仓库名>/）。
+// 所有缓存键都从这里拼，写死 '/' 会让子路径部署的用户拿到 404。
+const SCOPE = self.registration.scope;
+const SHELL_URL = SCOPE;
+
+/** 相对路径或根绝对路径 → 绝对 URL，按当前 scope 解析。 */
+function assetUrl(path) {
+  if (path.startsWith('/')) return new URL(path, self.location.origin).href;
+  return new URL(path.replace(/^\.\//, ''), SCOPE).href;
+}
 
 const PRECACHE = [
   SHELL_URL,
-  '/manifest.webmanifest',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  '/icons/icon-maskable-512.png',
-  '/icons/apple-touch-icon.png',
+  assetUrl('manifest.webmanifest'),
+  assetUrl('icons/icon-192.png'),
+  assetUrl('icons/icon-512.png'),
+  assetUrl('icons/icon-maskable-512.png'),
+  assetUrl('icons/apple-touch-icon.png'),
 ];
 
 // 带哈希的产物名只有构建知道：只靠运行时缓存的话，首访那一次的 JS/CSS 在本 worker
 // 接管页面之前就取完了，断网刷新只剩壳、脚本全落空，页面是白的。
 // 从首页 HTML 里现读产物名，就不需要构建插件，也不怕文件名变。
-const ASSET_PATTERN = /\/assets\/[A-Za-z0-9._-]+\.(?:js|css)/g;
+// 构建用相对 base 时 HTML 里是 "./assets/x.js"，根部署是 "/assets/x.js"——两种都认，再按 scope 拼绝对地址。
+const ASSET_PATTERN = /[^"'\s<>()]*assets\/[A-Za-z0-9._-]+\.(?:js|css)/g;
 
 function scanAssetUrls(html) {
-  return [...new Set(html.match(ASSET_PATTERN) ?? [])];
+  return [...new Set((html.match(ASSET_PATTERN) ?? []).map(assetUrl))];
 }
 
 /**

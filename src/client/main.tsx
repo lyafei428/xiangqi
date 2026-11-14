@@ -22,7 +22,7 @@ createRoot(container).render(
 // 单文件版不注册：file:// 下 service worker 本来就不被允许，且没有可预缓存的资源清单。
 if (import.meta.env.PROD && import.meta.env.VITE_STANDALONE !== '1' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    void navigator.serviceWorker.register('/sw.js').catch((error: unknown) => {
+    void navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch((error: unknown) => {
       console.warn('service worker 注册失败', error);
     });
   });

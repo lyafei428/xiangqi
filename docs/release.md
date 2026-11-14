@@ -82,3 +82,17 @@ npm run build          # 产物在 dist/
 产物是静态文件，回滚 = 把上一版 `dist/` 重新部署。
 
 注意 `sw.js` 的 `CACHE` 已经是新版本时，回滚要同时把 `CACHE` 改回旧名，否则老版本产物会被新缓存名接下，用户看到的还是新代码。
+
+## 4. 部署到 GitHub Pages
+
+站点是纯静态产物（`dist/`），GitHub Pages 直接托管；构建与发布由 `.github/workflows/pages.yml` 完成：推送 `main` 或手动触发 → `npm ci` → `npm run check` → `npm run build` → 上传 `dist/` 并发布。跑不过闸门就不发。
+
+**路径口径**：Pages 的项目站点挂在 `/<仓库名>/` 下，所以构建用相对 base（`vite.config.ts` 里 `base: command === 'build' ? './' : '/'`）。三处跟着走：`index.html` 的静态资源用 `%BASE_URL%`；`public/manifest.webmanifest` 的 `start_url` / `scope` / 图标用相对路径；`public/sw.js` 以 `self.registration.scope` 为部署根拼所有缓存键。写死 `/assets`、`/sw.js`、`/` 会在子路径下全套 404。
+
+**首次启用**（只做一次）：
+
+1. 在 GitHub 建仓库并推上去：`git remote add origin git@github.com:<用户名>/<仓库名>.git && git push -u origin main`。
+2. 仓库 Settings → Pages → Build and deployment → Source 选 **GitHub Actions**。
+3. 回到 Actions 看「部署到 GitHub Pages」这一趟跑完，站点地址是 `https://<用户名>.github.io/<仓库名>/`。
+
+**这套静态部署没有的**：联机对战需要的 WebSocket 服务（`npm run dev:server`）不在 Pages 上，页面上点位「创建房间 / 随机匹配」会连不上 `/ws`——见台账 #13。人机、本地对弈、课程、练习、棋谱、规则全部可用。
