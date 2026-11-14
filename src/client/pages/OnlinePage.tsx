@@ -35,6 +35,8 @@ export function OnlinePage() {
   const [state, dispatch] = useReducer(onlineReducer, undefined, createOnlineState);
   const [code, setCode] = useState('');
   const [selected, setSelected] = useState<number | null>(null);
+  // 着法区在手机上默认收起：常驻条之外的东西一律进抽屉，别压在棋盘上。
+  const [panelOpen, setPanelOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const socketRef = useRef<OnlineSocket | null>(null);
   const receivedAtRef = useRef(Date.now());
@@ -267,7 +269,9 @@ export function OnlinePage() {
           <h2 className="panel-title">联机对战</h2>
           <span className="panel-mode">房间 {snapshot.room}</span>
         </div>
-        <div className="panel-body">
+        {/* 常驻条：身份、状态、计时与认输/求和/和棋提议。
+            手机上这些必须一直在——放进可收起的抽屉里就会浮在棋盘上把棋盘挡住。 */}
+        <div className="panel-focus">
           {state.phase === 'reconnecting' ? (
             <p className="online-banner" role="status">
               连接断开，正在重连…
@@ -334,6 +338,28 @@ export function OnlinePage() {
               把房间码发给对手：<strong>{snapshot.room}</strong>
             </p>
           ) : null}
+          <div className="panel-actions">
+            <button
+              type="button"
+              className="panel-toggle"
+              aria-expanded={panelOpen}
+              aria-controls="online-panel-body"
+              onClick={() => setPanelOpen((previous) => !previous)}
+            >
+              着法
+            </button>
+            <button type="button" className="new-game" onClick={leaveRoom}>
+              离开房间
+            </button>
+          </div>
+        </div>
+        <div className="panel-body" id="online-panel-body" hidden={!panelOpen}>
+          <div className="panel-body-head">
+            <span className="panel-body-title">着法记录</span>
+            <button type="button" className="panel-close" onClick={() => setPanelOpen(false)}>
+              收起着法
+            </button>
+          </div>
           <div className="moves">
             {snapshot.moves.length === 0 ? (
               <p className="moves-empty">尚未走子</p>
@@ -347,9 +373,6 @@ export function OnlinePage() {
               </ol>
             )}
           </div>
-          <button type="button" className="new-game" onClick={leaveRoom}>
-            离开房间
-          </button>
         </div>
       </aside>
     </div>
