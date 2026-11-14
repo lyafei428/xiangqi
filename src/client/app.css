@@ -1139,7 +1139,24 @@ button {
 /* 棋谱页：左列表、右回放 */
 
 .page-replay {
-  flex-direction: row;
+  flex-direction: column;
+}
+
+.replay-tabs {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px 0;
+}
+
+.replay-tab[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fffdf7;
+}
+
+.replay-tab[aria-pressed='true']:hover:not(:disabled) {
+  background: #966023;
 }
 
 .replay-main {
@@ -1312,6 +1329,103 @@ button {
   flex-direction: column;
   gap: 10px;
   align-items: flex-start;
+}
+
+/* 棋谱库分栏 */
+
+.study-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.study-filter {
+  border: 1px solid var(--line);
+  background: #fffdf7;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.study-filter[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: #f3ead8;
+  font-weight: 600;
+}
+
+.study-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.study-row {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffdf7;
+}
+
+.study-row[data-current='yes'] {
+  border-color: var(--accent);
+}
+
+.study-open {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 8px 10px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.study-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.study-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.study-note {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--accent);
+  background: #f6efdf;
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.study-source {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 767px) {
+  /* 分栏与筛选各占一行，宁可横向滑动，也不把按钮压成两字一行。 */
+  .replay-tabs,
+  .study-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+
+  .replay-tab,
+  .study-filter {
+    flex: 0 0 auto;
+  }
 }
 
 @media (max-width: 720px) {

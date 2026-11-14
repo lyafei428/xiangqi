@@ -61,20 +61,33 @@ function isClockMs(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= MAX_CLOCK_MS;
 }
 
-/** 重放前 step 着；step 夹到 [0, moves.length]。非法着法抛错，被改坏的记录不能静默回放成别的局面。 */
-export function positionAt(record: GameRecord, step: number): Position {
-  const total = record.moves.length;
+/**
+ * 从起始局面重放前 step 着；step 夹到 [0, moves.length]。
+ * 非法着法抛错：被改坏的记录不能静默回放成别的局面。
+ * 棋谱库与本地存局共用这一份，两路的夹取与抛错口径才不会分家。
+ */
+export function positionAtMoves(
+  startFen: string,
+  moves: readonly Move[],
+  step: number,
+): Position {
+  const total = moves.length;
   const target = Math.max(0, Math.min(total, Math.trunc(step)));
-  let position = parseFen(record.startFen);
+  let position = parseFen(startFen);
   let history = [] as ReturnType<typeof playMove>['history'];
   for (let index = 0; index < target; index += 1) {
-    const move = record.moves[index];
+    const move = moves[index];
     if (move === undefined) break;
     const played = playMove(position, history, move);
     position = played.position;
     history = played.history;
   }
   return position;
+}
+
+/** 重放前 step 着；契约同 positionAtMoves。 */
+export function positionAt(record: GameRecord, step: number): Position {
+  return positionAtMoves(record.startFen, record.moves, step);
 }
 
 /** 全量重放一次：结构合法不等于能走完，导入与回放都要过这一关。 */

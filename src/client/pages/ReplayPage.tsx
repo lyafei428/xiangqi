@@ -1,16 +1,28 @@
-// 棋谱页：列表、回放、导入与导出。
+// 棋谱页：分栏（我的棋谱 / 棋谱库）、列表、回放、导入与导出。
 // 回放不重算判罚，只按记录里的着法还原局面——判罚已经写在结果里。
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Move, Position } from '../../shared/index.ts';
-import { isReplayable, notationsOf, parseRecord, positionAt, recordText } from '../../shared/record.ts';
+import { parseFen, playMove, toChineseNotation } from '../../shared/index.ts';
+import {
+  isReplayable,
+  notationsOf,
+  parseRecord,
+  positionAt,
+  positionAtMoves,
+  recordText,
+} from '../../shared/record.ts';
 import type { GameRecord } from '../../shared/record.ts';
+import type { StudyRecord } from '../../shared/study.ts';
 import { Board } from '../board/Board.tsx';
 import { boardSize } from '../board/geometry.ts';
 import { useStageSize } from '../board/useStageSize.ts';
 import { resultLabel } from '../panel/result-text.ts';
 import { deleteRecord, findRecord, listRecords, saveRecord } from '../storage/records.ts';
+import { StudyLibrary } from '../study/StudyLibrary.tsx';
 import { routeHash } from '../shell/routes.ts';
+
+type ReplayTab = 'mine' | 'library';
 
 function stampText(ms: number): string {
   const date = new Date(ms);
@@ -18,15 +30,145 @@ function stampText(ms: number): string {
   return `${String(date.getFullYear())}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+/** 棋谱库的记谱：与本地存局同源，同样走 toChineseNotation + playMove。 */
+function studyNotations(record: StudyRecord): string[] {
+  let position = parseFen(record.startFen);
+  let history = [] as ReturnType<typeof playMove>['history'];
+  const notations: string[] = [];
+  for (const move of record.moves) {
+    notations.push(toChineseNotation(position, move));
+    const played = playMove(position, history, move);
+    position = played.position;
+    history = played.history;
+  }
+  return notations;
+}
+
+interface StepControlsProps {
+  readonly step: number;
+  readonly total: number;
+  readonly notations: readonly string[];
+  readonly onStep: (step: number) => void;
+}
+
+/** 步进条与记谱列表：本地存局与棋谱库共用，两路的操作手感一致。 */
+function StepControls({ step, total, notations, onStep }: StepControlsProps) {
+  return (
+    <>
+      <div className="replay-controls">
+        <button className="btn" type="button" onClick={() => onStep(0)} disabled={step === 0}>
+          首
+        </button>
+        <button
+          className="btn"
+          type="button"
+          onClick={() => onStep(Math.max(0, step - 1))}
+          disabled={step === 0}
+        >
+          上一步
+        </button>
+        <span className="replay-counter" aria-live="polite">
+          第 {step} / {total} 着
+        </span>
+        <button
+          className="btn"
+          type="button"
+          onClick={() => onStep(Math.min(total, step + 1))}
+          disabled={step >= total}
+        >
+          下一步
+        </button>
+        <button
+          className="btn"
+          type="button"
+          onClick={() => onStep(total)}
+          disabled={step >= total}
+        >
+          末
+        </button>
+      </div>
+      <input
+        className="replay-range"
+        type="range"
+        aria-label="回放步数"
+        min={0}
+        max={total}
+        value={step}
+        onChange={(event) => onStep(Number(event.target.value))}
+      />
+      <ol className="replay-moves">
+        {notations.map((text, index) => (
+          <li key={`${String(index)}-${text}`}>
+            <button
+              className="replay-move"
+              type="button"
+              aria-current={index + 1 === step ? 'true' : undefined}
+              onClick={() => onStep(index + 1)}
+            >
+              {`${String(index + 1)}. ${text}`}
+            </button>
+          </li>
+        ))}
+      </ol>
+    </>
+  );
+}
+
 export interface ReplayPageProps {
   /** null 表示列表；数字表示打开某一局。 */
   readonly id: number | null;
 }
 
+interface StudyReplayProps {
+  readonly record: StudyRecord;
+}
+
+/** 库内回放：独立挂载，棋盘尺寸的观察点与棋盘同一次挂载出现（页内切换不会丢尺寸）。 */
+function StudyReplay({ record }: StudyReplayProps) {
+  const [step, setStep] = useState(0);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const stage = useStageSize(stageRef);
+  const size = boardSize(stage.width, stage.height, 520);
+  const notations = useMemo(() => studyNotations(record), [record]);
+  const frame = useMemo(
+    () => ({
+      position: positionAtMoves(record.startFen, record.moves, step),
+      lastMove: step === 0 ? null : (record.moves[step - 1] ?? null),
+    }),
+    [record, step],
+  );
+  const note = record.notes.find((item) => item.step === step) ?? null;
+
+  return (
+    <div className="replay-stage">
+      <div className="board-fit" ref={stageRef}>
+        <div className="board-slot">
+          <Board
+            mode={{ kind: 'demo' }}
+            size={size}
+            position={frame.position}
+            lastMove={frame.lastMove}
+          />
+        </div>
+      </div>
+      <StepControls
+        step={step}
+        total={record.moves.length}
+        notations={notations}
+        onStep={setStep}
+      />
+      {note !== null ? <p className="study-note">{note.text}</p> : null}
+      <p className="study-source">来源：{record.source}</p>
+    </div>
+  );
+}
+
 export function ReplayPage({ id }: ReplayPageProps) {
+  const [tab, setTab] = useState<ReplayTab>('mine');
   const [records, setRecords] = useState<readonly GameRecord[]>(() => listRecords());
   const [notice, setNotice] = useState<string | null>(null);
   const [step, setStep] = useState(0);
+  const [study, setStudy] = useState<StudyRecord | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const stage = useStageSize(stageRef);
   const size = boardSize(stage.width, stage.height, 520);
@@ -90,6 +232,16 @@ export function ReplayPage({ id }: ReplayPageProps) {
     }
   }, [record, replayable]);
 
+  // 库内回放是页内状态：不新增地址，切分栏或重进页面回到列表。
+  const switchTab = (next: ReplayTab): void => {
+    setTab(next);
+    if (next === 'library') setStudy(null);
+  };
+
+  const openStudy = (target: StudyRecord): void => {
+    setStudy(target);
+  };
+
   let frame: { position: Position; lastMove: Move | null } | null = null;
   if (record !== null && replayable) {
     try {
@@ -104,138 +256,129 @@ export function ReplayPage({ id }: ReplayPageProps) {
 
   return (
     <div className="page page-replay">
+      <div className="replay-tabs" role="group" aria-label="棋谱分栏">
+        <button
+          className="btn replay-tab"
+          type="button"
+          aria-pressed={tab === 'mine'}
+          onClick={() => switchTab('mine')}
+        >
+          我的棋谱
+        </button>
+        <button
+          className="btn replay-tab"
+          type="button"
+          aria-pressed={tab === 'library'}
+          onClick={() => switchTab('library')}
+        >
+          棋谱库
+        </button>
+      </div>
       <main className="replay-main">
-        <section className="replay-list" aria-label="棋谱列表">
-          <div className="replay-head">
-            <h2>我的棋谱</h2>
-            <label className="btn file-btn">
-              导入
-              <input
-                type="file"
-                accept="application/json,.json"
-                aria-label="导入棋谱"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  event.target.value = '';
-                  if (file !== undefined) void importFile(file);
-                }}
-              />
-            </label>
-          </div>
-          {notice !== null ? (
-            <p className="replay-notice" role="status">
-              {notice}
-            </p>
-          ) : null}
-          {records.length === 0 ? (
-            <p className="replay-empty">还没有棋谱</p>
-          ) : (
-            <ul className="replay-rows">
-              {records.map((item) => (
-                <li key={String(item.id)} className="replay-row" data-current={item.id === id ? 'yes' : undefined}>
-                  <a className="replay-open" href={routeHash({ name: 'replayOne', id: item.id ?? 0 })}>
-                    <span className="replay-time">{stampText(item.savedAt)}</span>
-                    <span className="replay-result">
-                      {item.result === null ? '未完成' : resultLabel(item.result)}
-                    </span>
-                    <span className="replay-steps">{item.moves.length} 着</span>
-                  </a>
-                  <button className="btn btn-quiet" type="button" onClick={() => remove(item)}>
+        {tab === 'mine' ? (
+          <>
+            <section className="replay-list" aria-label="棋谱列表">
+              <div className="replay-head">
+                <h2>我的棋谱</h2>
+                <label className="btn file-btn">
+                  导入
+                  <input
+                    type="file"
+                    accept="application/json,.json"
+                    aria-label="导入棋谱"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      event.target.value = '';
+                      if (file !== undefined) void importFile(file);
+                    }}
+                  />
+                </label>
+              </div>
+              {notice !== null ? (
+                <p className="replay-notice" role="status">
+                  {notice}
+                </p>
+              ) : null}
+              {records.length === 0 ? (
+                <p className="replay-empty">还没有棋谱</p>
+              ) : (
+                <ul className="replay-rows">
+                  {records.map((item) => (
+                    <li
+                      key={String(item.id)}
+                      className="replay-row"
+                      data-current={item.id === id ? 'yes' : undefined}
+                    >
+                      <a
+                        className="replay-open"
+                        href={routeHash({ name: 'replayOne', id: item.id ?? 0 })}
+                      >
+                        <span className="replay-time">{stampText(item.savedAt)}</span>
+                        <span className="replay-result">
+                          {item.result === null ? '未完成' : resultLabel(item.result)}
+                        </span>
+                        <span className="replay-steps">{item.moves.length} 着</span>
+                      </a>
+                      <button className="btn btn-quiet" type="button" onClick={() => remove(item)}>
+                        删除
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <section className="replay-board" aria-label="回放">
+              {id === null ? (
+                <p className="replay-hint">从左侧选一局棋谱，或导入一个 JSON 文件。</p>
+              ) : record === null ? (
+                <p className="replay-hint">棋谱不存在</p>
+              ) : !replayable || frame === null ? (
+                <div className="replay-broken">
+                  <p>这条棋谱无法回放</p>
+                  <button className="btn" type="button" onClick={() => remove(record)}>
                     删除
                   </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <section className="replay-board" aria-label="回放">
-          {id === null ? (
-            <p className="replay-hint">从左侧选一局棋谱，或导入一个 JSON 文件。</p>
-          ) : record === null ? (
-            <p className="replay-hint">棋谱不存在</p>
-          ) : !replayable || frame === null ? (
-            <div className="replay-broken">
-              <p>这条棋谱无法回放</p>
-              <button className="btn" type="button" onClick={() => remove(record)}>
-                删除
-              </button>
-            </div>
-          ) : (
-            <div className="replay-stage">
-              <div className="board-fit" ref={stageRef}>
-                <div className="board-slot">
-                  <Board
-                    mode={{ kind: 'demo' }}
-                    size={size}
-                    position={frame.position}
-                    lastMove={frame.lastMove}
-                  />
                 </div>
-              </div>
-              <div className="replay-controls">
-                <button className="btn" type="button" onClick={() => setStep(0)} disabled={step === 0}>
-                  首
-                </button>
-                <button
-                  className="btn"
-                  type="button"
-                  onClick={() => setStep((value) => Math.max(0, value - 1))}
-                  disabled={step === 0}
-                >
-                  上一步
-                </button>
-                <span className="replay-counter" aria-live="polite">
-                  第 {step} / {record.moves.length} 着
-                </span>
-                <button
-                  className="btn"
-                  type="button"
-                  onClick={() => setStep((value) => Math.min(record.moves.length, value + 1))}
-                  disabled={step >= record.moves.length}
-                >
-                  下一步
-                </button>
-                <button
-                  className="btn"
-                  type="button"
-                  onClick={() => setStep(record.moves.length)}
-                  disabled={step >= record.moves.length}
-                >
-                  末
-                </button>
-              </div>
-              <input
-                className="replay-range"
-                type="range"
-                aria-label="回放步数"
-                min={0}
-                max={record.moves.length}
-                value={step}
-                onChange={(event) => setStep(Number(event.target.value))}
-              />
-              <ol className="replay-moves">
-                {notations.map((text, index) => (
-                  <li key={`${String(index)}-${text}`}>
-                    <button
-                      className="replay-move"
-                      type="button"
-                      aria-current={index + 1 === step ? 'true' : undefined}
-                      onClick={() => setStep(index + 1)}
-                    >
-                      {`${String(index + 1)}. ${text}`}
+              ) : (
+                <div className="replay-stage">
+                  <div className="board-fit" ref={stageRef}>
+                    <div className="board-slot">
+                      <Board
+                        mode={{ kind: 'demo' }}
+                        size={size}
+                        position={frame.position}
+                        lastMove={frame.lastMove}
+                      />
+                    </div>
+                  </div>
+                  <StepControls
+                    step={step}
+                    total={record.moves.length}
+                    notations={notations}
+                    onStep={setStep}
+                  />
+                  <div className="replay-actions">
+                    <button className="btn" type="button" onClick={() => exportRecord(record)}>
+                      导出
                     </button>
-                  </li>
-                ))}
-              </ol>
-              <div className="replay-actions">
-                <button className="btn" type="button" onClick={() => exportRecord(record)}>
-                  导出
-                </button>
-              </div>
-            </div>
-          )}
-        </section>
+                  </div>
+                </div>
+              )}
+            </section>
+          </>
+        ) : (
+          <>
+            <StudyLibrary selectedId={study?.id ?? null} onOpen={openStudy} />
+            <section className="replay-board" aria-label="棋谱库回放">
+              {study === null ? (
+                <p className="replay-hint">从左侧选一条棋谱。</p>
+              ) : (
+                <StudyReplay key={study.id} record={study} />
+              )}
+            </section>
+          </>
+        )}
       </main>
     </div>
   );

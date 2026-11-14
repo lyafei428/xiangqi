@@ -1,0 +1,762 @@
+[
+  {
+    "id": "opening-central-cannon",
+    "title": "中炮对屏风马",
+    "phase": "opening",
+    "source": "自编",
+    "startFen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
+    "moves": [
+      {
+        "from": 70,
+        "to": 67
+      },
+      {
+        "from": 7,
+        "to": 24
+      },
+      {
+        "from": 88,
+        "to": 69
+      },
+      {
+        "from": 1,
+        "to": 20
+      },
+      {
+        "from": 89,
+        "to": 88
+      },
+      {
+        "from": 8,
+        "to": 7
+      },
+      {
+        "from": 88,
+        "to": 34
+      },
+      {
+        "from": 33,
+        "to": 42
+      }
+    ],
+    "result": null,
+    "notes": [
+      {
+        "step": 1,
+        "text": "炮二平五抢占中路，直指黑方中卒，逼黑方马上表态。"
+      },
+      {
+        "step": 4,
+        "text": "黑方马2进3护住中卒，两马并立成屏风马，中路不会被一炮打穿。"
+      },
+      {
+        "step": 5,
+        "text": "红车一平二抢先亮车，下一步过河压制黑方右翼。"
+      }
+    ]
+  },
+  {
+    "id": "opening-shunpao-rook",
+    "title": "顺炮直车对横车",
+    "phase": "opening",
+    "source": "自编",
+    "startFen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
+    "moves": [
+      {
+        "from": 70,
+        "to": 67
+      },
+      {
+        "from": 25,
+        "to": 22
+      },
+      {
+        "from": 88,
+        "to": 69
+      },
+      {
+        "from": 7,
+        "to": 24
+      },
+      {
+        "from": 89,
+        "to": 88
+      },
+      {
+        "from": 8,
+        "to": 17
+      },
+      {
+        "from": 88,
+        "to": 61
+      },
+      {
+        "from": 29,
+        "to": 38
+      }
+    ],
+    "result": null,
+    "notes": [
+      {
+        "step": 2,
+        "text": "黑方炮8平5以顺炮对攻，双方中炮各镇一路，局面立刻尖锐。"
+      },
+      {
+        "step": 6,
+        "text": "黑车9进1先蓄力，准备平到8路与红车对峙。"
+      },
+      {
+        "step": 7,
+        "text": "红车进到河口，准备压向黑方左马。"
+      }
+    ]
+  },
+  {
+    "id": "opening-xianren",
+    "title": "仙人指路转中炮",
+    "phase": "opening",
+    "source": "自编",
+    "startFen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
+    "moves": [
+      {
+        "from": 56,
+        "to": 47
+      },
+      {
+        "from": 29,
+        "to": 38
+      },
+      {
+        "from": 70,
+        "to": 67
+      },
+      {
+        "from": 7,
+        "to": 24
+      },
+      {
+        "from": 88,
+        "to": 69
+      },
+      {
+        "from": 1,
+        "to": 20
+      },
+      {
+        "from": 89,
+        "to": 88
+      },
+      {
+        "from": 8,
+        "to": 7
+      }
+    ],
+    "result": null,
+    "notes": [
+      {
+        "step": 1,
+        "text": "兵七进一先通马路，把开局选择权留在自己手里，这是仙人指路的用意。"
+      },
+      {
+        "step": 3,
+        "text": "黑方应以卒3进1后，红方再架中炮，避免过早定型。"
+      },
+      {
+        "step": 7,
+        "text": "红车一平二亮出右车，黑车9平8针锋相对。"
+      }
+    ]
+  },
+  {
+    "id": "opening-elephant",
+    "title": "飞相局",
+    "phase": "opening",
+    "source": "自编",
+    "startFen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
+    "moves": [
+      {
+        "from": 87,
+        "to": 67
+      },
+      {
+        "from": 7,
+        "to": 24
+      },
+      {
+        "from": 88,
+        "to": 69
+      },
+      {
+        "from": 33,
+        "to": 42
+      },
+      {
+        "from": 89,
+        "to": 88
+      },
+      {
+        "from": 1,
+        "to": 20
+      },
+      {
+        "from": 64,
+        "to": 28
+      },
+      {
+        "from": 8,
+        "to": 7
+      }
+    ],
+    "result": null,
+    "notes": [
+      {
+        "step": 1,
+        "text": "相三进五先补中相，稳步出子，不急于抢先。"
+      },
+      {
+        "step": 7,
+        "text": "炮八进四伸进卒林，瞄住黑方中象，是飞相局常见的封锁手段。"
+      },
+      {
+        "step": 8,
+        "text": "黑车9平8亮车，准备与红方争夺二路。"
+      }
+    ]
+  },
+  {
+    "id": "middlegame-zhongpao",
+    "title": "中炮过河车对屏风马",
+    "phase": "middlegame",
+    "source": "自编",
+    "startFen": "r1bakabr1/9/1cn3nc1/p1p1p2Rp/6p2/9/P1P1P1P1P/1C2C1N2/9/RNBAKAB2 w - - 0 1",
+    "moves": [
+      {
+        "from": 34,
+        "to": 35
+      },
+      {
+        "from": 7,
+        "to": 16
+      },
+      {
+        "from": 64,
+        "to": 28
+      },
+      {
+        "from": 24,
+        "to": 41
+      },
+      {
+        "from": 69,
+        "to": 76
+      },
+      {
+        "from": 3,
+        "to": 13
+      },
+      {
+        "from": 81,
+        "to": 72
+      },
+      {
+        "from": 25,
+        "to": 22
+      }
+    ],
+    "result": null,
+    "notes": [
+      {
+        "step": 0,
+        "text": "红方过河车已压到卒林，黑方屏风马待机，双方都在等对方先动。"
+      },
+      {
+        "step": 1,
+        "text": "车二平一吃掉边卒，先取实利，也给中路让出通道。"
+      },
+      {
+        "step": 6,
+        "text": "黑方士4进5补厚中路，下一步准备把车调到河口。"
+      }
+    ]
+  },
+  {
+    "id": "middlegame-shunpao",
+    "title": "顺炮七兵过河",
+    "phase": "middlegame",
+    "source": "自编",
+    "startFen": "rnbakab2/8r/1c2c1n2/p3p1p1p/2p6/9/P1P1P1PRP/1C2C1N2/9/RNBAKAB2 w - - 0 1",
+    "moves": [
+      {
+        "from": 56,
+        "to": 47
+      },
+      {
+        "from": 38,
+        "to": 47
+      },
+      {
+        "from": 82,
+        "to": 65
+      },
+      {
+        "from": 1,
+        "to": 20
+      },
+      {
+        "from": 81,
+        "to": 72
+      },
+      {
+        "from": 17,
+        "to": 16
+      },
+      {
+        "from": 58,
+        "to": 49
+      },
+      {
+        "from": 22,
+        "to": 21
+      }
+    ],
+    "result": null,
+    "notes": [
+      {
+        "step": 0,
+        "text": "顺炮走到这里，红方七兵已过河、黑方3卒顶上来，中路仍是火药桶。"
+      },
+      {
+        "step": 2,
+        "text": "卒3进1吃掉红兵，黑方先解掉七路的压力。"
+      },
+      {
+        "step": 8,
+        "text": "黑炮平4避开红车锋芒，保持中炮的机动。"
+      }
+    ]
+  },
+  {
+    "id": "middlegame-xianren",
+    "title": "仙人指路·过河车压马",
+    "phase": "middlegame",
+    "source": "自编",
+    "startFen": "r1bakabr1/9/1cn3nc1/p3p1p1p/2p6/2P6/P3P1P1P/1C2C1N2/9/RNBAKABR1 w - - 0 1",
+    "moves": [
+      {
+        "from": 88,
+        "to": 34
+      },
+      {
+        "from": 7,
+        "to": 16
+      },
+      {
+        "from": 58,
+        "to": 49
+      },
+      {
+        "from": 3,
+        "to": 13
+      },
+      {
+        "from": 82,
+        "to": 65
+      },
+      {
+        "from": 19,
+        "to": 55
+      },
+      {
+        "from": 64,
+        "to": 63
+      },
+      {
+        "from": 25,
+        "to": 26
+      }
+    ],
+    "result": null,
+    "notes": [
+      {
+        "step": 0,
+        "text": "仙人指路转中炮后，红车已经过河，黑方双马正待反击。"
+      },
+      {
+        "step": 1,
+        "text": "车二进六直压卒林，逼黑方表态。"
+      },
+      {
+        "step": 7,
+        "text": "炮八平九把炮挪到边线，准备从侧翼配合过河车。"
+      }
+    ]
+  },
+  {
+    "id": "middlegame-elephant",
+    "title": "飞相局·炮入卒林",
+    "phase": "middlegame",
+    "source": "自编",
+    "startFen": "r1bakabr1/9/1cn3nc1/pCp1p3p/6p2/9/P1P1P1P1P/4B1NC1/9/RNBAKA1R1 w - - 0 1",
+    "moves": [
+      {
+        "from": 82,
+        "to": 65
+      },
+      {
+        "from": 7,
+        "to": 16
+      },
+      {
+        "from": 81,
+        "to": 72
+      },
+      {
+        "from": 27,
+        "to": 36
+      },
+      {
+        "from": 70,
+        "to": 34
+      },
+      {
+        "from": 24,
+        "to": 41
+      },
+      {
+        "from": 69,
+        "to": 76
+      },
+      {
+        "from": 25,
+        "to": 26
+      }
+    ],
+    "result": null,
+    "notes": [
+      {
+        "step": 5,
+        "text": "炮二进四伸到卒林，借黑方中卒作炮架，威胁中象。"
+      },
+      {
+        "step": 6,
+        "text": "黑马7进6跳出来反盯红炮，中局开始短兵相接。"
+      },
+      {
+        "step": 8,
+        "text": "黑炮平9避开红炮锋芒，转到边线找机会。"
+      }
+    ]
+  },
+  {
+    "id": "ending-two-rooks",
+    "title": "双车错",
+    "phase": "ending",
+    "source": "自编",
+    "startFen": "4k4/9/R8/1pp3p1R/9/9/P8/9/9/3K5 w - - 0 1",
+    "moves": [
+      {
+        "from": 35,
+        "to": 17
+      },
+      {
+        "from": 29,
+        "to": 38
+      },
+      {
+        "from": 18,
+        "to": 0
+      }
+    ],
+    "result": {
+      "type": "checkmate",
+      "winner": "red"
+    },
+    "notes": [
+      {
+        "step": 0,
+        "text": "黑将被困在底线，红方双车一横一纵，只等最后一击。"
+      },
+      {
+        "step": 1,
+        "text": "车一进二先把另一辆车提到横线，控制黑将的退路。"
+      },
+      {
+        "step": 3,
+        "text": "车九进二沉底，双车一纵一横封死九宫。"
+      }
+    ]
+  },
+  {
+    "id": "ending-horse-cannon",
+    "title": "马后炮",
+    "phase": "ending",
+    "source": "自编",
+    "startFen": "4k4/9/9/p1p3N1p/9/9/P3C4/9/9/3K5 w - - 0 1",
+    "moves": [
+      {
+        "from": 58,
+        "to": 40
+      },
+      {
+        "from": 35,
+        "to": 44
+      },
+      {
+        "from": 33,
+        "to": 22
+      }
+    ],
+    "result": {
+      "type": "checkmate",
+      "winner": "red"
+    },
+    "notes": [
+      {
+        "step": 0,
+        "text": "红方马炮已经到位，黑将左右无路，只差把炮架到中路。"
+      },
+      {
+        "step": 1,
+        "text": "炮五进二先占住中路，等马跳到将前当炮架。"
+      },
+      {
+        "step": 3,
+        "text": "马三进五跳到黑将正前方，马作炮架，马后炮成杀。"
+      }
+    ]
+  },
+  {
+    "id": "ending-rook-horse",
+    "title": "车马冷着",
+    "phase": "ending",
+    "source": "自编",
+    "startFen": "4k4/9/R6N1/2p3p1p/9/9/P8/9/9/3K5 w - - 0 1",
+    "moves": [
+      {
+        "from": 25,
+        "to": 6
+      },
+      {
+        "from": 35,
+        "to": 44
+      },
+      {
+        "from": 18,
+        "to": 0
+      }
+    ],
+    "result": {
+      "type": "checkmate",
+      "winner": "red"
+    },
+    "notes": [
+      {
+        "step": 0,
+        "text": "红方车马分处两翼，马先占住将门，车再从底线切入。"
+      },
+      {
+        "step": 1,
+        "text": "马二进三跳到卧槽位，先封住黑将的退路。"
+      },
+      {
+        "step": 3,
+        "text": "车九进二沉底，马控将门、车走底线，黑将无处可逃。"
+      }
+    ]
+  },
+  {
+    "id": "ending-facing-kings",
+    "title": "对面笑",
+    "phase": "ending",
+    "source": "自编",
+    "startFen": "3k5/9/R5N2/p1p5p/9/9/P8/9/9/4K4 w - - 0 1",
+    "moves": [
+      {
+        "from": 24,
+        "to": 31
+      },
+      {
+        "from": 27,
+        "to": 36
+      },
+      {
+        "from": 18,
+        "to": 0
+      }
+    ],
+    "result": {
+      "type": "checkmate",
+      "winner": "red"
+    },
+    "notes": [
+      {
+        "step": 0,
+        "text": "黑将偏在一边，红帅正好占住中路，黑将最怕的就是平中。"
+      },
+      {
+        "step": 1,
+        "text": "马三退五先补住黑将的退路，为沉底车做准备。"
+      },
+      {
+        "step": 3,
+        "text": "车九进二沉底，黑将想平中即与红帅照面，对面笑成杀。"
+      }
+    ]
+  },
+  {
+    "id": "endgame-wocao-horse",
+    "title": "卧槽马",
+    "phase": "endgame",
+    "source": "自编 · 仿《适情雅趣》杀法",
+    "startFen": "3aka3/C8/2P6/8p/2N6/9/9/9/9/3K5 w - - 0 1",
+    "moves": [
+      {
+        "from": 20,
+        "to": 11
+      },
+      {
+        "from": 35,
+        "to": 44
+      },
+      {
+        "from": 38,
+        "to": 21
+      }
+    ],
+    "result": {
+      "type": "checkmate",
+      "winner": "red"
+    },
+    "notes": [
+      {
+        "step": 0,
+        "text": "黑方双士自堵宫门，红方只要把马跳到卧槽位，再让炮借兵作架封住将门。"
+      },
+      {
+        "step": 1,
+        "text": "兵七进一给炮当架子，同时封住黑将的退路。"
+      },
+      {
+        "step": 3,
+        "text": "马七进六跳到卧槽，马将一体，黑将无路。"
+      }
+    ]
+  },
+  {
+    "id": "endgame-double-cannon",
+    "title": "重炮",
+    "phase": "endgame",
+    "source": "自编 · 仿《适情雅趣》杀法",
+    "startFen": "3k5/2N6/3C5/p1p5p/9/1C7/9/9/9/4K4 w - - 0 1",
+    "moves": [
+      {
+        "from": 21,
+        "to": 30
+      },
+      {
+        "from": 27,
+        "to": 36
+      },
+      {
+        "from": 46,
+        "to": 48
+      }
+    ],
+    "result": {
+      "type": "checkmate",
+      "winner": "red"
+    },
+    "notes": [
+      {
+        "step": 0,
+        "text": "红方双炮一马对黑将形成包围，关键是把两门炮叠在同一条线上。"
+      },
+      {
+        "step": 1,
+        "text": "炮六退一先把前炮摆到将门一线，给后炮留出炮架。"
+      },
+      {
+        "step": 3,
+        "text": "炮八平六叠炮，后炮隔前炮将军，重炮成杀。"
+      }
+    ]
+  },
+  {
+    "id": "endgame-side-tiger",
+    "title": "侧面虎",
+    "phase": "endgame",
+    "source": "自编 · 仿《适情雅趣》杀法",
+    "startFen": "3k5/9/R5N2/p1p5p/9/9/P8/9/9/4K4 w - - 0 1",
+    "moves": [
+      {
+        "from": 24,
+        "to": 31
+      },
+      {
+        "from": 27,
+        "to": 36
+      },
+      {
+        "from": 18,
+        "to": 0
+      }
+    ],
+    "result": {
+      "type": "checkmate",
+      "winner": "red"
+    },
+    "notes": [
+      {
+        "step": 0,
+        "text": "红方车马对黑将形成夹击之势，马先占住将门，车再沉底。"
+      },
+      {
+        "step": 1,
+        "text": "马三退五跳到宫心侧翼，封住黑将的退路。"
+      },
+      {
+        "step": 3,
+        "text": "车九进二沉底，车马一纵一横，黑将无路可走。"
+      }
+    ]
+  },
+  {
+    "id": "endgame-double-horse",
+    "title": "双马饮泉",
+    "phase": "endgame",
+    "source": "自编 · 仿《适情雅趣》杀法",
+    "startFen": "3k5/9/5N3/p5p1p/9/9/N8/9/9/4K4 w - - 0 1",
+    "moves": [
+      {
+        "from": 54,
+        "to": 37
+      },
+      {
+        "from": 35,
+        "to": 44
+      },
+      {
+        "from": 37,
+        "to": 20
+      }
+    ],
+    "result": {
+      "type": "checkmate",
+      "winner": "red"
+    },
+    "notes": [
+      {
+        "step": 0,
+        "text": "红方双马盘旋，黑将只剩中路和底线两个去处，先调一马入宫。"
+      },
+      {
+        "step": 1,
+        "text": "马九进八先跳到中场，下一步直取卧槽。"
+      },
+      {
+        "step": 3,
+        "text": "马八进七跳到将门，另一马封住退路，双马成杀。"
+      }
+    ]
+  }
+]
