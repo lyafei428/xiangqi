@@ -82,10 +82,11 @@ Survey evidence: 已核对 `docs/design/modules/local-play.md`（事件源）、
 |---|---|---|
 | `src/client/sound/sound.ts` | 156 | 不跨层（新增模块，合成与判定同处） |
 | `src/client/sound/useSoundEnabled.ts` | 35 | 不跨层 |
-| `test/sound.test.ts` | 48 | 不跨层 |
+| `test/sound.test.ts` | 58 | 不跨层 |
 | `test/prefs.test.ts` | 80 | 不跨层（只加音效键的用例） |
 | `src/client/App.tsx` | 269 | 不跨层（挂一次 hook + 浮层里加两个控件） |
 | `src/client/pages/AiPage.tsx` | 358 | 不跨层（挂一次 hook） |
+| `test/integration/sound.test.tsx` | 114 | 不跨层（F5-6 的集成行） |
 
 均不跨层：没有文件越过 500 行的代码结构线，本变更也不把它们推向那条线。
 
@@ -95,9 +96,9 @@ Survey evidence: 已核对 `docs/design/modules/local-play.md`（事件源）、
 |---|---|
 | 判定正确 | `test/sound.test.ts`：用真实局面走出的 `HistoryEntry` 覆盖五条路径（普通落子、吃子、将军、终局压过一切、将死那一着只算终局） |
 | 偏好读写 | `test/prefs.test.ts`：读回、坏值退缺省、存储抛错时不炸 |
-| 改动面命令 | `node --test test/sound.test.ts test/prefs.test.ts`（提交前仍走 `npm run check` 整体闸门） |
+| 改动面命令 | `node --test test/sound.test.ts test/prefs.test.ts` 与 `npx vitest run test/integration/sound.test.tsx`（提交前仍走 `npm run check` 整体闸门） |
 | 人机页 | 浏览器探针在 `#/ai` 用触摸走一着：振荡器计数 +2（玩家一着 + AI 回一着），上下文 `running` |
-| 真响了 | 浏览器探针记 `OscillatorNode.start` 与 `AudioContext.state`：**真实指针按下**（CDP Input，带用户激活）后上下文进 `running`、缓冲区计数 +1；随后走一着再 +1；关掉声音再走不增；重新打开后认输出现 3 个正弦波（终局三音，见 §2 的波形列）。用 `element.click()` 这类合成事件测不出来——它们不产生用户激活，上下文会一直停在 `suspended`，看起来「建了不响」 |
+| 真响了 | 浏览器探针记 `OscillatorNode.start` 与 `AudioContext.state`（集成用例数的是同一个量：终局是三音同按，所以「响一次终局」在计数上是 3，用例按这个口径断言）：**真实指针按下**（CDP Input，带用户激活）后上下文进 `running`、缓冲区计数 +1；随后走一着再 +1；关掉声音再走不增；重新打开后认输出现 3 个正弦波（终局三音，见 §2 的波形列）。用 `element.click()` 这类合成事件测不出来——它们不产生用户激活，上下文会一直停在 `suspended`，看起来「建了不响」 |
 
 ## 10. 集成测试设计
 
@@ -107,6 +108,6 @@ Survey evidence: 已核对 `docs/design/modules/local-play.md`（事件源）、
 |---|---|
 | 破坏 | 无：F5-6 此前没有实现，没有既有用例断言过声音 |
 | 冗余 | 无：不复制 F1-1 / F1-3 的对局用例，声音只在该行验 |
-| 缺失 | 一行：F5-6 的集成行——从对弈页真实走一着与一次认输，断言「四种声音各响一次」与「关掉后不响、重开页面仍是关」 |
+| 缺失 | 一行：F5-6 的集成行——从对弈页真实走一着与一次认输，断言「落子响一次、终局响一次」与「关掉后不响、重开页面仍是关」；吃子与将军两条路径由 §9 的判定位用例覆盖（`test/sound.test.ts`），集成行不重复验判定 |
 
 该行的断言只取业务可观察结果（响了几次、开关状态是否跨刷新保留），不取合成参数内部的节点细节；合成细节留给 `test/sound.test.ts`。
