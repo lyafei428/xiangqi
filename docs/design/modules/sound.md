@@ -37,7 +37,7 @@ Survey evidence: 已核对 `docs/design/modules/local-play.md`（事件源）、
 
 `useGameSound(session, enabled)` 只盯两个观测点：
 
-**每份 session 各自挂一次**：对弈页的 session 在 `App`，人机页的在 `AiPage`——只在 `App` 挂过一次，人机页就永远没有声音（这就是「试听会响、走子不响」的根因）。开关用 `useSoundEnabled()` 这个共享 store 读，两处拿到的必然是同一个值。
+**每份 session 各自挂一次**：对弈页的 session 在 `App`，人机页的在 `AiPage`，联机页的在 `OnlinePage`——只在 `App` 挂过一次，其余两页就永远没有声音（这就是「试听会响、走子不响」的根因）。开关用 `useSoundEnabled()` 这个共享 store 读，两处拿到的必然是同一个值。
 
 - 结果从无到有 → 终局音；
 - 着法数增加 → 按 `classify` 响**最后那一着**。
@@ -50,7 +50,7 @@ Survey evidence: 已核对 `docs/design/modules/local-play.md`（事件源）、
 
 顶栏右端一枚「设置」浮层（`<details>`），里面是配色下拉、「音效开 / 关」与「试听」。声音开关用 `aria-pressed` 表示状态，选择写 `localStorage`（`xiangqi.sound.v1`），缺省开——配置项必须有自己的界面写面。
 
-浮层的**结构**不归本模块：它由 `docs/design/modules/theme.md` 的顶栏控件一节拥有（配色下拉就在那里），本模块只往浮层里追加两个控件，不改浮层的开合与位置。
+浮层的**结构**不归本模块：它的落点是 `src/client/App.tsx` 里那枚 `<details>`，`docs/design/modules/theme.md` 的红线只给配色下拉（`App.tsx` 那一行），开合与位置由壳档的顶栏管；本模块只往浮层里追加两个控件，不改浮层的开合与位置。
 
 **试听那一下顺手解掉了自动播放限制**：它是一次真实手势，点下去时 `prime()` 会把音频上下文点着并播一个静音样本；不然用户第一次听到的是「走子没声」，还以为功能坏了。
 
@@ -86,7 +86,7 @@ Survey evidence: 已核对 `docs/design/modules/local-play.md`（事件源）、
 | `test/prefs.test.ts` | 80 | 不跨层（只加音效键的用例） |
 | `src/client/App.tsx` | 269 | 不跨层（挂一次 hook + 浮层里加两个控件） |
 | `src/client/pages/AiPage.tsx` | 358 | 不跨层（挂一次 hook） |
-| `test/integration/sound.test.tsx` | 114 | 不跨层（F5-6 的集成行） |
+| `test/integration/sound.test.tsx` | 115 | 不跨层（F5-6 的集成行） |
 
 均不跨层：没有文件越过 500 行的代码结构线，本变更也不把它们推向那条线。
 
@@ -108,6 +108,6 @@ Survey evidence: 已核对 `docs/design/modules/local-play.md`（事件源）、
 |---|---|
 | 破坏 | 无：F5-6 此前没有实现，没有既有用例断言过声音 |
 | 冗余 | 无：不复制 F1-1 / F1-3 的对局用例，声音只在该行验 |
-| 缺失 | 一行：F5-6 的集成行——从对弈页真实走一着与一次认输，断言「落子响一次、终局响一次」与「关掉后不响、重开页面仍是关」；吃子与将军两条路径由 §9 的判定位用例覆盖（`test/sound.test.ts`），集成行不重复验判定 |
+| 缺失 | 一行：F5-6 的集成行——从对弈页真实走一着与一次认输，断言「落子响一次、终局响一次」与「关掉后不响、重开页面仍是关」。实现文件 `test/integration/sound.test.tsx`；吃子与将军两条路径由 §9 的判定位用例覆盖（`test/sound.test.ts`），集成行不重复验判定 |
 
 该行的断言只取业务可观察结果（响了几次、开关状态是否跨刷新保留），不取合成参数内部的节点细节；合成细节留给 `test/sound.test.ts`。

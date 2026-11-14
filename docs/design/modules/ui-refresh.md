@@ -96,7 +96,7 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md` §3 的 F1.1–F1.10�
 
 | 文件 | 动作 |
 |---|---|
-| `docs/requirements/xiangqi.md` | F1.10、F4.6、F5.5 三行已就位 |
+| `docs/requirements/xiangqi.md` | F1.10、F4.6、F5.5 三行 |
 | `docs/design/modules/board-ui.md` | §2 棋子材质（允许描边内 1px 内阴影）；§5 窄屏覆盖式几何与可用高来源 |
 | `docs/design/modules/local-play.md` | §2 样式拆分说明；§5 的 <768px 行改为覆盖式 |
 | `src/client/styles/base.css` | 新增：变量层、reset、排版、按钮基元（约 40 行起） |
@@ -119,7 +119,7 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md` §3 的 F1.1–F1.10�
 
 分档：`src/client/app.css` 实测 1451 行，过了 800 行硬上限，本批拆成上表八个样式文件（按现有分区估算，单文件均 < 500 行）；拆后 `src/client/app.css` 只剩八行引入。
 
-其余受影响文件实测都在档内：`src/client/pages/AiPage.tsx` 265 行、`src/client/panel/GamePanel.tsx` 218 行、`src/client/pages/PlayPage.tsx` 67 行。
+其余受影响文件实测都在档内：`src/client/pages/AiPage.tsx` 358 行、`src/client/panel/GamePanel.tsx` 244 行、`src/client/pages/PlayPage.tsx` 87 行。
 
 `scripts/acceptance.mjs` 实测 596 行，过了 500 行的主动复核档。本批只在它既有读数器旁加一段 F4-6 读数（约 30 行），按页拆开放到下一批。
 

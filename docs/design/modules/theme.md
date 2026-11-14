@@ -164,7 +164,7 @@ F5.5 对实现的三个约束，逐条对应到本档：分色（§2）、对比
 | 顶栏 | 保持现状高度，不新设定值；深色底 + 底部 1px `--line`；手机档仍隐品牌名、七项单行 |
 | 卡片 | `--panel-bg` + 1px `--line` + `--radius-lg`；不加外投影 |
 | 主操作 | 每个视图一个填充蓝按钮，位置不变，不新造按钮 |
-| 棋盘 | 浅色纸：`--board-bg` + 1px `--line` + 一圈柔和外投影（唯一的投影） |
+| 棋盘 | 浅色纸：`--board-bg` + 1px `--line` + 一圈柔和外投影（深色档里唯一的外投影；浅色档另有 `--raise` 那层轻浮雕） |
 | 间距 | ≥768 档页内边距 16px、卡片内 16px、控件间距 12px；**<768 档页内边距保持 8px**（面板与常驻条用；棋盘舞台左右为 0，见 `docs/design/modules/board-ui.md` §5，棋盘按整屏宽排，375 上格宽 41.7、360 上 40.0） |
 | 字体 | 沿用现有栈；数字仍 `tabular-nums`。字号：导航 16px（手机档 14）、页标题 26px（手机档 22）、副标题 14px（手机档 13）、面板与胶囊按钮 13px |
 
@@ -190,9 +190,9 @@ F5.5 对实现的三个约束，逐条对应到本档：分色（§2）、对比
 | `src/client/styles/shell.css`、`panel.css`、`play.css`、`learn.css`、`drill.css`、`replay.css`、`responsive.css` | 残留字面色值换成变量；界面上的红/黑/绿文字改指向 `--red-text`／`--black-text`／`--target-text`；棋盘加外投影 |
 | `scripts/acceptance.mjs` | 新增 F5-4 对比度读数：从 `:root` 取变量值，按 WCAG 公式逐对算并断言 |
 | `test/RTM.md` | 新增 F5-4 一行（行号先定，用例后写） |
-| `docs/design/modules/ui-refresh.md` | §2 的取值表已改为指向本档；§7 第①条的对比度口径一并改为指向本档 §3／§7，避免两处各写一份 |
+| `docs/design/modules/ui-refresh.md` | 取值表与对比度口径都指向本档 §2／§3，两处只留一份 |
 
-分档结论：样式表最大 `play.css` 419 行、`measures` 393 行，都在 500 行内；`scripts/acceptance.mjs` 已按「按页拆」的口径拆成 `scripts/acceptance/support.mjs`（196 行）与 `scripts/acceptance/measures.mjs`（393 行），主档 249 行——三份都离开 800 行硬上限有距离。**本批不需要拆分方案。**
+分档结论：样式表最大 `play.css` 419 行、`measures` 415 行，都在 500 行内；`scripts/acceptance.mjs` 已按「按页拆」的口径拆成 `scripts/acceptance/support.mjs`（196 行）与 `scripts/acceptance/measures.mjs`（415 行），主档 249 行——三份都离开 800 行硬上限有距离。**本批不需要拆分方案。**
 
 现有件检查：
 
