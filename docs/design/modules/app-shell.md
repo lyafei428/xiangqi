@@ -20,10 +20,11 @@ Survey evidence: 已核对 `docs/design/architecture.md`（技术栈、响应式
 | `#/online` | 联机大厅 / 房间 |
 | `#/replay` | 棋谱列表 |
 | `#/replay/<id>` | 单局回放 |
+| `#/rules` | 规则说明 |
 
 - hash 变化用 `hashchange` 订阅；未知路由按对弈页渲染，不改写地址。这是地址栏兜底，无观察来源、也无用例断言。
 - 练习路由可带 `?seed=<n>&kind=<kind>`，用于复现同一道题；不带时随机出题。场景：`test/integration/drill.test.tsx` 用固定 seed 进入并确定作答（复现命令 `npm run test:ui`）；没有这个查询面，页面每次随机出题，用例无法确定答案。
-- 不引路由库：十条路由用 `parseHash` / `routeHash` 两个纯函数足够。
+- 不引路由库：十一条路由用 `parseHash` / `routeHash` 两个纯函数足够。
 
 ## 2. 状态归属
 
@@ -42,7 +43,7 @@ Survey evidence: 已核对 `docs/design/architecture.md`（技术栈、响应式
 
 ## 3. 导航与布局
 
-- 顶部一条导航：对弈 / 人机 / 联机 / 课程 / 练习 / 棋谱；当前项用 `aria-current="page"` 标记。
+- 顶部一条导航：对弈 / 人机 / 联机 / 课程 / 练习 / 棋谱 / 规则；当前项用 `aria-current="page"` 标记。
 - 桌面：导航横排；内容区沿用对弈页的「棋盘 + 面板」两栏。
 - 平板 / 手机：导航仍在顶部，内容区改为上下结构，棋盘尺寸规则复用 `docs/design/modules/board-ui.md` §5。
 - 课程页与练习页的棋盘都在内容区内，尺寸由同一 `boardSize` 计算。
@@ -76,7 +77,7 @@ Survey evidence: 已核对 `docs/design/architecture.md`（技术栈、响应式
 |---|---|
 | F4.1 三端同一套界面 | 一套组件 + 三档 CSS，无第二套页面 |
 | F4.2 切换不丢状态 | 对局状态在 App 级；切页不重建；跨会话进度不在本批 |
-| F5.1 界面简约 | 导航六项（对弈 / 人机 / 联机 / 课程 / 练习 / 棋谱），不附加装饰控件 |
+| F5.1 界面简约 | 导航七项（对弈 / 人机 / 联机 / 课程 / 练习 / 棋谱 / 规则），不附加装饰控件 |
 
 ## 6. 集成测试设计
 

@@ -51,8 +51,9 @@
 | 行 | 集成用例 | 业务结果 | 用户入口 | 需求 |
 |---|---|---|---|---|
 | F4-1 | 切页不丢对局 | 走一着后去课程再回来，棋盘与记谱保持原样（对弈与人机各验一次） | 打开页面 → 对弈（人机）→ 课程 → 回原页 | F4.2 |
+| F4-2 | 规则页 | 导航点「规则」后八条判罚逐条可见，并写明长捉与一将一闲不在 v1 范围内 | 打开页面 → 规则 | F4.5、规则口径 |
 
-用例实现：`test/integration/navigation.test.tsx`。
+用例实现：`test/integration/navigation.test.tsx`（F4-1）、`test/integration/rules.test.tsx`（F4-2）；F4.5 的 manifest / 图标 / sw / 注册点静态断言见 `test/pwa.test.ts`。
 
 ## 响应式（需求 F4）
 

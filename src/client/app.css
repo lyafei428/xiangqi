@@ -998,9 +998,18 @@ button {
 
 
 @media (max-width: 767px) {
+  /* 七项导航在 375px 下装不进一行：允许折行，让导航条自己长高，
+     而不是把标签压成单字一行再溢出到内容区。 */
   .app-nav {
-    padding: 0 10px;
-    gap: 10px;
+    height: auto;
+    min-height: 48px;
+    flex-wrap: wrap;
+    padding: 6px 10px;
+    gap: 8px 10px;
+  }
+
+  .app-links {
+    flex-wrap: wrap;
   }
 
   .board-stage {

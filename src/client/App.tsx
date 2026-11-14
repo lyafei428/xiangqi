@@ -11,6 +11,7 @@ import { MissionsPage } from './pages/MissionsPage.tsx';
 import { MissionPage } from './pages/MissionPage.tsx';
 import { OnlinePage } from './pages/OnlinePage.tsx';
 import { ReplayPage } from './pages/ReplayPage.tsx';
+import { RulesPage } from './pages/RulesPage.tsx';
 import { createSession, restoreSession, sessionReducer } from './game/session.ts';
 import type { GameSession } from './game/session.ts';
 import { clockFrom, positionAt, remainingOf } from '../shared/index.ts';
@@ -26,6 +27,7 @@ const NAV: readonly { readonly label: string; readonly route: Route; readonly ma
   { label: '课程', route: { name: 'learn' }, match: ['learn', 'lesson'] },
   { label: '练习', route: { name: 'drill' }, match: ['drill', 'missions', 'mission'] },
   { label: '棋谱', route: { name: 'replay' }, match: ['replay', 'replayOne'] },
+  { label: '规则', route: { name: 'rules' }, match: ['rules'] },
 ];
 
 /** 启动时接上未完成的本地对局：重放局面，时钟按暂停处理（关页期间没有计时器）。 */
@@ -135,6 +137,7 @@ export function App() {
         {route.name === 'online' ? <OnlinePage /> : null}
         {route.name === 'replay' ? <ReplayPage id={null} /> : null}
         {route.name === 'replayOne' ? <ReplayPage key={route.id} id={route.id} /> : null}
+        {route.name === 'rules' ? <RulesPage /> : null}
       </div>
     </div>
   );

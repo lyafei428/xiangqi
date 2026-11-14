@@ -12,7 +12,8 @@ export type Route =
   | { readonly name: 'mission'; readonly id: string }
   | { readonly name: 'online' }
   | { readonly name: 'replay' }
-  | { readonly name: 'replayOne'; readonly id: number };
+  | { readonly name: 'replayOne'; readonly id: number }
+  | { readonly name: 'rules' };
 
 const DRILL_KINDS: readonly DrillKind[] = ['move-pattern', 'legality', 'position', 'notation'];
 
@@ -51,6 +52,8 @@ export function parseHash(hash: string): Route {
     const id = decodeURIComponent(path.slice('/mission/'.length));
     return id === '' ? { name: 'missions' } : { name: 'mission', id };
   }
+  // 规则页是纯静态文案，没有参数，所以这里只占一行。
+  if (path === '/rules') return { name: 'rules' };
   return { name: 'play' };
 }
 
@@ -81,5 +84,7 @@ export function routeHash(route: Route): string {
       return '#/replay';
     case 'replayOne':
       return `#/replay/${String(route.id)}`;
+    case 'rules':
+      return '#/rules';
   }
 }

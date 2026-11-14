@@ -93,7 +93,7 @@ type AiResponse = { readonly id: number; readonly reply: AiReply };
 
 ## 4. 页面
 
-路由 `#/ai`，页面 `src/client/pages/AiPage.tsx`；导航六项之第 2 位（对弈 / 人机 / 联机 / 课程 / 练习 / 棋谱，见 `docs/design/modules/app-shell.md` §3）。
+路由 `#/ai`，页面 `src/client/pages/AiPage.tsx`；导航七项之第 2 位（对弈 / 人机 / 联机 / 课程 / 练习 / 棋谱 / 规则，见 `docs/design/modules/app-shell.md` §3）。
 
 - 控件：难度三选一（`入门` / `普通` / `高手`，单选按钮组）；阵营二选一（`执红` / `执黑`，默认执红）。两项都是固定取值，用选项不给文本框。
 - 棋盘用 `Board` 的 `play` 模式，`side` 传玩家颜色——AI 的棋子不可选、不可拖。

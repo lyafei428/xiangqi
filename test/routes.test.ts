@@ -45,8 +45,13 @@ test('棋谱路由', () => {
   assert.equal(routeHash({ name: 'replayOne', id: 12 }), '#/replay/12');
 });
 
+test('规则页路由', () => {
+  assert.deepEqual(parseHash('#/rules'), { name: 'rules' });
+  assert.equal(routeHash({ name: 'rules' }), '#/rules');
+});
+
 test('routeHash 与 parseHash 往返一致', () => {
-  for (const hash of ['#/play', '#/learn', '#/lesson/horse', '#/drill?seed=3&kind=notation', '#/missions', '#/mission/mission-iron-bolt', '#/online', '#/replay', '#/replay/1700000000000']) {
+  for (const hash of ['#/play', '#/learn', '#/lesson/horse', '#/drill?seed=3&kind=notation', '#/missions', '#/mission/mission-iron-bolt', '#/online', '#/replay', '#/replay/1700000000000', '#/rules']) {
     assert.equal(routeHash(parseHash(hash)), hash);
   }
 });
