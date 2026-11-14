@@ -45,26 +45,22 @@ export function StudyLibrary({ selectedId, onOpen }: StudyLibraryProps) {
           </button>
         ))}
       </div>
-      {shown.length === 0 ? (
-        <p className="replay-empty">这一类还没有棋谱</p>
-      ) : (
-        <ul className="study-rows">
-          {shown.map((record) => (
-            <li
-              key={record.id}
-              className="study-row"
-              data-current={record.id === selectedId ? 'yes' : undefined}
-            >
-              <button className="study-open" type="button" onClick={() => onOpen(record)}>
-                <span className="study-title">{record.title}</span>
-                <span className="study-meta">
-                  {PHASE_LABELS[record.phase]} · {record.source} · {record.moves.length} 着
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      <ul className="study-rows">
+        {shown.map((record) => (
+          <li
+            key={record.id}
+            className="study-row"
+            data-current={record.id === selectedId ? 'yes' : undefined}
+          >
+            <button className="study-open" type="button" onClick={() => onOpen(record)}>
+              <span className="study-title">{record.title}</span>
+              <span className="study-meta">
+                {PHASE_LABELS[record.phase]} · {record.source} · {record.moves.length} 着
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

@@ -53,7 +53,7 @@ function ofPhase(phase: StudyPhase): StudyRecord[] {
   return records().filter((record) => record.phase === phase);
 }
 
-test('棋谱库共 16 条，四类各 4 条', () => {
+test('棋谱库共 24 条，四类各 6 条', () => {
   const all = records();
   assert.equal(all.length, 24);
   for (const phase of PHASES) {

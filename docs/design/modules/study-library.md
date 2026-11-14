@@ -62,13 +62,13 @@ export function parseStudyRecord(value: unknown): StudyRecord | null;
 | 终局 | 自编；`statusOf` 走到末着为将死；起始局面双方子力各不少于 4 枚 |
 | 残局 | 来源写明出处（古谱名，或明标为「仿……杀法」的自编排局）；起始局面双方子力各不超过 6 枚；以将死或和棋收尾 |
 
-内容来源：残局为少子排局，杀法取自《橘中秘》《适情雅趣》一类古谱，但**当前四条是由我按该谱杀法构造的排局，不是逐字转录原谱**，所以 `source` 写成「自编 · 仿《…》杀法」——标谱名不给原谱坐实就是署名失真；若日后拿到可核的原谱着法表，再换成真转录。其余三类自编。**每条的着法都由引擎逐着复核**，复核不过的不收。
+内容来源：残局为少子排局，杀法取自《橘中秘》《适情雅趣》一类古谱，但**现行六条都是按该谱杀法构造的排局，不是逐字转录原谱**，所以 `source` 写成「自编 · 仿《…》杀法」——标谱名不给原谱坐实就是署名失真；若日后拿到可核的原谱着法表，再换成真转录。其余三类自编。**每条的着法都由引擎逐着复核**，复核不过的不收。
 
 `notes` 每条 1–3 则，写关键着法的用意（为什么这一步，而不是复述走法）。
 
 ## 4. 界面
 
-- 棋谱页顶部两个分栏按钮：`我的棋谱` / `棋谱库`；`我的棋谱` 的分栏下保持现状，不改列表、回放与导入导出。
+- 棋谱页顶部两个分栏按钮：`我的棋谱` / `棋谱库`；`我的棋谱` 的分栏下不改列表、回放与导入导出；唯一的例外是表头吸顶（见下一条），它属于本批。
 - `棋谱库` 分栏：一排分类筛选（全部 / 开局 / 中局 / 终局 / 残局）+ 条目列表（标题、类别、来源、步数）。
 - `我的棋谱` 的表头（标题 + `导入`）吸在列表顶部（`position: sticky`，底色与页面一致 + 一条分隔线）：棋谱攒多以后往下拉，表头不跟着走。
 - 点开条目进入页内回放：复用现有棋盘与步进控件，记谱列表同源；`notes` 命中当前步时在棋盘下方显示一条说明。
@@ -95,7 +95,7 @@ export function parseStudyRecord(value: unknown): StudyRecord | null;
 | `src/client/study/content.ts` | 新增：`import` 内容 JSON，导出逐条 `parseStudyRecord` 后的列表 |
 | `src/client/study/StudyLibrary.tsx` | 新增：分栏内的筛选与列表 |
 | `src/client/pages/ReplayPage.tsx` | 加分栏切换、库内回放状态与说明行 |
-| `src/client/app.css` | 分栏、筛选、库列表与说明行的样式 |
+| `src/client/styles/replay.css` | 分栏、筛选、库列表与说明行的样式（经 `src/client/app.css` 的 `@import` 引入） |
 | `content/games/index.json` | 24 条棋谱（四类各 6 条） |
 | `test/study.test.ts` | 新增：内容自证 |
 | `test/integration/study.test.tsx` | 新增：F1-9 |
@@ -109,13 +109,14 @@ export function parseStudyRecord(value: unknown): StudyRecord | null;
 
 现有件检查：
 
-- existing —— `src/shared/record.ts` 的 `parseRecord` / `positionAt` / `isReplayable` / `notationsOf` / `recordText`；`src/client/pages/ReplayPage.tsx` 的列表与回放布局；面板与棋盘的样式集中在 `src/client/app.css`。
+- existing —— `src/shared/record.ts` 的 `parseRecord` / `positionAt` / `isReplayable` / `notationsOf` / `recordText`；`src/client/pages/ReplayPage.tsx` 的列表与回放布局；面板与棋盘的样式集中在 `src/client/styles/` 下的分表（由 `src/client/app.css` 统一 `@import`）。
 - none found —— 新名字 `StudyRecord`、`StudyPhase`、`parseStudyRecord`、`positionAtMoves`、`StudyLibrary`、`src/client/study/content.ts` 项目内均无同名先例（检索 `study|Study` 零命中）；「随包棋谱内容」亦无先例。
 - 文案：`我的棋谱` 是 `src/client/pages/ReplayPage.tsx` 里现状列表的标题（本批沿用）；`棋谱库`、`全部 / 开局 / 中局 / 终局 / 残局`、`这一类还没有棋谱` 为新增文案。
 
 ## 7. 验收
 
 - 内容自证：`node --test test/study.test.ts`，覆盖逐条解析、逐着合法、四类各 6 条、分类规则可判、`id` 唯一、`notes.step` 在范围。
+- 提交门另算：`npm run check`（typecheck + 全量单测 + 前端用例）是提交前的闸门，不是本批的验收口径。
 - 集成用例 F1-9 的那一半在收口行报告（`test/integration/study.test.tsx`），不写进本模块验收。
 - 提交门见 `AGENTS.md`。
 
