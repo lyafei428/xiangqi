@@ -60,7 +60,7 @@
   border: 1px solid var(--line);
   background: var(--raise-bg);
   color: var(--text);
-  border-radius: var(--radius);
+  border-radius: var(--radius-pill);
   box-shadow: var(--raise-flat);
   padding: 7px 12px;
   font-size: 13px;
@@ -200,7 +200,7 @@
   background: var(--panel-bg);
   color: var(--text);
   padding: 7px 14px;
-  border-radius: var(--radius);
+  border-radius: var(--radius-pill);
   box-shadow: var(--raise-flat);
   font-weight: 600;
   cursor: pointer;
@@ -290,7 +290,7 @@
   background: var(--panel-bg);
   color: var(--text);
   padding: 7px 12px;
-  border-radius: var(--radius);
+  border-radius: var(--radius-pill);
   box-shadow: var(--raise-flat);
   font-weight: 600;
   cursor: pointer;

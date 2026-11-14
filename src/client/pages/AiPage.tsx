@@ -47,6 +47,10 @@ export function AiPage() {
   // 与对弈页同一口径：第一次收起，用户展开过就记住。
   const [panelOpen, setPanelOpen] = useState(readPanelOpen);
   const [controlsOpen, setControlsOpen] = useState(false);
+  /** 这一局已经在控件组里选过难度或阵营；选过之后鼠标移开就收起。 */
+  const [picked, setPicked] = useState(false);
+  /** 选过之后被鼠标移开收起了：与「摘要点开」分开存，才能做到移开就收、点摘要再铺开。 */
+  const [collapsedByLeave, setCollapsedByLeave] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const stageRef = useRef<HTMLDivElement | null>(null);
   const stage = useStageSize(stageRef);
@@ -160,6 +164,11 @@ export function AiPage() {
     gameRef.current += 1;
     setThinking(false);
     setNotice(null);
+    // 新局把控件组重新铺开：一局里选过一次、被鼠标移开收起过，都不该带到下一局。
+    // 这里直接复位，而不是只靠 hasMoves 的 effect——还没走过子的新局里 hasMoves 没变，effect 不会重跑。
+    setPicked(false);
+    setCollapsedByLeave(false);
+    setControlsOpen(false);
     dispatch({ type: 'reset' });
   };
 
@@ -178,21 +187,45 @@ export function AiPage() {
 
   const canPlay = !over && session.position.turn === side && !thinking;
   const size = boardSize(stage.width, stage.height);
-  // 未走子时难度与阵营就在页面上；走完第一着收成一行摘要，点摘要可再展开改。
+  // 难度与阵营：开局就在页面上，选过之后鼠标一离开就收成一行摘要，新局再重新铺开。
+  // 走完第一着也收；点摘要可随时展开改。
   // 「AI 思考中」与出错提示不属于这组控件，留在外面，收起后仍看得见。
   const hasMoves = session.notations.length > 0;
-  const showControls = !hasMoves || controlsOpen;
+  const showControls = controlsOpen || (!hasMoves && !collapsedByLeave);
 
-  // 新局（着法清零）时把「展开过」复位：否则一局里点过一次摘要，往后每局都再也不收起。
+  // 新局（着法清零）时把「展开过」与「选过」一起复位：控件组重新铺开。
   useEffect(() => {
-    if (!hasMoves) setControlsOpen(false);
+    if (!hasMoves) {
+      setControlsOpen(false);
+      setPicked(false);
+      setCollapsedByLeave(false);
+    }
   }, [hasMoves]);
+
+  // 选过之后鼠标移出控件组就收起；键盘焦点还在组里时不收，免得一 Tab 出去界面就跳。
+  const closeOnLeave = (event: React.PointerEvent<HTMLDivElement>): void => {
+    if (!picked || hasMoves) return;
+    const next = event.relatedTarget;
+    if (next instanceof Node && event.currentTarget.contains(next)) return;
+    setControlsOpen(false);
+    setCollapsedByLeave(true);
+  };
+
+  // 记一笔「这一局已经在控件组里选过」，收起才有依据。
+  const chooseLevel = (item: AiLevel): void => {
+    setPicked(true);
+    setLevel(item);
+  };
+  const chooseSide = (item: Color): void => {
+    setPicked(true);
+    changeSide(item);
+  };
 
   return (
     <div className="page page-play page-ai" data-panel={panelOpen ? 'open' : 'closed'}>
       <main className="board-stage">
         {showControls ? (
-          <div className="ai-controls">
+          <div className="ai-controls" onPointerLeave={closeOnLeave}>
             <div className="mission-actions" role="radiogroup" aria-label="难度">
               <span className="drill-hint" style={{ alignSelf: 'center' }}>
                 难度
@@ -204,7 +237,7 @@ export function AiPage() {
                     name="ai-level"
                     value={item}
                     checked={item === level}
-                    onChange={() => setLevel(item)}
+                    onChange={() => chooseLevel(item)}
                   />
                   {LEVEL_LABEL[item]}
                 </label>
@@ -221,7 +254,7 @@ export function AiPage() {
                     name="ai-side"
                     value={item}
                     checked={item === side}
-                    onChange={() => changeSide(item)}
+                    onChange={() => chooseSide(item)}
                   />
                   {SIDE_LABEL[item]}
                 </label>
@@ -229,7 +262,14 @@ export function AiPage() {
             </div>
           </div>
         ) : (
-          <button type="button" className="ai-summary" onClick={() => setControlsOpen(true)}>
+          <button
+            type="button"
+            className="ai-summary"
+            onClick={() => {
+              setControlsOpen(true);
+              setCollapsedByLeave(false);
+            }}
+          >
             难度 {LEVEL_LABEL[level]} · {SIDE_LABEL[side]} · 改
           </button>
         )}

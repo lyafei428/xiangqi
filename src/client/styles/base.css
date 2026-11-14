@@ -37,6 +37,8 @@
   --raise: 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
   --raise-flat: 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
   --radius: 12px;
+  /* 按钮用胶囊（站点 --dsl-button-border-radius: 4096px）；卡片与输入框不用它。 */
+  --radius-pill: 4096px;
   --radius-lg: 14px;
   --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   --font-board: 'STKaiti', 'KaiTi', 'Songti SC', serif;

@@ -133,6 +133,7 @@ type AiResponse = { readonly id: number; readonly reply: AiReply };
 - 面板复用 `GamePanel`，模式标签显示「人机 · 普通」这类实际档位；终局文案与本地一致。
 - 人机局的计时与认输：每人 10 分钟包干，AI 思考耗时计在它自己那份里；终局后停表。认输沿用 `docs/design/modules/clock.md` §2 的口径：只接受当前行棋方，所以玩家只在自己回合可认输（`GamePanel` 的 `resignDisabled` 在 AI 回合置灰）；AI 不会认输。
 - 控件语义：换难度只影响下一着（在飞结果仍按原难度落地）；换阵营等同重开一局，旧请求 `cancel()` 丢弃。
+- 控件收起：未走子时铺开；选过之后鼠标移出控件组即收成一行摘要，点摘要可再展开，新局重新铺开（详见 `docs/design/modules/ui-refresh.md` §3）。键盘焦点还在组里时不收。
 - 新局：按当前阵营重开；AI 执红时开局即请求一着。
 - 终局存棋谱：收到带 `result` 的会话时调 `saveRecord`（与本地对局同一函数，带 dedupe：切页重挂载不重复写；键里含换局代数，免得新局撞上同样着法数与结果被当成已存），未完成局不写。
 

@@ -335,6 +335,32 @@ describe('F1-10 人机页专注：难度与阵营收为一行摘要', () => {
     expect((screen.getByRole('radio', { name: '执红' }) as HTMLInputElement).checked).toBe(true);
     expect(summary()).toBeNull();
   });
+
+  it('选过之后鼠标移开就收起，新局重新铺开', () => {
+    const { container } = open();
+    const levelGroup = (): HTMLElement | null => screen.queryByRole('radiogroup', { name: '难度' });
+    const summary = (): HTMLElement | null => screen.queryByRole('button', { name: /难度 .* · 改/ });
+    const controls = (): Element | null => container.querySelector('.ai-controls');
+
+    // 没选过：鼠标移开不收——否则用户还没选就被迫点摘要展开。
+    const before = controls();
+    if (before === null) throw new Error('控件组没渲染');
+    fireEvent.pointerLeave(before);
+    expect(levelGroup()).not.toBeNull();
+
+    // 选过难度：移开就收成摘要。
+    fireEvent.click(screen.getByRole('radio', { name: '高手' }));
+    const afterPick = controls();
+    if (afterPick === null) throw new Error('控件组没渲染');
+    fireEvent.pointerLeave(afterPick);
+    expect(levelGroup()).toBeNull();
+    expect(summary()?.textContent).toBe('难度 高手 · 执红 · 改');
+
+    // 新局：控件组重新铺开（一局里选过一次，不该影响下一局）。
+    fireEvent.click(screen.getByRole('button', { name: '新局' }));
+    expect(levelGroup()).not.toBeNull();
+    expect(summary()).toBeNull();
+  });
 });
 
 describe('挂载重放（StrictMode 双调用）', () => {
