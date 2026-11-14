@@ -58,7 +58,7 @@
   justify-content: center;
   gap: 6px;
   border: 1px solid var(--line);
-  background: var(--panel-bg);
+  background: var(--raise-bg);
   color: var(--text);
   border-radius: var(--radius);
   box-shadow: var(--raise-flat);
@@ -70,11 +70,11 @@
 }
 
 .panel-toggle:hover {
-  background: #f0f1f4;
+  background: var(--sunken-bg);
 }
 
 .panel-toggle[aria-expanded='true'] {
-  background: #e9ebef;
+  background: var(--sunken-bg);
 }
 
 /* 收起时不参与布局、不可聚焦：hidden 属性由结构保证，这里只兜底。 */
@@ -116,7 +116,7 @@
 
 .panel-close:hover {
   color: var(--text);
-  background: #f0f1f4;
+  background: var(--sunken-bg);
 }
 
 .status-line {
@@ -129,7 +129,8 @@
 }
 
 .status-line.is-result {
-  color: var(--accent);
+  /* 结果行是正文级字号（18px），不能用 --accent 本色：它在 --panel-bg 上只有 3.8:1。 */
+  color: var(--accent-strong);
 }
 
 .turn-dot {
@@ -157,7 +158,7 @@
   overflow-y: auto;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: #f7f8fa;
+  background: var(--sunken-bg);
   box-shadow: var(--raise-flat);
   padding: 8px 10px;
 }
@@ -195,7 +196,6 @@
 }
 
 .new-game {
-  flex: 0 0 auto;
   border: 1px solid var(--line);
   background: var(--panel-bg);
   color: var(--text);
@@ -207,7 +207,7 @@
 }
 
 .new-game:hover {
-  background: #f0f1f4;
+  background: var(--sunken-bg);
 }
 
 .new-game:active {
@@ -224,7 +224,7 @@
 
 .notation-input {
   border: 1px solid var(--line);
-  background: #f7f8fa;
+  background: var(--sunken-bg);
   color: var(--text);
   border-radius: var(--radius);
   padding: 8px 10px;
@@ -262,7 +262,7 @@
   padding: 5px 8px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: #f7f8fa;
+  background: var(--sunken-bg);
   font-size: 13px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -281,8 +281,8 @@
 }
 
 .clock.is-low {
-  color: #a12f2f;
-  border-color: #a12f2f;
+  color: var(--low);
+  border-color: var(--low);
 }
 
 .resign {
@@ -297,7 +297,7 @@
 }
 
 .resign:hover:not(:disabled) {
-  background: #f0f1f4;
+  background: var(--sunken-bg);
 }
 
 .resign:disabled {

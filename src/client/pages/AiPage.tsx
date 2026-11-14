@@ -179,6 +179,11 @@ export function AiPage() {
   const hasMoves = session.notations.length > 0;
   const showControls = !hasMoves || controlsOpen;
 
+  // 新局（着法清零）时把「展开过」复位：否则一局里点过一次摘要，往后每局都再也不收起。
+  useEffect(() => {
+    if (!hasMoves) setControlsOpen(false);
+  }, [hasMoves]);
+
   return (
     <div className="page page-play page-ai" data-panel={panelOpen ? 'open' : 'closed'}>
       <main className="board-stage">

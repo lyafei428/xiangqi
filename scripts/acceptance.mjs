@@ -532,13 +532,20 @@ async function measurePhoneOneScreen(cdp) {
   await delay(600);
   const read = (label) =>
     evaluate(cdp, `(() => {
-      const board = document.querySelector('svg');
+      const board = document.querySelector('svg.board');
       const box = board ? board.getBoundingClientRect() : null;
+      const nav = document.querySelector('.app-nav');
+      const panel = document.querySelector('.panel');
+      const sheet = document.querySelector('.panel-body');
       const doc = document.scrollingElement;
+      const rect = (el) => (el ? { top: Math.round(el.getBoundingClientRect().top), bottom: Math.round(el.getBoundingClientRect().bottom), height: Math.round(el.getBoundingClientRect().height) } : null);
       return {
         label: ${JSON.stringify(label)},
-        boardTop: box ? Math.round(box.top) : -1,
-        boardBottom: box ? Math.round(box.bottom) : -1,
+        board: rect(board),
+        nav: rect(nav),
+        bar: rect(panel),
+        sheet: rect(sheet),
+        sheetHidden: sheet ? sheet.hasAttribute('hidden') : null,
         viewport: window.innerHeight,
         scrollHeight: doc ? doc.scrollHeight : -1,
         clientHeight: doc ? doc.clientHeight : -1,
@@ -608,14 +615,45 @@ function report(data) {
   if (data.fluency.maxFrameGapMs > THRESHOLDS.frameMs) failures.push(`连续走子最大帧间隔 ${data.fluency.maxFrameGapMs.toFixed(1)}ms > 32ms`);
 
   console.log(`\n手机一屏（375×667，F4.6）`);
-  console.table([data.oneScreen.closed, data.oneScreen.open, data.oneScreen.again]);
+  console.table(
+    [data.oneScreen.closed, data.oneScreen.open, data.oneScreen.again].map((row) => ({
+      label: row.label,
+      boardTop: row.board.top,
+      boardBottom: row.board.bottom,
+      barTop: row.bar.top,
+      sheetTop: row.sheet?.top ?? null,
+      sheetBottom: row.sheet?.bottom ?? null,
+      sheetHidden: String(row.sheetHidden),
+      viewport: row.viewport,
+    })),
+  );
   const oneScreen = data.oneScreen.closed;
-  if (oneScreen.boardBottom < 0) failures.push('375×667 下没有读到棋盘');
-  if (oneScreen.boardBottom > oneScreen.clientHeight) failures.push(`375×667 下棋盘底边 ${oneScreen.boardBottom} 超出可视区 ${oneScreen.clientHeight}`);
-  if (oneScreen.boardTop < 0) failures.push(`375×667 下棋盘顶边 ${oneScreen.boardTop} 被裁`);
+  const opened = data.oneScreen.open;
+  const again = data.oneScreen.again;
+  const board = oneScreen.board;
+  // 不靠 scrollHeight：.app 钉了 100dvh + overflow:hidden，那个值永远等于 clientHeight。
+  // 直接逐元素看「底边有没有越出视口」，被裁掉也算不达标。
+  for (const [name, box] of [
+    ['导航', oneScreen.nav],
+    ['棋盘', board],
+    ['常驻条', oneScreen.bar],
+  ]) {
+    if (box === null) {
+      failures.push(`375×667 下没有读到${name}`);
+      continue;
+    }
+    if (box.bottom > oneScreen.viewport) failures.push(`375×667 下${name}底边 ${box.bottom} 超出视口 ${oneScreen.viewport}`);
+    if (box.top < 0) failures.push(`375×667 下${name}顶边 ${box.top} 被裁`);
+  }
   if (oneScreen.scrollHeight > oneScreen.clientHeight + 1) failures.push(`375×667 下页面可纵向滚动（${oneScreen.scrollHeight} > ${oneScreen.clientHeight}）`);
-  if (data.oneScreen.open.boardBottom !== oneScreen.boardBottom) failures.push('展开「着法」后棋盘被挤小了');
-  if (data.oneScreen.again.boardBottom !== oneScreen.boardBottom) failures.push('收起「着法」后棋盘没有回到原位');
+  // 展开态必须真展开，而且不能盖住常驻条。
+  if (opened.sheetHidden !== false) failures.push('点「着法」后着法区仍标记为隐藏');
+  if ((opened.sheet?.height ?? 0) <= 0) failures.push('点「着法」后着法区高度为 0');
+  if (opened.sheet !== null && opened.sheet.bottom > opened.bar.top + 1) failures.push(`着法上浮层盖住了常驻条（浮层底 ${opened.sheet.bottom} > 条顶 ${opened.bar.top}）`);
+  if (opened.sheet !== null && opened.sheet.top >= opened.board.bottom) failures.push('着法上浮层没有盖住棋盘下沿（设计要求覆盖式）');
+  if (again.sheetHidden !== true) failures.push('点「收起着法」后着法区没有回到隐藏态');
+  if (opened.board.bottom !== board.bottom) failures.push('展开「着法」后棋盘被挤小了');
+  if (again.board.bottom !== board.bottom) failures.push('收起「着法」后棋盘没有回到原位');
 
   if (data.selfTest !== null) {
     console.log(`\n正控（${data.selfTest.label}）：LCP ${Math.round(data.selfTest.lcp)}ms —— ${data.selfTest.failedAsExpected ? '如预期判负，量尺有效' : '没判负，F5.2 的检查是空转'}`);

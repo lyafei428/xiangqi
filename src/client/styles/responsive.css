@@ -143,14 +143,20 @@
     flex: 1 1 100%;
   }
 
-  /* 着法区改成覆盖式：贴底展开，不挤棋盘，自身滚动。 */
+  /* 着法区改成覆盖式：贴在常驻条上沿展开、不挤棋盘，自身滚动。
+     `bottom: 100%` 相对面板自身高度，所以不用写死条高；不能贴视口底，
+     否则展开时会盖住常驻条上的状态、计时、认输与新局（F1.10 的常驻清单）。 */
+  .panel {
+    position: relative;
+  }
+
   .panel-body {
-    position: fixed;
+    position: absolute;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: 100%;
     max-height: 50dvh;
-    padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+    padding: 12px;
     background: var(--panel-bg);
     border-top: 1px solid var(--line);
     border-radius: 14px 14px 0 0;
@@ -218,6 +224,18 @@
 
   .page-play[data-panel='closed'] .panel-mode {
     display: none;
+  }
+
+  /* 横屏是侧栏，不是底抽屉：着法区回到面板内自成一行，不能沿用窄屏的向上浮层。 */
+  .panel-body {
+    position: static;
+    max-height: none;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    z-index: auto;
   }
 
   .page-drill {

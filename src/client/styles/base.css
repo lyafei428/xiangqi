@@ -11,6 +11,11 @@
   --accent: #b0742a;
   /* 强调色作底、白字压在上面时用的深一档：本色作底只有 3.8:1。 */
   --accent-strong: #966023;
+  /* 交互面：--raise-bg 是可按的浅面，--sunken-bg 是悬停/选中的凹面。 */
+  --raise-bg: #fbfbfc;
+  --sunken-bg: #eef0f3;
+  /* 时钟低时。 */
+  --low: #a12f2f;
   --target: #2f6f4f;
   --text: #1f2328;
   /* 次要信息：在 --page-bg 上约 5.5:1，在 --panel-bg 上更高；低于此值就过不了 4.5:1。 */

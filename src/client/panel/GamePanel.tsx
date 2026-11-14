@@ -111,7 +111,8 @@ export function GamePanel(props: GamePanelProps) {
   useEffect(() => {
     const element = movesRef.current;
     if (element !== null) element.scrollTop = element.scrollHeight;
-  }, [session.notations.length]);
+    // 收起时 scrollHeight 为 0（display:none），“滑到最新”是空转；展开那一刻要补一次。
+  }, [session.notations.length, open]);
 
   useEffect(() => {
     if (!focusAfterExpand || !open) return;
