@@ -387,11 +387,19 @@ export function OnlinePage() {
             >
               着法
             </button>
-            {over && !spectating ? (
-              <button type="button" className="new-game" onClick={() => socketRef.current?.rematch()}>
+            {/* 新局常驻：一局打完后不该还要猜按钮藏在哪；对局中置灰而不是隐藏，
+                这样「结束就能重开」这件事一直是看得见的。观战者没有座位，不显示。 */}
+            {spectating ? null : (
+              <button
+                type="button"
+                className="new-game"
+                onClick={() => socketRef.current?.rematch()}
+                disabled={!over}
+                title={over ? undefined : '对局还没结束'}
+              >
                 新局
               </button>
-            ) : null}
+            )}
             <button type="button" className="new-game" onClick={leaveRoom}>
               离开房间
             </button>

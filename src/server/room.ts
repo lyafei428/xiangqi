@@ -88,7 +88,8 @@ export function createRoom(
     black: null,
     spectators: 0,
     idleSince: null,
-    clock: createClock(now, clockMs),
+    // 建房间只是等人：只有一方时表不走，等人到齐由第二人就座开表。
+    clock: { ...createClock(now, clockMs), running: null },
     clockMs,
     drawOffer: null,
     drawBlocked: null,

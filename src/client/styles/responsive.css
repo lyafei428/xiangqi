@@ -133,7 +133,11 @@
 
   .panel {
     height: auto;
-    max-height: none;
+    /* 面板自己滚，不把操作行（着法 / 新局 / 离开）挤出视口：
+       大字号或矮屏时，宁可让面板内部滚动。 */
+    max-height: 50dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
     gap: 6px;
   }

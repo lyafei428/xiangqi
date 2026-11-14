@@ -218,7 +218,13 @@
   cursor: pointer;
 }
 
-.new-game:hover {
+.new-game:disabled {
+  /* 对局还没结束时的新局：看得见、按不动。 */
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.new-game:hover:not(:disabled) {
   background: var(--sunken-bg);
 }
 
