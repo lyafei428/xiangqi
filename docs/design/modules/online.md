@@ -20,7 +20,7 @@ Survey evidence: 已核对以下文档与代码：
 - 随机匹配（`quick-match`）：服务端先找**空座且勾了允许匹配**的房坐进去当黑方；找不到就自己建一间标了可匹配的房等。默认不允许——建房时不勾「允许随机匹配」，那间房只能凭房间码进。
 - 房间码 6 位，字符集 `23456789ABCDEFGHJKLMNPQRSTUVWXYZ`（去掉 0/O/1/I），碰撞重试。
 - 进房发 token（16 字节随机十六进制）。客户端把房间与 token 存 `localStorage`（`xiangqi.online`），断线后带 token 重连，服务端按 token 找回颜色与局面。
-- 观战者的 token 不映射座位：重连带回去仍然是观战。观战按在线连接计、不按 token（同一 token 的新连接与尚未断开的旧连接各占一位）；八人满员时重连可能先收到 `spectators-full`，等旧连接断开后重试即可。
+- 观战者的 token 不映射座位：重连带回去仍然是观战。观战按在线连接计、不按 token（同一 token 的新连接与尚未断开的旧连接各占一位）；八人满员时重连会先收到 `spectators-full`：旧连接在 TCP 断开但服务端还没收到 close 帧时仍占位，重连的新连接于是看到「已满」（复现：观战端直接断网，30 秒内恢复；服务端心跳两次超时后旧连接才释放），等旧连接断开后重试即可。
 - 观战者发 `leave` 或断开即减计数、腾出观战位；服务端向房内广播新快照（`spectators` 变了）。
 - 房间存内存：服务进程重启即清空。「断线重连恢复」限定在服务进程存活期内；持久化留后续批次。
 - 回收：两名棋手都离线、且 `spectators === 0`，超 30 分钟才删房间，服务端每 60 秒扫一次；有观战在线时房间留住。
@@ -95,13 +95,13 @@ interface Snapshot {
 | `src/server/main.ts` | 读端口、启动、优雅退出。 |
 
 - 落子：`playMove(position, history, move)`；抛错即 `rejected`，房间不动；成功则更新局面、记谱（`toChineseNotation`，与本地对局同一套中文记谱）、`seq + 1`、`lastMove`，并取 `statusOf` / `judgeGame` 结果。
-- 时钟：房间持 `ClockState`（剩余毫秒、在走方与锚点）；第二人就座时开锚；落子前先判超时，判超时才扣时并换边；每秒检查在走方是否归零，归零即判 `timeout` 并广播。
+- 时钟：房间持 `ClockState`（剩余毫秒、在走方与锚点）；第二人就座时开锚；落子前先结清在走方已用时间：归零即判 `timeout` 并广播，未归零则落子并换边；另每秒检查在走方是否归零。
 - 认输与求和：协议接线与广播；判罚与状态机见 `docs/design/modules/clock.md` §2/§4。
 - 终局存棋谱：收到带 `result` 的快照时，棋手客户端用 `startFen` / `moveLog` 与快照里的时钟剩余写进本地棋谱库，格式见 `docs/design/modules/replay.md` §1；写入走 `dedupe`，切页或刷新后重连再收到同一终局快照不会重复入库。
-- 广播：每次状态变化向房内全部连接发 `state`（两席 + 至多 8 位观战者）；`presence` 只发在线位变更（仍只报棋手），`rejected` 只回发起方。第二人进房或重连时也先给先到者补一份 `state`（`players` 变了，先到者才能从等待进到对局）。
+- 广播：每次状态变化向房内全部连接发 `state`（两席 + 至多 8 位观战者）；`presence` 只发在线位变更（仍只报棋手），`rejected` 只回发起方。第二人进房或重连时也先给先到者补一份 `state`：进房时是座位数变了（`players` 1→2，先到者才能从等待进到对局），重连时座位数不变、变的是在线位（`red` / `black`），两种情形都要补，不能按 `players` 变化做门控。
 - 在线状态只有一个权威：快照里的 `red` / `black`。`presence` 只是变更通知，客户端把两个字段合入当前快照，面板只读快照。
 - 心跳：30 秒 ping，连续两次无 pong 视为掉线，保留房间与 token 供重连。
-- 随机匹配：`Rooms.findOpenMatchable()` 挑「`matchable` 为真、只有红方一席、红方在线、对局未结束」的房；挑到就让发起者走普通 `join` 坐黑方，挑不到就 `join` 建房并带 `matchable: true`。两条路都复用同一份建房/就座/广播实现，匹配本身不另开状态机。
+- 随机匹配：先退掉发起者自己已经占着的房，再由 `Rooms.findOpenMatchable()` 挑「`matchable` 为真、只有红方一席、红方在线、对局未结束」的房——不退这一步，同一连接匹配第二次会配到自己那间（自己坐红又坐黑，看着配上了其实没有对手）；挑到就让发起者走普通 `join` 坐黑方，挑不到就 `join` 建房并带 `matchable: true`。两条路都复用同一份建房/就座/广播实现，匹配本身不另开状态机。
 - 观战：两席都满且 token 不匹配任何一方时，第三人转观战（无需额外协议）；观战上限 8 人在线，满了回 `spectators-full`。
 - 观战不占座、不进计时：房间的 `spectators` 只计数，不写入 `red` / `black` 的在线位；观战者发 `move` / `resign` / `offer-draw` / `draw-response` / `rematch` 时 token 不映射座位，一律 `not-in-room`（客户端对观战者的该码文案是「你正在观战，不能走棋」）。
 - 观战者断开只减计数并广播 `state`；`presence` 仍只报棋手在线位。
@@ -112,8 +112,8 @@ interface Snapshot {
 ## 4. 客户端
 
 - `src/client/online/session.ts`：纯 reducer。阶段：`idle` / `connecting` / `lobby` / `waiting` / `playing` / `spectating` / `reconnecting` / `error`；`waiting` 与 `playing` 由快照的 `players` 判定（1 人等待、2 人对局），`role` 为 `spectator` 时直接进 `spectating`；吃服务端消息，存快照与错误。
-- `src/client/online/socket.ts`：WebSocket 封装与自动重连（1s → 2s → 4s → 8s 封顶）；`localStorage` 存 `{ room, token }`（读的时候也认旧版写在 `sessionStorage` 的那份）；重连时自动带 token 发 `join`；`quickMatch()` 走同一条连接，握手完成后发 `quick-match` 而不是 `join`。构造器接受 `WebSocketImpl` 注入（默认 `globalThis.WebSocket`），测试用假构造器驱动重连阶梯。
-- `src/client/pages/OnlinePage.tsx`：大厅（建房 / 输房间码）与房间（棋盘 + 面板）同页切换；页面清单在 `docs/design/modules/app-shell.md` §4，本模块不重复。
+- `src/client/online/socket.ts`：WebSocket 封装与自动重连（1s → 2s → 4s → 8s 封顶）；`localStorage` 存 `{ room, token }`（读的时候也认旧版写在 `sessionStorage` 的那份）；重连时自动带 token 发 `join`；`quickMatch()` 走同一条连接，握手完成后发 `quick-match` 而不是 `join`。这次「来匹配」的意图一直留到收到 `joined` 才清——握手后、`joined` 前掉线时，重连重发 `quick-match` 而不是拿空 `join` 另开一间房（服务端可能已经把人配进了另一间）。构造器接受 `WebSocketImpl` 注入（默认 `globalThis.WebSocket`），测试用假构造器驱动重连阶梯。
+- `src/client/pages/OnlinePage.tsx`：大厅（建房 / 随机匹配 / 输房间码）与房间（棋盘 + 面板）同页切换；页面清单在 `docs/design/modules/app-shell.md` §4，本模块不重复。
 - 导航项与顺序由壳档定义（见 `docs/design/modules/app-shell.md` §1/§3），本页不重复描述。
 - 棋盘用 `play` 模式按己方颜色限权；选子与可落点在本地用 `generateLegalMoves` 算，落子只发 `{from, to, seq}`，等服务端快照。
 - 面板：房间码、己方颜色、轮到谁、双方在线、双方时钟、记谱、结果、离开；对局中提供「认输」与「提议和棋」；终局后「认输」换成「新局」（同一枚按钮的两种身份，与联机页外的对弈页同名）；对方提议时显示接受/拒绝。对手离线时显示「等待对手重连」，棋盘只读。
@@ -131,7 +131,11 @@ interface Snapshot {
   - 观战者看到什么：同一条 `state` 广播，没有专门的「重开」事件；观战数不清零。
   - 客户端相位：快照 `result` 从有变无即回到 `playing`，不需要新的相位值。
 - 房间码常驻：常驻条里始终显示房间码，不随「对手是否已加入」消失；手机档面板标题是隐藏的，只挂在标题上等于没有。
-- 大厅是两张卡：左边「创建房间」，右边「加入房间」（六位码手动输入）。这是卡片式的落点——一件事一张卡，桌面并排、手机上下摞。样式落在 `src/client/styles/play.css` 的 `.online-cards` / `.online-card`（卡片材质取 `docs/design/modules/theme.md` §4 的卡片规格：`--panel-bg` + 1px `--line` + `--radius-lg`）。
+- 大厅三张卡：
+
+1. **创建房间**：「创建房间」主按钮；按钮下方一行勾选「允许随机匹配（不勾则只能凭房间码进）」，默认不勾。勾了，建房时发出去的 `join` 带 `matchable: true`；不勾就是普通房，只认房间码。
+2. **随机匹配**：「随机匹配」按钮。发 `quick-match`——服务端有在等的人就直接配上，没有就自己开一间可被匹配的房等。这一路不需要勾选：点它本身就是允许被匹配。
+3. **加入房间**：六位码手动输入 + 「加入」。这是卡片式的落点——一件事一张卡，桌面并排、手机上下摞。样式落在 `src/client/styles/play.css` 的 `.online-cards` / `.online-card`（卡片材质取 `docs/design/modules/theme.md` §4 的卡片规格：`--panel-bg` + 1px `--line` + `--radius-lg`）。
 - 每步胜率：记谱每着一格带一个红方视角的百分比，常驻区一行三段（红 x% / 概率条 / 黑 y%，取值与标定见 `docs/design/modules/ai.md` §9）；开关关掉后两者都不渲染。
 - 着色：身份「你是红方/你是黑方」用红/黑字色；在线状态「在线」绿、「离线」灰，红黑两方的名字各自用自己的字色——一眼能分出谁在谁不在。
 - 面板结构与对弈页一致：`panel-focus` 是常驻条（身份「你是红方」、状态行、双方在线、时钟、认输/新局、提议和棋、房间码、着法/离开按钮），`panel-body` 是可收起的着法抽屉。手机档这些若不进常驻条、全塞进抽屉，抽屉会浮在棋盘上把棋盘挡住（用户报的「你是红方挡住棋盘」）。
@@ -164,14 +168,14 @@ interface Snapshot {
 - 棋盘 `play` 模式：existing — `src/client/board/Board.tsx`，按 `side` 限权；本模块只传 `side = 己方颜色` 并复用选子与可落点规则。
 - `generateLegalMoves`：existing — `src/shared/moves.ts`；只用于本地高亮可落点，不判结果。
 - `toChineseNotation`：existing — `src/shared/notation.ts`；服务端用它生成 `Snapshot.moves`。
-- 「联机」导航文案、「创建房间」「房间码」「等待对手重连」「离开房间」「观战中 · N 人观战」、错误文案：none found — 项目内无同一句文案。
+- 「联机」导航文案、「创建房间」「随机匹配」「允许随机匹配（不勾则只能凭房间码进）」「房间码」「等待对手重连」「离开房间」「观战中 · N 人观战」、错误文案：none found — 项目内无同一句文案。
 - 观战棋盘 `demo` 模式：existing — `src/client/board/Board.tsx` 的 `BoardMode` 已有 `demo` 只读分支（教学演示在用）；观战只传 `mode={{kind:'demo'}}` 与局面，不传 `onTap`，不新写只读逻辑。
 - `rejected.reason` 的用户文案：none found — 新增，取值见 §2 的 `RejectReason`。
-- 「新局」按钮文案与 `rematch` / `not-over` 两个名字：none found — 新增；按钮与对联机页的 `新局` 同一处（对局页也叫「新局」），名字住在 `src/shared/protocol.ts`（消息）与 `src/client/online/session.ts`（文案表）。
+- 「新局」按钮文案与 `rematch` / `not-over` 两个名字：none found — 新增；文案与对弈页那枚「新局」同名同字（两处各在自己的页面里，不复用组件），名字住在 `src/shared/protocol.ts`（消息）与 `src/client/online/session.ts`（文案表）。
 
-命名：`OnlinePage`、`createOnlineServer`、`RoomState`、`joinRoom`、`applyRoomMove`、`rematchRoom`、`snapshotOf`、`useOnlineSocket` 为新增名字，项目内无同名先例（checked, none found）。
+命名：`OnlinePage`、`createOnlineServer`、`RoomState`、`joinRoom`、`applyRoomMove`、`rematchRoom`、`snapshotOf`、`useOnlineSocket`、`quick-match`、`matchable`、`findOpenMatchable` 为新增名字，项目内无同名先例（checked, none found）。「随机匹配」按钮与「创建房间」按钮同一套 `.btn` 样式与同一张大厅卡片结构（existing），不新造按钮样式。
 
-文件分档结论：本批涉及的服务端、共享、页面、客户端联机模块、测试文件与 `scripts/dev.mjs` 都没有跨过 500 行（代码结构线），也没有 300 行以上的单函数——**本批不需要拆分方案**。各文件的实测行数不进本档（量在评审时现取），这里只留结论。
+文件分档结论：本批涉及的服务端、共享、页面、客户端联机模块、测试文件与 `scripts/dev.mjs` 都没有跨过 500 行（代码结构线），也没有 300 行以上的单函数——**本批不需要拆分方案**。余量最小的是 `test/room.test.ts` 与 `test/integration/online.test.tsx`（本批判定时刻分别 462 / 500 行），新增用例优先落在 `test/online.test.ts`；这三个文件任一越过 500 行就同批拆出，不拖到下一批。各文件的实测行数不进本档（量在评审时现取），这里只留结论。
 
 ## 8. 验收对照
 
@@ -179,6 +183,7 @@ interface Snapshot {
 |---|---|
 | F1.2 两台设备同房、走子实时同步 | `src/server/room.ts` + `test/online.test.ts` 双客户端 |
 | F1.2 终局后同房间再来一局 | `rematchRoom`（服务端）+ `OnlinePage` 的新局按钮；`test/room.test.ts`（重开、对局中拒绝、观战者拒绝）与 `test/integration/online.test.tsx` |
+| F1.2 随机匹配 | `src/server/rooms.ts` 的 `findOpenMatchable` + `test/online.test.ts` 三条：两人先后匹配进同一房且颜色不撞、未勾可匹配的房配不进来、同一连接匹配两次不会配到自己那间；前端 `test/integration/online.test.tsx` 三条：默认不带 `matchable`、勾上带 `matchable: true`、点「随机匹配」发 `quick-match` 不发 `join` |
 | F1.4 计时与归零判负 | 快照 `clock` + 服务端每秒检查；`docs/design/modules/clock.md` |
 | F1.5 认输与求和 | `resign` / `offer-draw` / `draw-response`；判罚见 `docs/design/modules/clock.md` §2 |
 | F1.7 观战：只读、不参与计时、上限 8 人、棋手离开不结束 | `joined.role` / `Snapshot.spectators` / `spectators-full`；回收看 `spectators`；`test/room.test.ts`、`test/online.test.ts`、`test/integration/online.test.tsx` |
@@ -190,11 +195,12 @@ interface Snapshot {
 
 ## 9. 集成测试设计
 
-起点：`test/RTM.md` 的「对弈」故事。本批的增量是 **F1-2 扩写一行「终局后同房间再来一局」**（见下表第一行）；F1-4 的行归 `docs/design/modules/clock.md` §8 拥有，本档只引用不重写；F1-6 观战行不破坏、不冗余；F1-3 属本地，在 `docs/design/modules/clock.md` §8；壳的 `F4-1` 不受影响（断言不涉及导航项数）。
+起点：`test/RTM.md` 的「对弈」故事。本批的增量是 **F1-2 扩写两行**：一行「终局后同房间再来一局」，一行「随机匹配」；两行的业务结果与 `test/RTM.md` 的 F1-2 逐字对齐；F1-4 的行归 `docs/design/modules/clock.md` §8 拥有，本档只引用不重写；F1-6 观战行不破坏、不冗余；F1-3 属本地，在 `docs/design/modules/clock.md` §8；壳的 `F4-1` 不受影响（断言不涉及导航项数）。
 
 | 行 | 验的交互 | 用户可见结果 | 入口 | 需求 |
 |---|---|---|---|---|
 | F1-2 | 两个客户端 → 房间 → 服务端权威判定 | 同房走子双方看到同一局面；非法着法被拒绝；断线重连带 token 恢复 | 打开页面 → 联机 | F1.2 |
+| F1-2（随机匹配） | 两个客户端 → 匹配池 → 房间层就座 | 先点「随机匹配」的人进房等；后点的人配进同一间房、颜色不撞；建房时没勾「允许随机匹配」的房配不进来 | 打开页面 → 联机 → 随机匹配 | F1.2 |
 | F1-2（再来一局） | 终局快照 → 点「新局」→ 服务端重置 → 全房新快照 | 点了就开新的一局：棋盘回开局、时钟回满额、座位与颜色不变 | 打开页面 → 联机 → 下完一局 | F1.2 |
 | F1-4 | （本行由 `docs/design/modules/clock.md` §8 拥有，此处不重写） | — | — | F1.4、F1.5 |
 | F1-6 | 两台设备对局 + 第三台进同一房间 | 第三台看到同一局面但不能走、无认输与求和按钮，面板显示观战中；棋手离开后观战仍在；第 11 台设备被拒 | 打开页面 → 联机 | F1.7 |

@@ -153,7 +153,10 @@ export async function createOnlineServer(options: OnlineServerOptions = {}): Pro
         join(conn, message);
         return;
       case 'quick-match': {
-        // 先看有没有人在等：有就坐进那间房当黑方，没有就自己建一间可被匹配的房。
+        // 先退掉自己已经占着的房：不然第二次匹配（双击 / 同一设备又开一页）会配到自己那间，
+        // 自己坐红又坐黑，看着像配上了其实没有对手。
+        if (conn.room !== undefined) leave(conn);
+        // 再看有没有人在等：有就坐进那间房当黑方，没有就自己建一间可被匹配的房。
         // 两条路都走 join，建房 / 就座 / 广播只有一份实现。
         const waiting = rooms.findOpenMatchable();
         if (waiting === undefined) {

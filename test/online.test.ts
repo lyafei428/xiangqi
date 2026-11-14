@@ -410,3 +410,29 @@ test('随机匹配不碰没勾「允许匹配」的房', async () => {
     await server.close();
   }
 });
+
+test('随机匹配不会把自己配到自己那间房（同一连接匹配两次）', async () => {
+  const server = await createOnlineServer({ port: 0, heartbeatMs: 60_000 });
+  const clients: Client[] = [];
+  try {
+    const solo = new Client(server.port);
+    clients.push(solo);
+    await solo.open();
+    solo.send({ type: 'quick-match' });
+    const first = await solo.next((message) => message.type === 'joined');
+    if (first.type !== 'joined') throw new Error('第一次匹配没进房');
+    const firstRoom = first.room;
+
+    // 同一条连接再匹配一次：旧房要退掉，且不能把自己配回同一间。
+    solo.send({ type: 'quick-match' });
+    const second = await solo.next(
+      (message) => message.type === 'joined' && message.room !== firstRoom,
+    );
+    if (second.type !== 'joined') throw new Error('第二次匹配没拿到新房');
+    assert.notEqual(second.room, firstRoom, '不该配回自己那间房');
+    assert.equal(second.color, 'red');
+  } finally {
+    for (const client of clients) client.close();
+    await server.close();
+  }
+});

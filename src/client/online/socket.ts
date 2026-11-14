@@ -58,7 +58,11 @@ interface JoinInfo {
 
 export class OnlineSocket {
   private readonly onEvent: (event: OnlineEvent) => void;
-  /** 握手完成后要补发 quick-match 而不是 join。 */
+  /**
+   * 本次握手是来匹配的：握手完成后发 quick-match 而不是 join。
+   * 一直留到收到 joined 才清——握手后、joined 前掉线时，重连还认得这次意图，
+   * 否则会拿着空 join 另开一间房，而服务端可能已经把人配进了另一间。
+   */
   private pendingQuickMatch = false;
   private readonly WebSocketImpl: typeof WebSocket;
   private readonly url: string;
@@ -152,7 +156,6 @@ export class OnlineSocket {
     ws.addEventListener('open', () => {
       this.attempts = 0;
       if (this.pendingQuickMatch) {
-        this.pendingQuickMatch = false;
         ws.send(JSON.stringify({ type: 'quick-match' }));
         return;
       }
@@ -192,6 +195,8 @@ export class OnlineSocket {
     }
     switch (message.type) {
       case 'joined':
+        // 配上了：之后的断线走带 token 的 join，不再重发 quick-match。
+        this.pendingQuickMatch = false;
         this.stored = { room: message.room, token: message.token };
         saveStored(this.stored);
         this.joinInfo = { room: message.room, token: message.token };
