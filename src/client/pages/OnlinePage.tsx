@@ -14,7 +14,7 @@ import { Board } from '../board/Board.tsx';
 import { boardSize } from '../board/geometry.ts';
 import { useStageSize } from '../board/useStageSize.ts';
 import { createOnlineState, onlineReducer } from '../online/session.ts';
-import { OnlineSocket, loadStored } from '../online/socket.ts';
+import { OnlineSocket, loadStored, saveStored } from '../online/socket.ts';
 import { resultLabel, resultTone } from '../panel/result-text.ts';
 import { saveRecord } from '../storage/records.ts';
 
@@ -37,6 +37,8 @@ export function OnlinePage() {
   const [selected, setSelected] = useState<number | null>(null);
   // 着法区在手机上默认收起：常驻条之外的东西一律进抽屉，别压在棋盘上。
   const [panelOpen, setPanelOpen] = useState(false);
+  // 上次待过的房间：大厅里给一条「回到上次的房间」，不用重新建房。
+  const [storedRoom, setStoredRoom] = useState<string | null>(() => loadStored()?.room ?? null);
   const [now, setNow] = useState(() => Date.now());
   const socketRef = useRef<OnlineSocket | null>(null);
   const receivedAtRef = useRef(Date.now());
@@ -59,6 +61,15 @@ export function OnlinePage() {
     }
     return () => socket.dispose();
   }, []);
+
+  // 自动回房失败（房间已被回收）：清掉记忆，把码填进输入框，让人手动重试。
+  useEffect(() => {
+    if (state.error === null || state.snapshot !== null) return;
+    const stored = loadStored();
+    if (stored === null) return;
+    setCode(stored.room);
+    saveStored(null);
+  }, [state.error, state.snapshot]);
 
   const snapshot = state.snapshot;
   const spectating = state.role === 'spectator';
@@ -176,47 +187,60 @@ export function OnlinePage() {
     const busy = state.phase === 'connecting';
     return (
       <div className="page page-online-lobby">
-        <div className="online-card">
-          <h1 className="page-title">联机对战</h1>
-          <p className="page-subtitle">建房拿到房间码，或输入对方的房间码加入。一房两人，红先。</p>
-          <button type="button" className="btn primary" onClick={createRoom} disabled={busy}>
-            {busy ? '连接中…' : '创建房间'}
-          </button>
-          <div className="online-join">
-            <input
-              className="online-code-input"
-              value={code}
-              maxLength={6}
-              placeholder="房间码"
-              aria-label="房间码"
-              onChange={(event) =>
-                setCode(
-                  event.target.value
-                    .toUpperCase()
-                    .replace(/[^0-9A-Z]/g, '')
-                    .slice(0, 6),
-                )
-              }
-            />
-            <button
-              type="button"
-              className="btn"
-              onClick={joinRoom}
-              disabled={busy || code.trim().length !== 6}
-            >
-              加入
+        <div className="online-cards">
+          <section className="online-card">
+            <h1 className="online-card-title">联机对战</h1>
+            <p className="page-subtitle">一房两人，红先。建房后把房间码发给对手。</p>
+            <button type="button" className="btn primary" onClick={createRoom} disabled={busy}>
+              {busy ? '连接中…' : '创建房间'}
             </button>
-          </div>
-          {state.notice !== null ? (
-            <p className="online-error" role="status">
-              {state.notice}
-            </p>
-          ) : null}
-          {state.error === null ? null : (
-            <p className="online-error" role="alert">
-              {state.error}
-            </p>
-          )}
+            {storedRoom === null ? null : (
+              <p className="online-room-line">
+                上次的房间 <strong>{storedRoom}</strong>
+                <span className="online-room-hint">点「加入」可直接回去</span>
+              </p>
+            )}
+          </section>
+
+          <section className="online-card">
+            <h2 className="online-card-title">加入房间</h2>
+            <p className="page-subtitle">输入对方给的六位房间码。</p>
+            <div className="online-join">
+              <input
+                className="online-code-input"
+                value={code}
+                maxLength={6}
+                placeholder="房间码"
+                aria-label="房间码"
+                onChange={(event) =>
+                  setCode(
+                    event.target.value
+                      .toUpperCase()
+                      .replace(/[^0-9A-Z]/g, '')
+                      .slice(0, 6),
+                  )
+                }
+              />
+              <button
+                type="button"
+                className="btn"
+                onClick={joinRoom}
+                disabled={busy || code.trim().length !== 6}
+              >
+                加入
+              </button>
+            </div>
+            {state.notice !== null ? (
+              <p className="online-error" role="status">
+                {state.notice}
+              </p>
+            ) : null}
+            {state.error === null ? null : (
+              <p className="online-error" role="alert">
+                {state.error}
+              </p>
+            )}
+          </section>
         </div>
       </div>
     );
@@ -333,11 +357,14 @@ export function OnlinePage() {
             </p>
           ) : null}
           {myOffer ? <p className="online-banner">已提议和棋，等待对方答复</p> : null}
-          {snapshot.players < 2 ? (
-            <p className="online-waiting">
-              把房间码发给对手：<strong>{snapshot.room}</strong>
-            </p>
-          ) : null}
+          {/* 房间码常驻：手机档面板标题是隐藏的，只在这条分支里显示的话，
+              对手一进来房间号就没了（用户报的「手机端没有显示房间号」）。 */}
+          <p className="online-room-line">
+            房间 <strong>{snapshot.room}</strong>
+            <span className="online-room-hint">
+              {snapshot.players < 2 ? '把房间码发给对手' : '对手已加入'}
+            </span>
+          </p>
           <div className="panel-actions">
             <button
               type="button"

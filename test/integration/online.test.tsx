@@ -150,8 +150,9 @@ describe('F1-2 联机页：建房、权威快照与走子', () => {
       color: 'red',
       snapshot: snapshot(),
     });
-    await screen.findByText(/房间 ABC234/);
-    expect(screen.getByText('把房间码发给对手：')).toBeTruthy();
+    // 房间码常驻：等对手进来之前提示「把房间码发给对手」，进来之后码也不消失。
+    expect(await screen.findByText('ABC234')).toBeTruthy();
+    expect(screen.getByText('把房间码发给对手')).toBeTruthy();
 
     const waiting = snapshot({ players: 2, black: true });
     socket.serverSend({ type: 'state', snapshot: waiting });

@@ -124,17 +124,53 @@
   padding: 32px 16px 40px;
 }
 
-.online-card {
-  max-width: 460px;
+/* 卡片式：两件事各占一张卡，桌面并排、手机上下摞。
+   卡片是这套界面里「一件事」的单位——比一整块表单更容易扫读。 */
+.online-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  max-width: 760px;
   margin: 0 auto;
+}
+
+.online-card {
   display: flex;
   flex-direction: column;
   gap: 14px;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   background: var(--panel-bg);
   box-shadow: var(--raise);
   padding: 24px;
+}
+
+.online-card-title {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: 0.02em;
+}
+
+/* 房间码那一行：常驻在面板里，不随「对手是否已加入」消失。 */
+.online-room-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.online-room-line strong {
+  font-size: 20px;
+  letter-spacing: 0.14em;
+  color: var(--text);
+}
+
+.online-room-hint {
+  font-size: 13px;
+  color: var(--muted-2);
 }
 
 .online-join {

@@ -1,4 +1,4 @@
-// 联机 socket：连接、自动重连、sessionStorage 存 token、服务端消息转事件。
+// 联机 socket：连接、自动重连、localStorage 存房间与 token、服务端消息转事件。
 
 import type { ClientMessage, ServerMessage } from '../../shared/protocol.ts';
 import type { OnlineEvent } from './session.ts';
@@ -12,7 +12,9 @@ export interface StoredSession {
 
 export function loadStored(): StoredSession | null {
   try {
-    const raw = window.sessionStorage.getItem(STORAGE_KEY);
+    // 先用 localStorage：关掉浏览器再回来还能接着上一间房（用户要的「记住房间」）。
+    // 老版本只写 sessionStorage，读的时候也兼容一下，别让正在房里的人升级后掉出去。
+    const raw = window.localStorage.getItem(STORAGE_KEY) ?? window.sessionStorage.getItem(STORAGE_KEY);
     if (raw === null) return null;
     const parsed = JSON.parse(raw) as unknown;
     if (
@@ -30,11 +32,15 @@ export function loadStored(): StoredSession | null {
 }
 
 export function saveStored(session: StoredSession | null): void {
-  try {
-    if (session === null) window.sessionStorage.removeItem(STORAGE_KEY);
-    else window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-  } catch {
-    // 隐私模式下 sessionStorage 不可写：内存里仍有 token，本次会话可用。
+  // 两处都写：localStorage 负责「关浏览器再回来还认得这间房」，
+  // sessionStorage 只在本标签页内有效——隐私模式下前者可能被拒，后者兜底。
+  for (const storage of [window.localStorage, window.sessionStorage]) {
+    try {
+      if (session === null) storage.removeItem(STORAGE_KEY);
+      else storage.setItem(STORAGE_KEY, JSON.stringify(session));
+    } catch {
+      // 存不下只影响下次能不能自动回房，不影响这一局。
+    }
   }
 }
 
