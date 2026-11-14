@@ -66,14 +66,17 @@ test('白送大车必吃：不吃亏子力', () => {
   assert.deepEqual(pieceAt(after.board, at(4, 4)), { color: 'red', type: 'R' });
 });
 
-test('难度表：深度与预算逐档单调，且都低于需求的 2 秒', () => {
+test('难度表：深度与预算逐档单调，且每档不超自己的时间上限', () => {
   assert.deepEqual(AI_LEVELS.easy, { maxDepth: 2, budgetMs: 200 });
   assert.deepEqual(AI_LEVELS.normal, { maxDepth: 4, budgetMs: 1200 });
-  assert.deepEqual(AI_LEVELS.hard, { maxDepth: 6, budgetMs: 1800 });
+  assert.deepEqual(AI_LEVELS.hard, { maxDepth: 6, budgetMs: 3000 });
 
   const levels = [AI_LEVELS.easy, AI_LEVELS.normal, AI_LEVELS.hard];
+  // 需求的上限按档位分：普通档 2 秒，高手档 3 秒（用户裁定的放宽）。
+  const ceilingMs = [2_000, 2_000, 3_000];
   for (const [index, level] of levels.entries()) {
-    assert.ok(level.budgetMs < 2_000, `第 ${index + 1} 档预算 ${level.budgetMs} 超过了需求上限 2 秒`);
+    const ceiling = ceilingMs[index] ?? 0;
+    assert.ok(level.budgetMs <= ceiling, `第 ${index + 1} 档预算 ${level.budgetMs} 超过了该档上限 ${ceiling}ms`);
     const previous = levels[index - 1];
     if (previous === undefined) continue;
     assert.ok(level.maxDepth > previous.maxDepth, `第 ${index + 1} 档深度没有变深`);
