@@ -40,7 +40,7 @@ formatClock(ms): string                  // 面板显示：mm:ss
 - 每方 15 分钟（900000 毫秒）包干；不加秒、不读秒。
 - 时间只有一个来源：`since` 是唯一的绝对时间戳，剩余一律由 `remainingOf` 按 `now − since` 计算；不存第二套累计值，避免两套时间漂移。
 - 开表时机：进页面只建表、不走秒（`running: null`）。按下「开始」，或落下第一着，才由 `startClock` 把锚点挪到那一刻、交给当前行棋方。走子成功后 `switchClock` 切给对方。刷新页面不丢时间：进页面时表不走，锚点只在开表那一刻落定。
-- 「开始」与「认输」是同一个按钮的两种身份：开表前显示「开始」，开表后显示「认输」；外观与尺寸取认输那一套（`.resign`），换字时只做一次 200ms 淡入位移，按钮位置与宽度全程不跳。
+- 「开始」与「认输」是同一个按钮的两种身份：开表前显示「开始」，开表后显示「认输」。需求 F1.10 把对局页的控件列成「新局与认输」，这里读作「控件在场」：认输那枚按钮开表后才叫认输，开表前它叫开始——少一次误点（开局就认输没有意义），也不需要为此多占一个位置；外观与尺寸取认输那一套（`.resign`），换字时只做一次 200ms 淡入位移，按钮位置与宽度全程不跳。
 - 归零即终局：`timeoutColor` 返回归零方，结果 `timeout`，winner 为对方。
 - 本地：页面每秒调用 `tick(now)`，只做超时判定；显示由 `remainingOf` 计算，不每秒改写锚点。
 - 联机：建房间时表不走（只有一方，等人不该扣时）；第二人就座由 `joinRoom` 建表并开红方的表。服务端为唯一裁决（架构 §10）；快照里的 `clock` 是 `ClockState` 的线上投影（同形状，直接复用该类型）。
@@ -66,7 +66,7 @@ formatClock(ms): string                  // 面板显示：mm:ss
 - `GameSession` 增加 `clock: ClockState`；动作 `tick(now)`、`resign`。
 - 每次走子成功后 `switchClock`；`tick` 由页面每秒调用一次，`timeoutColor` 非空即把 `result` 置为 `timeout` 并 `stopClock`。
 - 走子与选子入口先判一次超时：已经归零就不再接受着法（不靠每秒轮询抽到）。
-- 新局重置为 15 分钟、红方在走。
+- 新局重置为 15 分钟、红方先行（表未开，等「开始」）。
 - 面板显示双方时钟（`mm:ss`）；不足 60 秒的数字变红。开局按下「开始」才走秒（见 §1 的开表时机）。
 
 ## 4. 联机对局
@@ -102,7 +102,7 @@ formatClock(ms): string                  // 面板显示：mm:ss
 | `src/client/pages/PlayPage.tsx` | 每秒 tick 与新局重置。 |
 | `src/server/room.ts` | 房间时钟、认输、求和状态与判罚。 |
 | `src/server/server.ts` | 新消息分发与每秒超时检查。 |
-| `src/shared/protocol.ts` | 三个新消息、快照字段与三个新拒绝码。 |
+| `src/shared/protocol.ts` | 三个新消息、快照字段与四个新拒绝码。 |
 | `src/client/online/session.ts` | 求和提议、拒绝、阻塞的展示状态。 |
 | `src/client/pages/OnlinePage.tsx` | 时钟、认输、求和的按钮与横幅。 |
 | `test/clock.test.ts` | 时钟单测（新增）。 |
@@ -123,7 +123,7 @@ formatClock(ms): string                  // 面板显示：mm:ss
 
 命名：`ClockState`、`createClock`、`switchClock`、`remainingOf`、`stopClock`、`timeoutColor`、`drawOffer`、`drawBlocked`、`draw-blocked`、`draw-pending`、`no-draw-offer` 为新增名字，项目内无同名先例（checked, none found）。`ClockView` 直接复用 `ClockState`（线上投影同形状）。
 
-文件分档：本批新增与扩展文件均不足 300 行，无 300+ 行单函数；`src/client/game/session.ts`、`src/server/room.ts` 与三份测试改动后仍不足 500 行，不需要拆分方案。
+文件分档结论：本批所有改动文件都在 500 行内，也没有 300 行以上的单函数——**本批不需要拆分方案**。
 
 ## 7. 验收对照
 

@@ -73,7 +73,7 @@ interface Snapshot {
 - 认输与求和的判罚见 `docs/design/modules/clock.md` §2；协议只负责传输意图与结果。
 - `rejected` 一定附带当前快照，客户端以快照为准，不做本地回滚。
 - `rejected.reason` 是固定取值（`not-in-room` / `not-your-turn` / `game-over` / `stale-seq` / `illegal-move` / `draw-blocked` / `draw-pending` / `no-draw-offer` / `not-over`），客户端按取值给文案；非法着法、轮次不对、序号过期都走 `rejected`，房间状态不变。
-- 三个新拒绝码的来源：
+- 四个新拒绝码的来源：
   - `draw-blocked`：被拒方在对方走一着前再次提议；复现：A 提议、B 拒绝后，A 再发 `offer-draw`。
   - `draw-pending`：已有待答提议时再提议；复现：A 提议后，B 在应答前也发 `offer-draw`。
   - `no-draw-offer`：没有待答提议或不是提议的对方时发 `draw-response`；复现：直接发 `{"type":"draw-response","accept":true}`，或提议方自己发应答。
@@ -113,7 +113,7 @@ interface Snapshot {
 - `src/client/pages/OnlinePage.tsx`：大厅（建房 / 输房间码）与房间（棋盘 + 面板）同页切换；页面清单在 `docs/design/modules/app-shell.md` §4，本模块不重复。
 - 导航项与顺序由壳档定义（见 `docs/design/modules/app-shell.md` §1/§3），本页不重复描述。
 - 棋盘用 `play` 模式按己方颜色限权；选子与可落点在本地用 `generateLegalMoves` 算，落子只发 `{from, to, seq}`，等服务端快照。
-- 面板：房间码、己方颜色、轮到谁、双方在线、双方时钟、记谱、结果、离开；对局中提供「认输」与「提议和棋」；对方提议时显示接受/拒绝。对手离线时显示「等待对手重连」，棋盘只读。
+- 面板：房间码、己方颜色、轮到谁、双方在线、双方时钟、记谱、结果、离开；对局中提供「认输」与「提议和棋」；终局后「认输」换成「新局」（同一枚按钮的两种身份，与联机页外的对弈页同名）；对方提议时显示接受/拒绝。对手离线时显示「等待对手重连」，棋盘只读。
 - 观战：棋盘用 `demo` 模式只读，隐藏「认输」「提议和棋」与和棋应答，面板显示「观战中 · N 人观战」；大厅输码进满房时直接进观战，无需额外按钮。
 
 ## 5. 路由与页面
@@ -130,7 +130,7 @@ interface Snapshot {
 - 房间码常驻：常驻条里始终显示房间码，不随「对手是否已加入」消失；手机档面板标题是隐藏的，只挂在标题上等于没有。
 - 大厅是两张卡：左边「创建房间」，右边「加入房间」（六位码手动输入）。这是卡片式的落点——一件事一张卡，桌面并排、手机上下摞。样式落在 `src/client/styles/play.css` 的 `.online-cards` / `.online-card`（卡片材质取 `docs/design/modules/theme.md` §4 的卡片规格：`--panel-bg` + 1px `--line` + `--radius-lg`）。
 - 着色：身份「你是红方/你是黑方」用红/黑字色；在线状态「在线」绿、「离线」灰，红黑两方的名字各自用自己的字色——一眼能分出谁在谁不在。
-- 面板结构与对弈页一致：`panel-focus` 是常驻条（身份「你是红方」、状态行、双方在线、时钟、认输、提议和棋、房间码、着法/离开按钮），`panel-body` 是可收起的着法抽屉。手机档这些若不进常驻条、全塞进抽屉，抽屉会浮在棋盘上把棋盘挡住（用户报的「你是红方挡住棋盘」）。
+- 面板结构与对弈页一致：`panel-focus` 是常驻条（身份「你是红方」、状态行、双方在线、时钟、认输/新局、提议和棋、房间码、着法/离开按钮），`panel-body` 是可收起的着法抽屉。手机档这些若不进常驻条、全塞进抽屉，抽屉会浮在棋盘上把棋盘挡住（用户报的「你是红方挡住棋盘」）。
 - 手机档棋盘：房间页复用 `play` 页的舞台与尺寸规则（`docs/design/modules/board-ui.md` §5）；建房后棋盘才出现，尺寸靠「每次渲染重新量」拿到，不能只在挂载时量一次。
 
 ## 6. 开发运行
@@ -165,7 +165,7 @@ interface Snapshot {
 - `rejected.reason` 的用户文案：none found — 新增，取值见 §2 的 `RejectReason`。
 - 「新局」按钮文案与 `rematch` / `not-over` 两个名字：none found — 新增；按钮与对联机页的 `新局` 同一处（对局页也叫「新局」），名字住在 `src/shared/protocol.ts`（消息）与 `src/client/online/session.ts`（文案表）。
 
-命名：`OnlinePage`、`createOnlineServer`、`RoomState`、`joinRoom`、`applyRoomMove`、`snapshotOf`、`useOnlineSocket` 为新增名字，项目内无同名先例（checked, none found）。
+命名：`OnlinePage`、`createOnlineServer`、`RoomState`、`joinRoom`、`applyRoomMove`、`rematchRoom`、`snapshotOf`、`useOnlineSocket` 为新增名字，项目内无同名先例（checked, none found）。
 
 文件分档结论：本批涉及的服务端、共享、页面、客户端联机模块、测试文件与 `scripts/dev.mjs` 都没有跨过 500 行（代码结构线），也没有 300 行以上的单函数——**本批不需要拆分方案**。各文件的实测行数不进本档（量在评审时现取），这里只留结论。
 

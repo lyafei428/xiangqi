@@ -48,6 +48,9 @@
 `test/RTM.md` F1-2 / F1-3 / F1-10 各行；`scripts/acceptance.mjs` 的手机一屏与对比度阈值。
 
 ## §3 设计评审（评审子代理）
+**状态行**：评审通过
+
+
 
 ### 轮次 1（评审子代理）
 
@@ -79,6 +82,35 @@
 计数：🔴 2 · 🟡 6 · 🔵 4 · 合计 12。
 
 VERDICT: changes-required
+
+### 轮次 2（评审子代理）
+
+修复轮复审：核对第 1 轮 12 条，另记新发现 4 条。
+
+受评文档与相关文件全部重读，文件行数以 read 实测（只取行数）。未取 git diff。
+
+| # | Orig# | File | Severity | Status | Notes |
+|---|---|---|---|---|---|
+| 1 | 1 | `scripts/acceptance.mjs`、`docs/design/modules/theme.md` | 🔴 | Fixed | 硬上限已解除：`scripts/acceptance.mjs` 实测 249 行、`scripts/acceptance/support.mjs` 196 行、`scripts/acceptance/measures.mjs` 415 行，三份都离开 500 行档与 800 行硬上限。`docs/design/modules/theme.md` §6 已写结论：「`scripts/acceptance.mjs` 已按「按页拆」的口径拆成 `scripts/acceptance/support.mjs`（196 行）与 `scripts/acceptance/measures.mjs`（393 行），主档 249 行」。 |
+| 2 | 2 | `docs/design/modules/theme.md` | 🔴 | Fixed | 固定项已改为按档表述：「**深色档只此一处投影**：棋盘的外投影是分层手段，不是装饰……卡片与按钮在深色档不投影。浅色档另当别论：`--raise` / `--raise-flat` 回到「轻浮雕」（内高光 + 1–2px 的近层阴影），只压在按钮与可按的浅面上，卡片仍不投影。」与 §2「浅色」表的 `--raise` 取值、§4 卡片行「不加外投影」一致。 |
+| 3 | 3 | `docs/design/modules/ui-refresh.md` | 🟡 | Fixed | §6 登记行已改：「｜ `test/RTM.md` ｜ F4-6、F1-10、F1-11 三行 + 受影响行改写 + 用例实现 ｜」，与 §5 表里的 F1-11 行对齐。 |
+| 4 | 4 | `docs/design/modules/theme.md`、`docs/design/modules/online.md`、`docs/design/modules/replay.md` | 🟡 | Fixed | 三个主题都有落点：字号「导航 16px（手机档 14）、页标题 26px（手机档 22）、副标题 14px（手机档 13）、面板与胶囊按钮 13px」（`docs/design/modules/theme.md` §4）；卡片大厅「样式落在 `src/client/styles/play.css` 的 `.online-cards` / `.online-card`」（`docs/design/modules/online.md` §5）；表头吸顶「「我的棋谱」列表的表头（标题 + `导入`）吸在列表顶部：`.replay-head` 是 `position: sticky` + 页面底色 + 一条分隔线」（`docs/design/modules/replay.md`）。🔵 同一句吸顶描述还留在 `docs/design/modules/study-library.md`（受评范围外），两处各一份，建议只留一处。 |
+| 5 | 5 | `docs/design/modules/board-ui.md`、`docs/design/modules/sound.md` | 🟡 | Unfixed | 界面落点已补：「设置浮层里与它并列的还有「走子轨迹 开/关」（`xiangqi.trail.v1`）与「音效 开/关」（`xiangqi.sound.v1`）——三个开关同一处，落点是 `src/client/App.tsx` 的 `<details>` 浮层。」音效侧另有整份 `docs/design/modules/sound.md` 与两份用例；但「走子轨迹」与「对坐下棋」仍没有用例行或验收读数（第 1 轮要的是「各给一条可跑读数」）。非阻塞。 |
+| 6 | 6 | `docs/design/modules/ui-refresh.md` | 🟡 | Fixed | §3 已收成指路：「具体取值与禁止组合见 `docs/design/modules/theme.md` §2 的「结果着色」与 §3 的断言集，本档不重复」。 |
+| 7 | 7 | `docs/design/modules/theme.md` | 🟡 | Fixed | 那一对已进表并给结论：「｜ `--accent` #5686fe ｜ `--raise-bg` ｜ 4.14 ｜ **不过**：链接与错误文字因此不落在按钮面上（见下条约束） ｜」，并有同条约束「`--accent` 只作文字压在 `--page-bg` / `--panel-bg` 上，不落在 `--raise-bg`（按钮面）与 `--sunken-bg`（悬停面）上」。🔵 该约束没有机械检查（§7 只查 `color: var(--red\|--black\|--target)` 与 `background: var(--red\|--black\|--accent)`）。 |
+| 8 | 8 | `docs/design/modules/theme.md`、`docs/design/modules/ui-refresh.md` | 🟡 | Unfixed | 大部分已清（「现在（浅色批）」整列已删，§4 的「改前的现状……改后该表」已删），但仍留两处修订式叙述：`docs/design/modules/theme.md` §6「§2 的取值表已改为指向本档；§7 第①条的对比度口径一并改为指向本档 §3／§7」；`docs/design/modules/ui-refresh.md` §6「F1.10、F4.6、F5.5 三行已就位」。非阻塞。 |
+| 9 | 9 | `docs/design/modules/ui-refresh.md` | 🔵 | Fixed | 已改为「`--black-text` 只剩 1.35:1（同一公式复算）」，复算相符（0.74 是没把较亮一侧放分子的商）。 |
+| 10 | 10 | `docs/design/modules/ui-refresh.md`、`docs/design/modules/theme.md` | 🔵 | Unfixed | 读数仍与磁盘不一致：`docs/design/modules/ui-refresh.md` §6「`src/client/pages/AiPage.tsx` 265 行、`src/client/panel/GamePanel.tsx` 218 行、`src/client/pages/PlayPage.tsx` 67 行」对实测 358 / 244 / 87（`docs/design/modules/sound.md` §8 已按 358 记）；`docs/design/modules/theme.md` §6 记 `measures`「393 行」对实测 415。都没跨 500 行档，结论不变。非阻塞。 |
+| 11 | 11 | `docs/design/modules/board-ui.md` | 🔵 | Fixed | 转身集合与理由已写全：「另一半「汉界」不转：河界两字各朝一方，两边都至少有一半是正的……两半都转会让其中一半倒过来读。」 |
+| 12 | 12 | `docs/design/modules/ai.md` | 🔵 | Fixed | 已补焦点环：「键盘焦点另用 `:focus-visible` 的 `--accent` 描边标出——原生圆点藏掉之后，焦点环是唯一能看出「现在在哪一组」的线索」。 |
+| 13 | (new) | `docs/design/modules/theme.md` | 🟡 | New | 第 2 条同一机制在 §4 还留一处无条件表述：「｜ 棋盘 ｜ 浅色纸：`--board-bg` + 1px `--line` + 一圈柔和外投影（唯一的投影） ｜」——浅色档 `--raise` / `--raise-flat` 带投影后「唯一的投影」不成立。改成「深色档唯一的投影」或去掉括注。 |
+| 14 | (new) | `docs/design/modules/sound.md` | 🟡 | New | 联机页没有挂载点：「**每份 session 各自挂一次**：对弈页的 session 在 `App`，人机页的在 `AiPage`」只列两处，§8 受影响文件也没有 `src/client/pages/OnlinePage.tsx`；同档 §4 却说「AI 走子与联机快照走的是同一条路，因此不需要各写一遍」。照字面实现，联机对局无声。补第三处挂载与文件行，或写明 F5.6 只覆盖对弈/人机。 |
+| 15 | (new) | `docs/design/modules/sound.md` | 🟡 | New | 浮层归属指到不存在的节：「它由 `docs/design/modules/theme.md` 的顶栏控件一节拥有（配色下拉就在那里）」——`docs/design/modules/theme.md` 没有「顶栏控件」一节（§4 顶栏行只给高度/底色/密度，§6 的 `App.tsx` 行只写「顶栏「设置」浮层里的配色下拉」）；浮层的开合与位置在受评档里无人拥有。指定一处并写清结构。 |
+| 16 | (new) | `docs/design/modules/sound.md` | 🔵 | New | §10 的 F5-6 集成行没写实现文件，§8 受影响文件也没有 `test/integration/sound.test.tsx`（实测 115 行，未跨档）；读者拿不到「哪份用例实现这一行」。补一行实现文件。 |
+
+计数：🔴 2（均已 Fixed）· 🟡 9 · 🔵 5 · 合计 16 行。未解决项：5、8、10（🟡/🔵，非阻塞），无未解决 🔴。
+
+VERDICT: pass
 
 ## §4 用户批准（主 agent）
 ## §5 实施记录（实施者：主 agent ∥ coder）

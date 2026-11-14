@@ -27,6 +27,9 @@
 不做「双方都要点同意才重开」——一局终了、同一房间，任一方点重开即可，这和对局页「新局」的语义一致。也不做房间内换边。
 
 ## §3 设计评审（评审子代理）
+**状态行**：评审通过（round 2：原 12 条 11 Fixed / 1 Accepted，🔴 全消；新增 🟡 5（含 1 残项）+ 🔵 1，不阻塞）
+
+
 
 ### 轮次 1（评审子代理）
 
@@ -52,6 +55,38 @@ Scope note: 本轮无 document map，ownership 按 AGENTS.md 的层表与三份�
 Counts: 🔴 4 · 🟡 7 · 🔵 1
 
 VERDICT: changes-required
+
+### 轮次 2（评审子代理）
+
+Review-object: design | Target: M14 联机再来一局（修复轮）| Round 2 复审 — 核第 1 轮 12 条是否处置到位
+Scope: `docs/design/modules/online.md`、`docs/design/modules/clock.md`、`docs/requirements/xiangqi.md`（另核 `docs/design/modules/theme.md` §4 的交叉引用，成立）。
+
+汇总：原 12 条 → 11 Fixed、1 Accepted（🔵 放置偏好）；新增 6 行（其中 1 行为原 #10 残项、4 条 🟡 + 1 条 🔵 由本次修复引入）；🔴 0。
+
+| # | Orig# | File | Severity | Status | 依据与建议 |
+|---|---|---|---|---|---|
+| 1 | 1 | `docs/design/modules/online.md` | 🔴→已消 | Fixed | 协议契约已补齐：`ClientMessage` 有 `\| { type: 'rematch' }`；固定拒绝码表已收到 `` `no-draw-offer` / `not-over`） ``；观战段已改为 `` `draw-response` / `rematch` 时 token 不映射座位 ``。 |
+| 2 | 2 | `docs/design/modules/online.md` | 🔴→已消 | Fixed | 验收有了落点：§8 增 `\| F1.2 终局后同房间再玩一局…` 行（行内为 `` `rematchRoom`（服务端）+ `OnlinePage` 的新局按钮 ``，并点名 `test/room.test.ts` 与 `test/integration/online.test.tsx`）；§9 增量改为 `本批的增量是 **F1-2 扩写一行「终局后同房间再玩一局」**`，并新增 `\| F1-2（再来一局） | 终局快照 → 点「新局」→ 服务端重置 → 全房新快照 `` 行。面板清单的残项单列为第 14 行。 |
+| 3 | 3 | `docs/design/modules/online.md` | 🔴→已消 | Fixed | 存储口径统一为 localStorage + 旧 sessionStorage 兼容读：`客户端把房间与 token 存 `localStorage`（`xiangqi.online`）`、`` `localStorage` 存 `{ room, token }`（读的时候也认旧版写在 `sessionStorage` 的那份） ``、`离开房间发 `leave` 并清 `localStorage` 里的 `xiangqi.online``。 |
+| 4 | 4 | `docs/design/modules/clock.md` | 🔴→已消 | Fixed | 开表机制只剩一种说法：API 块含 `startClock(clock, now, turn): ClockState  // 开表：锚点挪到 now，交给 turn 走秒`，§3 已改为 `开局按下「开始」才走秒（见 §1 的开表时机）`，原先「不设『开始』按钮」的否定句已不在档内。要求层侧的残项单列为第 16 行。 |
+| 5 | 5 | `docs/design/modules/clock.md` | 🟡 | Fixed | 数值已对齐需求层：`每方 15 分钟（900000 毫秒）包干；不加秒、不读秒。`，与 `docs/requirements/xiangqi.md` F1.4 的 `每方 15 分钟包干` 一致；新局重置句同为 15 分钟。 |
+| 6 | 6 | `docs/design/modules/online.md` | 🟡 | Fixed | 再玩一局语义已分四条写明：`谁触发：任一棋手，不需要双方确认。`、`重置到什么：`、`观战者看到什么：`、`客户端相位：`，含 `result` / `moves` / `moveLog` / `lastMove` / `drawOffer` / `drawBlocked` 的复位清单。 |
+| 7 | 7 | `docs/design/modules/online.md` | 🟡 | Fixed | `not-over` 已与同类分支同形（含复现）：`` `not-over`：对局还没结束就发 `rematch`；复现：开一局、走一着后发 `{"type":"rematch"}`，服务端回 `not-over`，房间状态不变。 `` |
+| 8 | 8 | `docs/design/modules/online.md` | 🟡 | Fixed | 重复行已收口：`F1-4 的行归 `docs/design/modules/clock.md` §8 拥有，本档只引用不重写`，表内改为 `\| F1-4 \| （本行由 `docs/design/modules/clock.md` §8 拥有，此处不重写）`。 |
+| 9 | 9 | `docs/design/modules/online.md` | 🟡 | Fixed | 新名字/新文案有了三问答案：`「新局」按钮文案与 `rematch` / `not-over` 两个名字：none found — 新增`。 |
+| 10 | 10 | `docs/design/modules/online.md` | 🟡 | Fixed | 行数与档位话术已撤：`各文件的实测行数不进本档（量在评审时现取），这里只留结论。`，且结论覆盖 `scripts/dev.mjs` 与 500 行线。`docs/design/modules/clock.md` 的残项见第 13 行。 |
+| 11 | 11 | `docs/design/modules/clock.md` | 🟡 | Fixed | 修订式表述已清：`刷新页面不丢时间：进页面时表不走，锚点只在开表那一刻落定。`、`` `ClockView` 直接复用 `ClockState`（线上投影同形状）。 `` |
+| 12 | 12 | `docs/design/modules/online.md` | 🔵 | Accepted | 放置偏好仍成立但已不伤人：契约本体在 §2/§3，§5 只剩行为叙述；读者不再缺契约，故本轮按理由收口不再要求搬移。 |
+| 13 | 10（残） | `docs/design/modules/clock.md` | 🟡 | Unfixed | 同档 §6 仍写 `文件分档：本批新增与扩展文件均不足 300 行，无 300+ 行单函数`——仍是一句按 300 行计的尺寸断言，而代码结构线是 500（主动拆分复核）/ 800（硬上限）。建议只留结论（不足 500 行、无 300 行以上单函数、不需要拆分方案）。 |
+| 14 | (new) | `docs/design/modules/online.md` | 🟡 | New：面板清单与验收点名不一致 | §8/§9 点名了 `OnlinePage` 的新局按钮，但 §4 面板清单仍是 `面板：房间码、己方颜色、轮到谁、双方在线、双方时钟、记谱、结果、离开；对局中提供「认输」与「提议和棋」`，§5 常驻条清单为 `` `panel-focus` 是常驻条（身份「你是红方」、状态行、双方在线、时钟、认输、提议和棋、房间码、着法/离开按钮） ``，两处都没有再玩一局控件。建议把该控件补进这两处清单（或指明由别档拥有）。 |
+| 15 | (new) | `docs/design/modules/online.md` | 🟡 | New：新名字未走现有件检查 | 修复引入了 `rematchRoom`（`\| F1.2 终局后同房间再玩一局 \| `rematchRoom`（服务端）…`），但命名行仍是 `命名：`OnlinePage`、`createOnlineServer`、`RoomState`、`joinRoom`、`applyRoomMove`、`snapshotOf`、`useOnlineSocket` 为新增名字`，§3 文件表也没提这个导出。建议把 `rematchRoom` 补进命名/现有件检查。 |
+| 16 | (new) | `docs/design/modules/clock.md` | 🟡 | New：与 F1.10 的默认控件清单不一致 | 修复选了「开始」这一侧：`「开始」与「认输」是同一个按钮的两种身份：开表前显示「开始」，开表后显示「认输」`；而需求 F1.10 写 `对弈页与人机页默认只显示棋盘、行棋方与双方计时、新局与认输`。首次进页时按钮显示的是「开始」而非「认输」，两侧需择一处落定（改需求口径或改设计）。 |
+| 17 | (new) | `docs/design/modules/clock.md` | 🟡 | New：新局起始态两种读法 | §3 写 `新局重置为 15 分钟、红方在走。`，而本档 §1 把「在走」定义为时钟在走方（`running: Color | null;  // 正在走的一方`），同页又要求 `开局按下「开始」才走秒`。字面读成 running=red 会与开表规则相反。建议改成「红方先行（表未开）」一类说法。 |
+| 18 | (new) | `docs/design/modules/online.md` + `docs/design/modules/clock.md` | 🔵 | New：计数词未跟上 | 第 1 条的修复让拒绝码增至四个，但小标题仍是 `三个新拒绝码的来源：`（其下列四条），`docs/design/modules/clock.md` §6 的 `三个新消息、快照字段与三个新拒绝码` 同样过期。改词即可。 |
+
+Counts: 原 12 条 = Fixed 11 · Accepted 1 · Unfixed 0（🔴 全消）；新增 6 行 = 🟡 5（含 1 残项）· 🔵 1。
+
+VERDICT: pass
 
 ## §4 用户批准（主 agent）
 ## §5 实施记录（实施者：主 agent ∥ coder）
