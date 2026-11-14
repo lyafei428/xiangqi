@@ -240,6 +240,14 @@
   font-size: 13px;
 }
 
+/* 选中的那一项要一眼看出来：圆形单选钮在手机档会被藏掉（省一行宽度），
+   选中态就靠底色与字重表达。 */
+.ai-controls .option.is-chosen {
+  border-color: var(--accent);
+  background: var(--sunken-bg);
+  font-weight: 700;
+}
+
 .ai-controls input[type='radio'] {
   width: 12px;
   height: 12px;
@@ -258,6 +266,28 @@
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+  }
+
+  /*
+   * 手机档把圆形单选钮也藏掉（只藏视觉：radiogroup + 选中项的字重与底色已经说清状态，
+   * 读屏与键盘仍可操作）：五个选项各带一个 12px 圆点，加起来正好把这一行挤成两行。
+   */
+  .ai-controls input[type='radio'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .ai-controls .option {
+    padding: 2px 8px;
+    font-size: 12px;
+  }
+
+  .ai-controls {
+    gap: 2px 6px;
+    padding: 3px 6px;
   }
 
   /* 标签藏了就得给一条分隔线：不然「入门 普通 高手 执红 执黑」连成一片，
