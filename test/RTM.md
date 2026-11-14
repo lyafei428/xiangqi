@@ -88,3 +88,5 @@
 | F5-6 | 走子音效 | 落子 / 吃子 / 将军 / 终局四种声音可辨；静音开关生效且记住 | 打开页面 → 对弈 → 走子 / 认输 | F5.6 |
 
 用例实现：`scripts/acceptance.mjs`；自证用 `node scripts/acceptance.mjs --self-test`。
+
+F5-6 另有一条集成用例 `test/integration/sound.test.tsx`（对弈页真走一着 + 认输，数振荡器起振次数；关掉后不响且跨重挂仍是关）。

@@ -45,3 +45,14 @@ test('终局压过一切', () => {
   assert.equal(classify(entry, { type: 'resign', winner: 'black' }), 'end');
   assert.equal(classify(entry, { type: 'repetition', winner: null }), 'end');
 });
+
+test('将死那一着只算终局，不叠将军', () => {
+  // 红车 72→75 直接绝杀：这一着同时「给出将军」且「结果从无到有」，
+  // 只能响一次终局音——判定层把它归到终局。
+  const position = parseFen('3k5/9/9/9/9/9/9/9/R8/4K4 w - - 0 1');
+  const played = playMove(position, [], { from: 72, to: 75 });
+  const entry = played.history.at(-1);
+  if (entry === undefined) throw new Error('没写下着法记录');
+  assert.equal(entry.gaveCheck, true);
+  assert.equal(classify(entry, { type: 'checkmate', winner: 'red' }), 'end');
+});
