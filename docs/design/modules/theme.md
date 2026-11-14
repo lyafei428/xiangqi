@@ -166,18 +166,22 @@ F5.5 对实现的三个约束，逐条对应到本档：分色（§2）、对比
 
 ## 5. 集成测试设计
 
-起点：`test/RTM.md`。本批新增一行 F5-4（视觉基准的对比度），复核 F4-6（手机一屏）与 F1-10（对局专注）不破——配色不改变几何与结构，它们的断言不动。
+起点：`test/RTM.md`。本批新增一行 F5-4（视觉基准的对比度），复核 F4-6（手机一屏）与 F1-10（对局专注）不破——本批只改取值与内边距，不动它们的断言；F4-6 的几何改动归 `docs/design/modules/board-ui.md` §5 与 UI 档，本节只复核结果不变。
 
 | 行 | 验的交互 | 用户可见结果 | 入口 | 需求 | 实现 |
 |---|---|---|---|---|---|
 | F5-4 | 两套令牌层 → 页面与卡面上的正文、次要文字、链接、按钮文字、双方文字、提示绿；配色开关 → 页面底色 | 深浅两套各自：上列每一对 ≥ 4.5:1、白字不作 `--accent` 填充底；两套的 `--page-bg` 不同（相同即配色没接上）；棋盘在两套下都是浅色；样式表无渐变、无 `url(` | 打开页面（任意页）→ 右上角切三档 | F5.5 | `scripts/acceptance.mjs` |
 | F4-6 | 375×667 一屏 | 棋盘完整可见、无元素越界 | 对弈（375） | F4.6 | `scripts/acceptance.mjs`（复核，不改断言） |
-| F1-10 | 对局专注 | 默认收起与常驻条不变 | 对弈 / 人机 | F1.10 | jsdom 用例（不涉及样式，不改） |
+| F1-10 | 对局专注 | 常驻条不变；着法区按存储值决定进入态（首次收起） | 对弈 / 人机 | F1.10 | jsdom 用例（不涉及样式，不改） |
 
 ## 6. 文件划分
 
 | 文件 | 动作 |
 |---|---|
+| `src/client/storage/prefs.ts` | 三档偏好（`xiangqi.theme.v1`）与音效开关的读写；存储不可用时退缺省 |
+| `src/client/main.tsx` | 首屏渲染前把配色落到 `<html data-theme>` |
+| `src/client/App.tsx` | 顶栏「设置」浮层里的配色下拉；跟随系统时监听 `matchMedia` 变化 |
+| `test/prefs.test.ts` | 偏好读写与「存储抛错」失败路径 |
 | `src/client/styles/base.css` | 换取值；新增 `--muted-2`、`--red-text`、`--black-text`、`--target-text`、`--radius-lg`；重定义 `--raise`、`--raise-flat` |
 | `src/client/styles/shell.css`、`panel.css`、`play.css`、`learn.css`、`drill.css`、`replay.css`、`responsive.css` | 残留字面色值换成变量；界面上的红/黑/绿文字改指向 `--red-text`／`--black-text`／`--target-text`；棋盘加外投影 |
 | `scripts/acceptance.mjs` | 新增 F5-4 对比度读数：从 `:root` 取变量值，按 WCAG 公式逐对算并断言 |

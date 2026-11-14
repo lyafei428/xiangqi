@@ -6,7 +6,7 @@ Closest precedent: `docs/design/modules/board-ui.md` §2（棋盘八层与棋子
 
 对齐：断点（≥1024 / 768–1023 / <768）、棋盘 `boardSize` 的高度优先公式、棋子传统字与红黑两色、`ResizeObserver` 重算与 `dvh`——全部沿用。
 
-偏差：①窄屏面板由「占位抽屉」改成覆盖式，不再挤压棋盘高度（几何写进 `docs/design/modules/board-ui.md` §5）；②对局页默认收起着法记录与记谱输入；③棋子允许一圈 1px 内阴影表现厚度（`docs/design/modules/board-ui.md` §2 已同步改写）。
+偏差：①窄屏面板由「占位抽屉」改成覆盖式，不再挤压棋盘高度（几何的唯一出处是 `docs/design/modules/local-play.md` §5）；②对局页默认收起着法记录与记谱输入；③棋子允许一圈 1px 内阴影表现厚度（`docs/design/modules/board-ui.md` §2 已同步改写）。
 
 Survey evidence: 已核对 `docs/requirements/xiangqi.md` §3 的 F1.1–F1.10、F4.1–F4.6、F5.1–F5.5，`docs/design/modules/board-ui.md` §2/§5/§6，`docs/design/modules/local-play.md` §2/§5，`src/client/app.css`（`main.tsx` 唯一引入点），`test/RTM.md` 的对弈与响应式两节。
 
@@ -62,8 +62,8 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md` §3 的 F1.1–F1.10�
 
 改法两条：
 
-1. **面板改覆盖式**（几何已写进 `docs/design/modules/board-ui.md` §5）：`position: fixed` 贴底、`max-height: 50dvh`、自身纵向滚动；收起时 `translateY(100%)` + `visibility: hidden`，不参与布局、不可聚焦；展开时页面容器加 `overscroll-behavior: contain`，抽屉内滚动不外溢到页面。
-2. **棋盘按高度优先**：公式、720 上限与 360 下限全部按 `docs/design/modules/board-ui.md` §5 不变，本批只改「可用高」的来源——`useStageSize` 实测棋盘舞台的盒子，页面壳保证舞台与常驻控件（顶栏、行棋方与计时条、新局/认输）不重叠；对局页禁纵向滚动。
+1. **面板改覆盖式**（几何的唯一出处是 `docs/design/modules/local-play.md` §5）：`position: fixed` 贴底、`max-height: 50dvh`、自身纵向滚动；收起时 `translateY(100%)` + `visibility: hidden`，不参与布局、不可聚焦；展开时页面容器加 `overscroll-behavior: contain`，抽屉内滚动不外溢到页面。
+2. **棋盘按高度优先**：尺寸公式与 720 上限按 `docs/design/modules/board-ui.md` §5 不变；那节现在写的是「屏幕窄于 360 时格宽随宽度同缩，完整可见优先」，不是「360 下限」，本批只改「可用高」的来源——`useStageSize` 实测棋盘舞台的盒子，页面壳保证舞台与常驻控件（顶栏、行棋方与计时条、新局/认输）不重叠；对局页禁纵向滚动。
 
 不手算高度：常驻条的高度随档位与内容变化，写死数字就会漂；舞台的实测盒子才是唯一来源。
 
@@ -74,9 +74,8 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md` §3 的 F1.1–F1.10�
 | 行 | 验的交互 | 用户可见结果 | 入口 | 需求 | 用例实现 |
 |---|---|---|---|---|---|
 | F4-6 | 视口 375×667 → 对弈页 → 棋盘底边与页面滚动容器 | 棋盘第 10 行完整可见；`document.scrollingElement.scrollHeight <= clientHeight`；展开「着法」后抽屉盖在棋盘上方，收起后棋盘恢复完整 | 打开页面 → 对弈（375×667 视口） | F4.6 | `scripts/acceptance.mjs` |
-| F1-10 | 对弈页 → 「着法」切换 → `/` | 首次进入看不到着法记录与记谱框；点「着法」后两者出现，再点收起；展开过一次则之后进入即展开（存 `xiangqi.panel-open.v1`）；收起态按 `/` 展开并聚焦记谱框 | 打开页面 → 对弈 | F1.10 | `test/integration/local-play.test.tsx` |
+| F1-10 | 对弈页 → 「着法」切换 → `/` | 首次进入看不到着法记录与记谱框；点「着法」后两者出现，再点收起；展开过一次则之后进入即展开（存 `xiangqi.panel-open.v1`）；收起态按 `/` 展开并聚焦记谱框。用例内先清 `xiangqi.panel-open.v1` 再挂载——两条断言共用一份存储，不清会互相污染 | 打开页面 → 对弈 | F1.10 | `test/integration/local-play.test.tsx` |
 | F1-10 | 人机页 → 走第一着 → 难度与阵营 | 进入时可见；走一着后收为一行摘要；点摘要可展开 | 打开页面 → 人机 | F1.10 | `test/integration/ai.test.tsx` |
-
 | F1-11 | 终局 → 结果放大提示 → 面板状态行 | 任一终局在棋盘中央放大显示结果，停 3 秒后缩回原处；同一句话仍留在状态行 | 打开页面 → 对弈 → 认输 | F1.11 | `test/integration/local-play.test.tsx` |
 
 受影响行（不复述断言，只记入口与归属）：
@@ -107,6 +106,8 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md` §3 的 F1.1–F1.10�
 | `src/client/styles/responsive.css` | 新增：全部媒体查询（顺序按原分节，排在 `replay` 之前） |
 | `src/client/styles/replay.css` | 新增：棋谱页与棋谱库分栏 |
 | `src/client/app.css` | 只留八条 `@import`，顺序与原分节顺序一致：base → shell → play → panel → learn → drill → responsive → replay（`responsive` 在原文件里就排在 `replay` 之前，拆后不变），`main.tsx` 的引入不变。构建口径：生产构建把八份合成一张 CSS（`npm run preview` 的读数按此口径取）；dev 下按文件分请求，不计入 F5.2 的请求数 |
+| `src/client/storage/prefs.ts` | 着法区展开状态（`xiangqi.panel-open.v1`）与音效开关的读写；存储不可用退缺省 |
+| `test/prefs.test.ts` | 上述偏好的读写与「存储抛错」失败路径 |
 | `src/client/pages/PlayPage.tsx`、`src/client/pages/AiPage.tsx` | 面板默认收起；人机页按着法数决定难度与阵营的显隐 |
 | `src/client/panel/GamePanel.tsx` | 「着法」切换按钮与 `aria-expanded`；`/` 先展开再聚焦；结果行挂 `resultTone` 类名 |
 | `src/client/panel/ResultPop.tsx` | 终局放大提示（FLIP 缩回状态行，3 秒停留，`prefers-reduced-motion` 时只停不飞） |
@@ -128,7 +129,7 @@ Survey evidence: 已核对 `docs/requirements/xiangqi.md` §3 的 F1.1–F1.10�
 
 ## 7. 验收
 
-- 集成：`npx vitest run test/integration/local-play.test.tsx test/integration/ai.test.tsx`；F1-10 的两条在收口行报告。
+- 集成：`npx vitest run test/integration/local-play.test.tsx test/integration/ai.test.tsx`；偏好与失败路径：`node --test test/prefs.test.ts`；F1-10 的两条在收口行报告。
 - 浏览器读数：`node scripts/acceptance.mjs` 取 375×667 的滚动高度与棋盘底边（F4-6），以及 1440 / 768 两档的重算（F4-3 复核）。
 - F5.5 三条各给一条读数：①对比度按 `docs/design/modules/theme.md` §3 的断言集逐对量（须 ≥ 4.5:1），取值表与断言集都归那份档；②`grep` 确认样式表内无 `url(` 引用的图片与渐变（`linear-gradient`/`radial-gradient`）；③明暗层级靠 `--raise` 与 `--panel-bg` 差值判，截图留档。
 - 提交门见 `AGENTS.md`。
