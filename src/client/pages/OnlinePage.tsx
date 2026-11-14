@@ -16,6 +16,9 @@ import { useStageSize } from '../board/useStageSize.ts';
 import { createOnlineState, onlineReducer } from '../online/session.ts';
 import { OnlineSocket, loadStored, saveStored } from '../online/socket.ts';
 import { useMoveTrailEnabled } from '../board/useMoveTrail.ts';
+import { replayHistory } from '../online/history.ts';
+import { useGameSound } from '../sound/useGameSound.ts';
+import { useSoundEnabled } from '../sound/useSoundEnabled.ts';
 import { resultLabel, resultTone } from '../panel/result-text.ts';
 import { saveRecord } from '../storage/records.ts';
 
@@ -77,6 +80,17 @@ export function OnlinePage() {
   const snapshot = state.snapshot;
   const spectating = state.role === 'spectator';
   const position = useMemo(() => (snapshot === null ? null : parseFen(snapshot.fen)), [snapshot?.fen]);
+
+  // 联机页也有音效：用 startFen + moveLog 重放出与本地对局同形状的着法记录，
+  // 走子音与终局音都走同一处判断（见 useGameSound）。
+  const soundSource = useMemo(
+    () =>
+      snapshot === null
+        ? null
+        : { history: replayHistory(snapshot.startFen, snapshot.moveLog), result: snapshot.result },
+    [snapshot?.startFen, snapshot?.seq, snapshot?.result],
+  );
+  useGameSound(soundSource, useSoundEnabled());
 
   // 只跟服务端生成的快照走：presence 会新建快照对象，但时钟引用不变，不能因它重置锚点。
   useEffect(() => {

@@ -62,6 +62,7 @@ Survey evidence: 已核对 `docs/design/modules/local-play.md`（事件源）、
 
 - 不做音量滑杆（理由见 §2 的「音量」一段）、不做背景音乐、不做按材质分级的音色。
 - 不做「对方走子单独音色」：人机与联机里谁走的，界面已经显示得够清楚。
+- 联机页拿的是快照，不是 session：用 `snapshot.startFen` + `snapshot.moveLog` 重放出同形状的着法记录（`src/client/online/history.ts` 的 `replayHistory`），再交给同一个 `useGameSound`。重放失败（快照与起始局面不自洽）时返回空记录、不出声——棋盘用的是 `snapshot.fen`，不依赖这段重放。
 - 任何发声失败都静默降级：没有 `AudioContext`、被自动播放策略拦（合成事件不产生用户激活，上下文停在 `suspended`）、设备静音，都当没听见处理。声音是可听反馈，不是业务结果，丢失不影响胜负与记录。
 
 ## 7. 新增与改动的名字
@@ -87,6 +88,8 @@ Survey evidence: 已核对 `docs/design/modules/local-play.md`（事件源）、
 | `src/client/App.tsx` | 269 | 不跨层（挂一次 hook + 浮层里加两个控件） |
 | `src/client/pages/AiPage.tsx` | 358 | 不跨层（挂一次 hook） |
 | `test/integration/sound.test.tsx` | 115 | 不跨层（F5-6 的集成行） |
+| `src/client/online/history.ts` | 28 | 不跨层（快照 → 着法记录） |
+| `test/online-history.test.ts` | 41 | 不跨层 |
 
 均不跨层：没有文件越过 500 行的代码结构线，本变更也不把它们推向那条线。
 
