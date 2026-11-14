@@ -19,7 +19,7 @@ Survey evidence: 已核对 `docs/design/modules/replay.md`（记录格式、页�
 | 需求点 | 落点 |
 |---|---|
 | 两个分栏 | `ReplayPage` 顶部一组切换，`我的棋谱` 走原逻辑，`棋谱库` 走新增的 `StudyLibrary` |
-| 四类各 4 条、可按类筛选 | `content/games/index.json` 16 条 + `StudyLibrary` 的筛选行 |
+| 四类各 6 条、可按类筛选 | `content/games/index.json` 24 条 + `StudyLibrary` 的筛选行 |
 | 任意步回放、棋盘与记谱同步 | 复用现有回放组件；步进与记谱由 `positionAtMoves` 与 `notationsOf` 提供 |
 | 关键步说明可见 | `notes` 中 `step` 等于当前步时显示该条 |
 | 内容自证 | `test/study.test.ts` 逐条解析、逐着合法、分类计数 |
@@ -53,7 +53,7 @@ export function parseStudyRecord(value: unknown): StudyRecord | null;
 
 ## 3. 内容与分类口径
 
-`content/games/index.json`：数组，四类各 4 条，共 16 条。分类由作者标注，并由自证测试按下列可判规则核对：
+`content/games/index.json`：数组，四类各 6 条，共 24 条。分类由作者标注，并由自证测试按下列可判规则核对：
 
 | 类别 | 可判规则 |
 |---|---|
@@ -82,7 +82,7 @@ export function parseStudyRecord(value: unknown): StudyRecord | null;
 
 | 行 | 验的交互 | 用户可见结果 | 入口 | 需求 |
 |---|---|---|---|---|
-| F1-9 | 棋谱页分栏 → 内容库 → 回放器（棋盘 + 步进条） | 切到「棋谱库」看到四类共 16 条；按「残局」筛选只剩 4 条；点开一条能走到末步，棋盘跟着变，记谱条数等于步数；走到带说明的那一步，说明出现在棋盘下方 | 打开页面 → 棋谱 → 棋谱库 | F1.9 |
+| F1-9 | 棋谱页分栏 → 内容库 → 回放器（棋盘 + 步进条） | 切到「棋谱库」看到四类共 24 条；按「残局」筛选只剩 6 条；点开一条能走到末步，棋盘跟着变，记谱条数等于步数；走到带说明的那一步，说明出现在棋盘下方 | 打开页面 → 棋谱 → 棋谱库 | F1.9 |
 
 不破坏、不冗余：F1-5 验的是本地存局那一路（列表、导入导出、续局），本行验内容那一路；两路共用回放器，回放器自身的步进断言不重复。
 
@@ -96,7 +96,7 @@ export function parseStudyRecord(value: unknown): StudyRecord | null;
 | `src/client/study/StudyLibrary.tsx` | 新增：分栏内的筛选与列表 |
 | `src/client/pages/ReplayPage.tsx` | 加分栏切换、库内回放状态与说明行 |
 | `src/client/app.css` | 分栏、筛选、库列表与说明行的样式 |
-| `content/games/index.json` | 新增：16 条棋谱 |
+| `content/games/index.json` | 24 条棋谱（四类各 6 条） |
 | `test/study.test.ts` | 新增：内容自证 |
 | `test/integration/study.test.tsx` | 新增：F1-9 |
 | `docs/requirements/xiangqi.md` | F1.9 一行 |
@@ -115,7 +115,7 @@ export function parseStudyRecord(value: unknown): StudyRecord | null;
 
 ## 7. 验收
 
-- 内容自证：`node --test test/study.test.ts`，覆盖逐条解析、逐着合法、四类各 4 条、分类规则可判、`id` 唯一、`notes.step` 在范围。
+- 内容自证：`node --test test/study.test.ts`，覆盖逐条解析、逐着合法、四类各 6 条、分类规则可判、`id` 唯一、`notes.step` 在范围。
 - 集成用例 F1-9 的那一半在收口行报告（`test/integration/study.test.tsx`），不写进本模块验收。
 - 提交门见 `AGENTS.md`。
 

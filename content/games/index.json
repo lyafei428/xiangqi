@@ -758,5 +758,381 @@
         "text": "马八进七跳到将门，另一马封住退路，双马成杀。"
       }
     ]
+  },
+  {
+    "id": "opening-shunpao-cross",
+    "title": "顺手炮·横车过宫",
+    "phase": "opening",
+    "source": "自编",
+    "startFen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
+    "moves": [
+      {
+        "from": 70,
+        "to": 67
+      },
+      {
+        "from": 25,
+        "to": 22
+      },
+      {
+        "from": 88,
+        "to": 69
+      },
+      {
+        "from": 7,
+        "to": 24
+      },
+      {
+        "from": 89,
+        "to": 88
+      },
+      {
+        "from": 8,
+        "to": 17
+      },
+      {
+        "from": 60,
+        "to": 51
+      },
+      {
+        "from": 17,
+        "to": 12
+      }
+    ],
+    "result": null,
+    "notes": [
+      {
+        "step": 1,
+        "text": "炮二平五架中炮：中路是最短的一条攻击线，先手方第一着就该让黑方表态。"
+      },
+      {
+        "step": 3,
+        "text": "顺手炮：黑方同样架中炮，双方中路对顶——这类局面比的是谁先把车亮出来。"
+      },
+      {
+        "step": 8,
+        "text": "横车过宫到四路：把车放在能压住红方三路马的位置，比直接兑车更有后劲。"
+      }
+    ]
+  },
+  {
+    "id": "opening-xianren-pao",
+    "title": "仙人指路·卒底炮",
+    "phase": "opening",
+    "source": "自编",
+    "startFen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
+    "moves": [
+      {
+        "from": 56,
+        "to": 47
+      },
+      {
+        "from": 19,
+        "to": 20
+      },
+      {
+        "from": 82,
+        "to": 65
+      },
+      {
+        "from": 1,
+        "to": 18
+      },
+      {
+        "from": 83,
+        "to": 67
+      },
+      {
+        "from": 0,
+        "to": 1
+      },
+      {
+        "from": 88,
+        "to": 69
+      },
+      {
+        "from": 1,
+        "to": 55
+      }
+    ],
+    "result": null,
+    "notes": [
+      {
+        "step": 1,
+        "text": "兵七进一先探一步：不急着定阵型，让黑方先亮出意图，这叫仙人指路。"
+      },
+      {
+        "step": 2,
+        "text": "卒底炮应对：把炮摆到红方七路兵的同一侧，瞄着底相——这是最直接的反击思路。"
+      },
+      {
+        "step": 8,
+        "text": "黑车过河压到位：此时红方要算清「车压进来吃什么」，别让对方白赚一步。"
+      }
+    ]
+  },
+  {
+    "id": "middlegame-central-pawn",
+    "title": "中炮过河车·中路突破",
+    "phase": "middlegame",
+    "source": "自编",
+    "startFen": "r1bakabr1/8c/1cn3n2/p1p1p1R1p/6p2/2P6/P3P1P1P/1C2C1N2/9/RNBAKAB2 w - - 0 1",
+    "moves": [
+      {
+        "from": 33,
+        "to": 42
+      },
+      {
+        "from": 17,
+        "to": 15
+      },
+      {
+        "from": 42,
+        "to": 37
+      },
+      {
+        "from": 19,
+        "to": 64
+      },
+      {
+        "from": 37,
+        "to": 64
+      },
+      {
+        "from": 15,
+        "to": 60
+      },
+      {
+        "from": 69,
+        "to": 76
+      },
+      {
+        "from": 27,
+        "to": 36
+      }
+    ],
+    "result": null,
+    "notes": [
+      {
+        "step": 1,
+        "text": "车三退一是被逼的：黑炮平七路打车，红车先退一步保住，别为一个过河车硬顶。"
+      },
+      {
+        "step": 3,
+        "text": "车三平八转向另一翼：过河车打不动中路就换边，比在同一翼反复兑子有价值。"
+      },
+      {
+        "step": 8,
+        "text": "马三退五补中：红方中路曾经压得很凶，退马回来先把家里补好——这一步不进攻，但它决定了后面能不能进攻。"
+      }
+    ]
+  },
+  {
+    "id": "middlegame-elephant-cannon",
+    "title": "飞相局·炮入卒林",
+    "phase": "middlegame",
+    "source": "自编",
+    "startFen": "r1bakabr1/9/2ncc1n2/p1p1p3p/6p2/2P6/P3P1P1P/1CN1B1NC1/9/1RBAKA1R1 w - - 0 1",
+    "moves": [
+      {
+        "from": 54,
+        "to": 45
+      },
+      {
+        "from": 27,
+        "to": 36
+      },
+      {
+        "from": 64,
+        "to": 63
+      },
+      {
+        "from": 24,
+        "to": 41
+      },
+      {
+        "from": 63,
+        "to": 36
+      },
+      {
+        "from": 41,
+        "to": 60
+      },
+      {
+        "from": 70,
+        "to": 52
+      },
+      {
+        "from": 21,
+        "to": 66
+      }
+    ],
+    "result": null,
+    "notes": [
+      {
+        "step": 1,
+        "text": "兵九进一是试探：飞相局先手不急，边兵一步既通了自己的边车，也看黑方怎么应。"
+      },
+      {
+        "step": 3,
+        "text": "炮八平九跟着边线走：把炮摆在对方边卒的正对面，下一步打不打由自己决定。"
+      },
+      {
+        "step": 8,
+        "text": "炮二进二再提一档：两炮一前一后压住黑方两翼，黑方马炮都被牵住，这就是飞相局要的那种「不快的优势」。"
+      }
+    ]
+  },
+  {
+    "id": "ending-double-rook-gate",
+    "title": "双车夺门",
+    "phase": "ending",
+    "source": "自编",
+    "startFen": "4k4/9/R8/1pp3p1p/9/9/P3C4/9/4R4/3K5 w - - 0 1",
+    "moves": [
+      {
+        "from": 18,
+        "to": 22
+      },
+      {
+        "from": 4,
+        "to": 5
+      },
+      {
+        "from": 76,
+        "to": 77
+      }
+    ],
+    "result": {
+      "type": "checkmate",
+      "winner": "red"
+    },
+    "notes": [
+      {
+        "step": 1,
+        "text": "车九平五砍中士？不，是压住中路：双车一炮同时指黑将，黑方只能用将逃。"
+      },
+      {
+        "step": 3,
+        "text": "后车平四封死肋道：将不能回中，也不能向另一侧逃——双车错的基本图形。"
+      }
+    ]
+  },
+  {
+    "id": "ending-king-rook-rib",
+    "title": "借帅使车",
+    "phase": "ending",
+    "source": "自编",
+    "startFen": "3k5/9/9/1pp3p1p/9/9/P8/9/R7N/3K5 w - - 0 1",
+    "moves": [
+      {
+        "from": 84,
+        "to": 85
+      },
+      {
+        "from": 3,
+        "to": 12
+      },
+      {
+        "from": 72,
+        "to": 75
+      }
+    ],
+    "result": {
+      "type": "checkmate",
+      "winner": "red"
+    },
+    "notes": [
+      {
+        "step": 1,
+        "text": "先动帅不动车：帅平中路封住黑将的横路，这一步本身不将军，却是杀的前提。"
+      },
+      {
+        "step": 3,
+        "text": "车平肋道一将到底：将的上下都被自己的位置堵死，肋道车一进去就是绝杀。"
+      }
+    ]
+  },
+  {
+    "id": "endgame-rook-cannon-sea",
+    "title": "海底捞月",
+    "phase": "endgame",
+    "source": "自编 · 仿《适情雅趣》杀法",
+    "startFen": "3k5/9/9/9/9/9/9/9/4R4/3K1C3 w - - 0 1",
+    "moves": [
+      {
+        "from": 84,
+        "to": 85
+      },
+      {
+        "from": 3,
+        "to": 12
+      },
+      {
+        "from": 76,
+        "to": 75
+      }
+    ],
+    "result": {
+      "type": "checkmate",
+      "winner": "red"
+    },
+    "notes": [
+      {
+        "step": 1,
+        "text": "帅平中路先占住「对面的那条线」：将帅不能照面，这一占就把黑将钉在四路。"
+      },
+      {
+        "step": 3,
+        "text": "车平六路：炮在底线护住车，黑将既不能下也不能平，一步成杀。"
+      }
+    ]
+  },
+  {
+    "id": "endgame-rook-horse-king",
+    "title": "车马借帅",
+    "phase": "endgame",
+    "source": "自编 · 仿《适情雅趣》杀法",
+    "startFen": "4k4/9/9/9/9/9/9/9/2R6/3K2N2 w - - 0 1",
+    "moves": [
+      {
+        "from": 74,
+        "to": 76
+      },
+      {
+        "from": 4,
+        "to": 5
+      },
+      {
+        "from": 84,
+        "to": 85
+      },
+      {
+        "from": 5,
+        "to": 14
+      },
+      {
+        "from": 76,
+        "to": 77
+      }
+    ],
+    "result": {
+      "type": "checkmate",
+      "winner": "red"
+    },
+    "notes": [
+      {
+        "step": 1,
+        "text": "车七平五先卡住中肋：黑将只剩六路一条横线可走。"
+      },
+      {
+        "step": 3,
+        "text": "帅平中路跟着压：将帅照面的规则在这里就是一把刀——黑将不能回中。"
+      },
+      {
+        "step": 5,
+        "text": "车平四路收口：马护住四路的上方，车在下方将死，黑将无路可去。"
+      }
+    ]
   }
 ]

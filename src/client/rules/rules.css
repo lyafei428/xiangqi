@@ -76,3 +76,51 @@
     font-size: 14px;
   }
 }
+
+/* 进阶阅读：两篇长文折叠，展开后按段落排版。 */
+.rules-note {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.rules-article {
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-bg);
+  padding: 0 14px;
+}
+
+.rules-article-title {
+  cursor: pointer;
+  padding: 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.rules-article[open] .rules-article-title {
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 12px;
+}
+
+.rules-article-lead {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.rules-article-section {
+  margin-bottom: 18px;
+}
+
+.rules-article-heading {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+
+.rules-article-section p {
+  margin: 0 0 8px;
+  font-size: 15px;
+  line-height: 1.7;
+}

@@ -55,9 +55,9 @@ function ofPhase(phase: StudyPhase): StudyRecord[] {
 
 test('棋谱库共 16 条，四类各 4 条', () => {
   const all = records();
-  assert.equal(all.length, 16);
+  assert.equal(all.length, 24);
   for (const phase of PHASES) {
-    assert.equal(ofPhase(phase).length, 4, `${phase} 应为 4 条`);
+    assert.equal(ofPhase(phase).length, 6, `${phase} 应为 6 条`);
   }
 });
 

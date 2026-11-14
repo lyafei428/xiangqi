@@ -29,9 +29,9 @@ function openLibrary(): HTMLElement {
 afterEach(cleanup);
 
 describe('F1-9 棋谱库', () => {
-  it('切到棋谱库看到四类共 16 条', () => {
+  it('切到棋谱库看到四类共 24 条', () => {
     const container = openLibrary();
-    expect(container.querySelectorAll('.study-row')).toHaveLength(16);
+    expect(container.querySelectorAll('.study-row')).toHaveLength(24);
     expect(screen.getByRole('button', { name: '全部' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '开局' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '中局' })).toBeTruthy();
@@ -39,10 +39,10 @@ describe('F1-9 棋谱库', () => {
     expect(screen.getByRole('button', { name: '残局' })).toBeTruthy();
   });
 
-  it('按「残局」筛选只剩 4 条', () => {
+  it('按「残局」筛选只剩 6 条', () => {
     const container = openLibrary();
     fireEvent.click(screen.getByRole('button', { name: '残局' }));
-    expect(container.querySelectorAll('.study-row')).toHaveLength(4);
+    expect(container.querySelectorAll('.study-row')).toHaveLength(6);
     expect(screen.getByText('卧槽马')).toBeTruthy();
     expect(screen.getByText('双马饮泉')).toBeTruthy();
   });
