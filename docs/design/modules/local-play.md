@@ -88,6 +88,7 @@ Survey evidence: 已核对 `docs/design/architecture.md`（分层、技术栈、
 - 棋盘尺寸公式、格宽下限与滚动规则由 `docs/design/modules/board-ui.md` §5 规定。
 - 面板在 M1 只有固定宽与全宽两态，没有宽度驱动的内部重排，不需要容器查询；等面板可拖动改宽的批次再按 `docs/design/architecture.md` §6 用 `@container`。
 - 面板收起后 `ResizeObserver` 重算棋盘尺寸；旋转屏幕同样只重算尺寸，不重挂载组件。
+- 面板内可加行：记谱输入占着法记录下方一行（细则见 `docs/design/modules/notation-input.md`），不改变上表的断点与高度。
 - 手机横屏（`orientation: landscape and max-height: 500px`）改为棋盘在左、面板在右。
 
 ## 6. 性能

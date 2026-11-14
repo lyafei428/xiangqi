@@ -122,7 +122,11 @@ export function onlineReducer(state: OnlineState, event: OnlineEvent): OnlineSta
       return {
         ...state,
         phase: state.room === null ? 'lobby' : 'reconnecting',
-        notice: state.room === null ? null : '连接断开，正在重连…',
+        // 还没进房间就断开 = 服务本身没起来（静态托管上没有 /ws）。
+        // 以前这里回大厅且不留话，用户只看到按钮从「连接中…」弹回「创建房间」，
+        // 以为按钮坏了；现在把原因写出来，重试仍在后台跑。
+        notice:
+          state.room === null ? '连不上房间服务，正在重试。联机需要一个运行中的服务端进程。' : '连接断开，正在重连…',
       };
     case 'left':
       return createOnlineState();

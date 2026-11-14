@@ -205,6 +205,11 @@ export function OnlinePage() {
               加入
             </button>
           </div>
+          {state.notice !== null ? (
+            <p className="online-error" role="status">
+              {state.notice}
+            </p>
+          ) : null}
           {state.error === null ? null : (
             <p className="online-error" role="alert">
               {state.error}
