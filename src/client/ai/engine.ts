@@ -4,6 +4,7 @@
 
 import type { AiLevel, AiReply, HistoryEntry } from '../../shared/index.ts';
 import type { AiRequest, AiResponse } from './protocol.ts';
+import { createInlineWorker } from './inline-worker.ts';
 
 /** 应答事件只取 data。不用 DOM 的 MessageEvent，假 Worker 才不必扮成浏览器。 */
 export interface AiMessageEvent {
@@ -48,6 +49,11 @@ const IN_FLIGHT = 'createAiEngine: a request is already in flight';
 const CRASH_FALLBACK = 'AI worker crashed';
 
 function createBrowserWorker(): AiWorkerLike {
+  // 单文件版（file:// 打开）：浏览器不给 file:// 页面建 Worker，改在主线程跑同一套协议。
+  // 这个分支只在 standalone 构建里被 define 成 '1'，正常构建里是死代码。
+  if (import.meta.env.VITE_STANDALONE === '1') {
+    return createInlineWorker();
+  }
   // Vite 原生支持这种写法：worker.ts 单独打成一包，主包不含它。
   // 返回值按 AiWorkerLike 收：真 Worker 若哪天不长这个样子，这里先红。
   return new Worker(new URL('./worker.ts', import.meta.url), {
